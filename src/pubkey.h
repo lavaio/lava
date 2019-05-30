@@ -22,6 +22,16 @@ class CKeyID : public uint160
 public:
     CKeyID() : uint160() {}
     explicit CKeyID(const uint160& in) : uint160(in) {}
+
+    uint64_t GetPlotID() const
+    {
+        uint64_t result = 0;
+        for (int i = 0; i < 8; i++) {
+            result <<= 8;
+            result |= (data[7 - i] & 0xFF);
+        }
+        return result;
+    }
 };
 
 typedef uint256 ChainCode;

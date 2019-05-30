@@ -219,7 +219,13 @@ public:
     uint256 hashMerkleRoot;
     uint32_t nTime;
     uint32_t nBits;
-    uint32_t nNonce;
+    uint64_t nNonce;
+    //! block header poc
+    uint256 genSign;
+    uint64_t nPlotID;
+    uint64_t nBaseTarget;
+    uint64_t nDeadline;
+    uint64_t nCumulativeDiff;
 
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
     int32_t nSequenceId;
@@ -248,6 +254,12 @@ public:
         nTime          = 0;
         nBits          = 0;
         nNonce         = 0;
+
+        nPlotID = 0;
+        genSign.SetNull();
+        nBaseTarget = 0;
+        nDeadline = 0;
+        nCumulativeDiff = 0;
     }
 
     CBlockIndex()
@@ -264,6 +276,12 @@ public:
         nTime          = block.nTime;
         nBits          = block.nBits;
         nNonce         = block.nNonce;
+
+        nPlotID        = block.nPlotID;
+        genSign        = block.genSign;
+        nBaseTarget    = block.nBaseTarget;
+        nDeadline      = block.nDeadline;
+        nCumulativeDiff = block.nCumulativeDiff;
     }
 
     CDiskBlockPos GetBlockPos() const {
@@ -294,6 +312,12 @@ public:
         block.nTime          = nTime;
         block.nBits          = nBits;
         block.nNonce         = nNonce;
+
+        block.nBaseTarget    = nBaseTarget;
+        block.genSign        = genSign;
+        block.nPlotID        = nPlotID;
+        block.nDeadline      = nDeadline;
+        block.nCumulativeDiff = nCumulativeDiff;
         return block;
     }
 
@@ -422,6 +446,11 @@ public:
         READWRITE(nTime);
         READWRITE(nBits);
         READWRITE(nNonce);
+        READWRITE(genSign);
+        READWRITE(nDeadline);
+        READWRITE(nPlotID);
+        READWRITE(nBaseTarget);
+        READWRITE(nCumulativeDiff);
     }
 
     uint256 GetBlockHash() const
@@ -433,6 +462,11 @@ public:
         block.nTime           = nTime;
         block.nBits           = nBits;
         block.nNonce          = nNonce;
+        block.genSign = genSign;
+        block.nDeadline = nDeadline;
+        block.nPlotID = nPlotID;
+        block.nBaseTarget = nBaseTarget;
+        block.nCumulativeDiff = nCumulativeDiff;
         return block.GetHash();
     }
 

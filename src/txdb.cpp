@@ -8,7 +8,7 @@
 #include <chainparams.h>
 #include <hash.h>
 #include <random.h>
-#include <pow.h>
+#include <poc.h>
 #include <shutdown.h>
 #include <uint256.h>
 #include <util/system.h>
@@ -273,9 +273,16 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
                 pindexNew->nNonce         = diskindex.nNonce;
                 pindexNew->nStatus        = diskindex.nStatus;
                 pindexNew->nTx            = diskindex.nTx;
+                pindexNew->genSign        = diskindex.genSign;
+                pindexNew->nPlotID        = diskindex.nPlotID;
+                pindexNew->nBaseTarget    = diskindex.nBaseTarget;
+                pindexNew->nDeadline      = diskindex.nDeadline;
+                pindexNew->nCumulativeDiff = diskindex.nCumulativeDiff;
 
-                if (!CheckProofOfWork(pindexNew->GetBlockHash(), pindexNew->nBits, consensusParams))
-                    return error("%s: CheckProofOfWork failed: %s", __func__, pindexNew->ToString());
+                auto params = Params();
+                //TODO... fix genesis block
+                if (pindexNew->nHeight != 0 && !CheckProofOfCapacity(pindexNew->genSign, pindexNew->nHeight, pindexNew->nPlotID, pindexNew->nNonce, pindexNew->nBaseTarget, pindexNew->nDeadline, params.GetTargetDeadline()))
+                    return error("%s: CheckProofOfCapacity failed: %s", __func__, pindexNew->ToString());
 
                 pcursor->Next();
             } else {

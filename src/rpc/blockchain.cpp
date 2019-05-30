@@ -146,7 +146,13 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
     result.pushKV("mediantime", (int64_t)blockindex->GetMedianTimePast());
     result.pushKV("nonce", (uint64_t)block.nNonce);
     result.pushKV("bits", strprintf("%08x", block.nBits));
-    result.pushKV("difficulty", GetDifficulty(blockindex));
+    //result.pushKV("difficulty", GetDifficulty(blockindex));
+    result.pushKV("difficulty", 0.0);
+    result.pushKV("deadline", block.nDeadline/block.nBaseTarget);
+    result.pushKV("plotid", block.nPlotID);
+    result.pushKV("cumulativedifficulty", block.nCumulativeDiff);
+    result.pushKV("generationsignature", block.genSign.ToString());
+    result.pushKV("basetarget", block.nBaseTarget);
     result.pushKV("chainwork", blockindex->nChainWork.GetHex());
     result.pushKV("nTx", (uint64_t)blockindex->nTx);
 
@@ -782,9 +788,9 @@ static UniValue getblockheader(const JSONRPCRequest& request)
     const CBlockIndex* pblockindex;
     const CBlockIndex* tip;
     {
-        LOCK(cs_main);
-        pblockindex = LookupBlockIndex(hash);
-        tip = chainActive.Tip();
+    LOCK(cs_main);
+    pblockindex = LookupBlockIndex(hash);
+    tip = chainActive.Tip();
     }
 
     if (!pblockindex) {

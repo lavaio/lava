@@ -26,7 +26,14 @@ public:
     uint256 hashMerkleRoot;
     uint32_t nTime;
     uint32_t nBits;
-    uint32_t nNonce;
+    uint64_t nNonce;
+    
+    //poc
+    uint256 genSign;
+    uint64_t nPlotID;
+    uint64_t nBaseTarget;
+    uint64_t nDeadline;
+    uint64_t nCumulativeDiff;
 
     CBlockHeader()
     {
@@ -43,6 +50,12 @@ public:
         READWRITE(nTime);
         READWRITE(nBits);
         READWRITE(nNonce);
+        
+        READWRITE(genSign);
+        READWRITE(nPlotID);
+        READWRITE(nBaseTarget);
+        READWRITE(nDeadline);
+        READWRITE(nCumulativeDiff);
     }
 
     void SetNull()
@@ -53,6 +66,12 @@ public:
         nTime = 0;
         nBits = 0;
         nNonce = 0;
+        
+        genSign.SetNull();
+        nPlotID = 0;
+        nBaseTarget = 0;
+        nDeadline = 0;
+        nCumulativeDiff = 0;
     }
 
     bool IsNull() const
@@ -113,6 +132,12 @@ public:
         block.nTime          = nTime;
         block.nBits          = nBits;
         block.nNonce         = nNonce;
+
+        block.genSign = genSign;
+        block.nPlotID = nPlotID;
+        block.nBaseTarget = nBaseTarget;
+        block.nCumulativeDiff = nCumulativeDiff;
+        block.nDeadline = nDeadline;
         return block;
     }
 
