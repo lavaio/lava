@@ -158,19 +158,27 @@ UniValue submitNonce(const JSONRPCRequest& request)
     if (keyid.IsNull()) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Address does not refer to a key");
     }
+    std::shared_ptr<CReserveScript> coinbaseScript = std::make_shared<CReserveScript>();
+    coinbaseScript->reserveScript = GetScriptForDestination(dest);
     auto plotID = keyid.GetPlotID();
     uint64_t nonce = 0;
     auto nonceStr = request.params[1].get_str();
-    ParseUInt64(nonceStr, &nonce);
+    if (!ParseUInt64(nonceStr, &nonce)) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid nonce");
+    }
     uint64_t deadline = request.params[2].get_int64();
-    //valation
     
-    std::shared_ptr<CReserveScript> coinbaseScript = std::make_shared<CReserveScript>();
-    auto script = GetScriptForDestination(dest);
-    blockAssember.UpdateDeadline(plotID, nonce, deadline, script);
+    //auto script = GetScriptForDestination(dest);
     UniValue obj(UniValue::VOBJ);
-    obj.pushKV("accept", true);
-    obj.pushKV("deadline", deadline);
+    if (blockAssember.UpdateDeadline(plotID, nonce, deadline, coinbaseScript->reserveScript)) {
+        obj.pushKV("plotid", plotID);
+        obj.pushKV("deadline", deadline);
+        auto params = Params();
+        obj.pushKV("targetdeadline", params.GetTargetDeadline());
+        //obj.pushKV("errordescription", "");
+    } else {
+        obj.pushKV("accept", false);
+    }
     return obj;
 }
 

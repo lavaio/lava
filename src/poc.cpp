@@ -1,5 +1,6 @@
 #include "poc.h"
 #include "shabal/shabal.h"
+#include "chain.h"
 
 #include <vector>
 #include <immintrin.h>
@@ -10,6 +11,9 @@ using namespace std;
 #define HASH_CAP 4096
 #define SCOOP_SIZE 64
 #define PLOT_SIZE (HASH_CAP * SCOOP_SIZE) // 4096*64
+
+const uint64_t INITIAL_BASE_TARGET = 14660155037L;
+const uint64_t MAX_BASE_TARGET = 14660155037L;
 
 uint256 CalcGenerationSignature(uint256 lastSig, uint64_t lastPlotID)
 {
@@ -27,52 +31,46 @@ uint256 CalcGenerationSignature(uint256 lastSig, uint64_t lastPlotID)
     return uint256(res);
 }
 
-char* genNonceChunk(const uint64_t plotID, const uint64_t nonce, bool poc2)
+vector<uint8_t> genNonceChunk(const uint64_t plotID, const uint64_t nonce)
 {
     shabal_context ctx;
     _mm256_zeroupper();
-    char* gendata = new char[16 + PLOT_SIZE];
+    vector<uint8_t> genData(16 + PLOT_SIZE);
     //put plotID
-    char* xv = (char*)&plotID;
+    uint8_t* xv = (uint8_t*)&plotID;
     for (size_t i = 0; i < 8; i++) {
-        gendata[PLOT_SIZE + i] = xv[7 - i];
+        genData[PLOT_SIZE + i] = xv[7 - i];
     }
     //put nonce
-    xv = (char*)&nonce;
+    xv = (uint8_t*)&nonce;
     for (size_t i = 8; i < 16; i++) {
-        gendata[PLOT_SIZE + i] = xv[15 - i];
+        genData[PLOT_SIZE + i] = xv[15 - i];
     }
-    //
-    size_t len = 0;
-    for (size_t i = PLOT_SIZE; i > 0; i -= HASH_SIZE) {
+    for (auto i = PLOT_SIZE; i > 0; i -= HASH_SIZE) {
         shabal_init(&ctx, 256);
-        len = PLOT_SIZE + 16 - i;
+        auto len = PLOT_SIZE + 16 - i;
         if (len > HASH_CAP) len = HASH_CAP;
-        shabal(&ctx, gendata + i, len);
-        shabal_close(&ctx, 0, 0, &gendata[i - HASH_SIZE]);
+        shabal(&ctx, &genData[i], len);
+        shabal_close(&ctx, 0, 0, &genData[i - HASH_SIZE]);
     }
     shabal_init(&ctx, 256);
-    shabal(&ctx, gendata, 16 + PLOT_SIZE);
-    char* final = new char[32];
-    shabal_close(&ctx, 0, 0, final);
+    shabal(&ctx, &genData[0], 16 + PLOT_SIZE);
+    vector<uint8_t> final(32);
+    shabal_close(&ctx, 0, 0, &final[0]);
     // XOR with final
     for (size_t i = 0; i < PLOT_SIZE; i++) {
-        gendata[i] ^= (final[i % HASH_SIZE]);
+        genData[i] ^= (final[i % HASH_SIZE]);
     }
-    delete[] final;
-    if (poc2) {
-        char* data = new char[PLOT_SIZE];
-        for (size_t i = 0; i < PLOT_SIZE; i += HASH_SIZE) {
-            if ((i / HASH_SIZE) % 2 == 0) {
-                memmove(data + i, gendata + i, HASH_SIZE);
-            } else {
-                memmove(data + i, gendata + (PLOT_SIZE - i), HASH_SIZE);
-            }
+    
+    vector<uint8_t> data(PLOT_SIZE);
+    for (size_t i = 0; i < PLOT_SIZE; i += HASH_SIZE) {
+        if ((i / HASH_SIZE) % 2 == 0) {
+            memmove(&data[i], &genData[i], HASH_SIZE);
+        } else {
+            memmove(&data[i], &genData[PLOT_SIZE - i], HASH_SIZE);
         }
-        delete[] gendata;
-        return data;
     }
-    return gendata;
+    return std::move(data);
 }
 
 uint64_t CalcDeadline(const uint256 genSig, const uint64_t height, const uint64_t plotID, const uint64_t nonce)
@@ -96,7 +94,7 @@ uint64_t CalcDeadline(const uint256 genSig, const uint64_t height, const uint64_
     shabal_close(&ctx, 0, 0, genHash);
     uint32_t scoop = (((unsigned char)genHash[31]) + 256 * (unsigned char)genHash[30]) % 4096;
 
-    auto chunk = genNonceChunk(plotID, nonce, false);
+    auto chunk = genNonceChunk(plotID, nonce);
     vector<uint8_t> sig(32 + 64);
     memcpy(&sig[0], genSig.begin(), genSig.size());
     memcpy(&sig[32], &chunk[scoop * 64], sizeof(uint8_t) * 64);
@@ -105,7 +103,6 @@ uint64_t CalcDeadline(const uint256 genSig, const uint64_t height, const uint64_
     vector<uint8_t> res(32);
     shabal_close(&ctx, 0, 0, &res[0]);
     uint64_t* wertung = (uint64_t*)&res[0];
-    delete[] chunk;
     return *wertung;
 }
 
@@ -113,4 +110,99 @@ bool CheckProofOfCapacity(const uint256 genSig, const uint64_t height, const uin
 {
     auto dl = CalcDeadline(genSig, height, plotID, nonce);
     return (dl == deadline) && (targetDeadline >= dl / baseTarget);
+}
+
+void AdjustBaseTarget(const CBlockIndex* prevBlock, CBlock* block)
+{
+    // 1. Gensis block
+    auto height = 0;
+    if (prevBlock != nullptr) {
+        height = prevBlock->nHeight + 1;
+    }
+    if (prevBlock == NULL || height == 0) {
+        block->nBaseTarget = INITIAL_BASE_TARGET;
+        // 2. First 4 blocks
+    } else if (height < 4) {
+        block->nBaseTarget = INITIAL_BASE_TARGET;
+        // 3. First 30 blocks
+    } else if (height < 31) {
+        auto itBlock = prevBlock;
+        uint64_t avgBaseTarget = itBlock->nBaseTarget;
+
+        do {
+            itBlock = itBlock->pprev;
+            avgBaseTarget += itBlock->nBaseTarget;
+        } while (itBlock->nHeight > height - 4);
+
+        avgBaseTarget = avgBaseTarget / 4;
+
+        uint64_t difTime = block->nTime - itBlock->nTime;
+
+        uint64_t curBaseTarget = avgBaseTarget;
+        uint64_t newBaseTarget = curBaseTarget * difTime / (300 * 4);
+
+        if (newBaseTarget < 0 || newBaseTarget > MAX_BASE_TARGET) {
+            newBaseTarget = MAX_BASE_TARGET;
+        }
+
+        if (newBaseTarget == 0) {
+            newBaseTarget = 1;
+        }
+
+        // Adjust range should at [0.9, 1.1]
+        if (newBaseTarget < (curBaseTarget * 9 / 10)) {
+            newBaseTarget = curBaseTarget * 9 / 10;
+        }
+
+        if (newBaseTarget > (curBaseTarget * 11 / 10)) {
+            newBaseTarget = curBaseTarget * 11 / 10;
+        }
+
+        block->nBaseTarget = newBaseTarget;
+    }
+    // 4. Later blocks
+    else {
+        auto itBlock = prevBlock;
+        uint64_t expBaseTarget = itBlock->nBaseTarget;
+        int blockCounter = 1;
+
+        // Calculate EV of last 30 blocks
+        do {
+            itBlock = itBlock->pprev;
+            blockCounter++;
+            expBaseTarget = (expBaseTarget * blockCounter + itBlock->nBaseTarget) / (blockCounter + 1);
+        } while (blockCounter < 30);
+
+        uint64_t difTime = block->nTime - itBlock->nTime;
+        uint64_t targetTimespan = 30 * 300;
+
+        if (difTime < targetTimespan / 2) {
+            difTime = targetTimespan / 2;
+        }
+
+        if (difTime > targetTimespan * 2) {
+            difTime = targetTimespan * 2;
+        }
+
+        uint64_t curBaseTarget = prevBlock->nBaseTarget;
+        uint64_t newBaseTarget = expBaseTarget * difTime / targetTimespan;
+
+        if (newBaseTarget < 0 || newBaseTarget > MAX_BASE_TARGET) {
+            newBaseTarget = MAX_BASE_TARGET;
+        }
+
+        if (newBaseTarget == 0) {
+            newBaseTarget = 1;
+        }
+
+        if (newBaseTarget < (curBaseTarget * 8 / 10)) {
+            newBaseTarget = curBaseTarget * 8 / 10;
+        }
+
+        if (newBaseTarget > (curBaseTarget * 12 / 10)) {
+            newBaseTarget = curBaseTarget * 12 / 10;
+        }
+
+        block->nBaseTarget = newBaseTarget;
+    }
 }

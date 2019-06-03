@@ -205,7 +205,10 @@ static UniValue getnewaddress(const JSONRPCRequest& request)
 
     pwallet->SetAddressBook(dest, label, "receive");
 
-    return EncodeDestination(dest);
+    UniValue obj(UniValue::VOBJ);
+    obj.pushKV("address", EncodeDestination(dest));
+    obj.pushKV("plotid", newKey.GetID().GetPlotID());
+    return obj;
 }
 
 static UniValue getrawchangeaddress(const JSONRPCRequest& request)

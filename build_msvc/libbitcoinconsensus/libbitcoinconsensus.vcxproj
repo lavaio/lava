@@ -21,6 +21,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\arith_uint256.cpp" />
+    <ClCompile Include="..\..\src\assember.cpp" />
     <ClCompile Include="..\..\src\consensus\merkle.cpp" />
     <ClCompile Include="..\..\src\crypto\aes.cpp" />
     <ClCompile Include="..\..\src\crypto\chacha20.cpp" />
@@ -108,6 +109,7 @@
     <LinkIncremental>true</LinkIncremental>
     <Linkage-secp256k1>
     </Linkage-secp256k1>
+    <IncludePath>$(DEPENDS_INCLUDE);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>true</LinkIncremental>
@@ -118,6 +120,7 @@
     <LinkIncremental>true</LinkIncremental>
     <Linkage-secp256k1>
     </Linkage-secp256k1>
+    <IncludePath>$(DEPENDS_INCLUDE);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

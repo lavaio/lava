@@ -120,7 +120,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     if (chainparams.MineBlocksOnDemand())
         pblock->nVersion = gArgs.GetArg("-blockversion", pblock->nVersion);
 
-    pblock->nTime = GetAdjustedTime();
+    //pblock->nTime = GetAdjustedTime();
     const int64_t nMedianTimePast = pindexPrev->GetMedianTimePast();
 
     nLockTimeCutoff = (STANDARD_LOCKTIME_VERIFY_FLAGS & LOCKTIME_MEDIAN_TIME_PAST) ? nMedianTimePast : pblock->GetBlockTime();
@@ -166,7 +166,8 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     pblock->nNonce = nonce;
     pblock->nDeadline = deadline;
     pblock->nPlotID = plotID;
-    pblock->nBaseTarget = pindexPrev->nBaseTarget;
+    // Adjust baseTarget
+    AdjustBaseTarget(chainActive.Tip(), pblock);
     pblock->nCumulativeDiff = pindexPrev->nCumulativeDiff + (18446744073709551615 / pblock->nBaseTarget);
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 

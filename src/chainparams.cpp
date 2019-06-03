@@ -35,7 +35,7 @@ static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesi
     genesis.vtx.push_back(MakeTransactionRef(std::move(txNew)));
     genesis.hashPrevBlock.SetNull();
     genesis.hashMerkleRoot = BlockMerkleRoot(genesis);
-    genesis.nBaseTarget = 111296;
+    genesis.nBaseTarget = 14660155037;
     return genesis;
 }
 
@@ -113,7 +113,7 @@ public:
 
         genesis = CreateGenesisBlock(1231006505, 2083236893, 0x1d00ffff, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0xf72f3b9197a6631bed21afe6d4793de71429f140c840b4e0a43da2ddc89a5476"));
+        assert(consensus.hashGenesisBlock == uint256S("0xdfdcda6aad39077f369ad8b222424fcd0cc24c76b8c20cb5b50477c71f1a652d"));
         assert(genesis.hashMerkleRoot == uint256S("0x4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"));
 
         // Note that of those which support the service bits prefix, most only support a subset of
@@ -225,7 +225,7 @@ public:
 
         genesis = CreateGenesisBlock(1296688602, 414098458, 0x1d00ffff, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0xaa46dc0355100f68168b4f802be3b93050faedccdb438135bbc4484fe325917e"));
+        assert(consensus.hashGenesisBlock == uint256S("0xc8a4563ecfb5c0764aee94785b20cb903e5d3313c316179b5561a0c3f7036e58"));
         assert(genesis.hashMerkleRoot == uint256S("0x4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"));
 
         vFixedSeeds.clear();
@@ -318,7 +318,7 @@ public:
 
         genesis = CreateGenesisBlock(1296688602, 2, 0x207fffff, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x763a550c70b0627b8eb8359d1360f9c7377e88b577da131dfc6d548bcc7c5a92"));
+        assert(consensus.hashGenesisBlock == uint256S("0xb43d08c7d24309e8e13db4f5062b5fc39b0925db34e0bf1ff631aa00819bd5ca"));
         assert(genesis.hashMerkleRoot == uint256S("0x4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"));
 
         vFixedSeeds.clear(); //!< Regtest mode doesn't have any fixed seeds.
