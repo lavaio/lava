@@ -102,11 +102,11 @@ public:
          * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
          * a large 32-bit integer with any alignment.
          */
-        pchMessageStart[0] = 0xf9;
-        pchMessageStart[1] = 0xbe;
-        pchMessageStart[2] = 0xb4;
-        pchMessageStart[3] = 0xd9;
-        nDefaultPort = 8333;
+        pchMessageStart[0] = 0xd9;
+        pchMessageStart[1] = 0xb4;
+        pchMessageStart[2] = 0xbe;
+        pchMessageStart[3] = 0xf9;
+        nDefaultPort = 6868;
         nPruneAfterHeight = 100000;
         m_assumed_blockchain_size = 240;
         m_assumed_chain_state_size = 3;
@@ -121,7 +121,7 @@ public:
         // This is fine at runtime as we'll fall back to using them as a oneshot if they don't support the
         // service bits we want, but we should get them updated to support all service bits wanted by any
         // release ASAP to avoid it where possible.
-        //vSeeds.emplace_back("seed.bitcoin.sipa.be"); // Pieter Wuille, only supports x1, x5, x9, and xd
+        vSeeds.emplace_back("192.168.50.174:6868"); // Pieter Wuille, only supports x1, x5, x9, and xd
         //vSeeds.emplace_back("dnsseed.bluematt.me"); // Matt Corallo, only supports x9
         //vSeeds.emplace_back("dnsseed.bitcoin.dashjr.org"); // Luke Dashjr
         //vSeeds.emplace_back("seed.bitcoinstats.com"); // Christian Decker, supports x1 - xf
