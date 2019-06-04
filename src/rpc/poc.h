@@ -17,4 +17,6 @@ UniValue listMinerAccounts(const JSONRPCRequest& request);
 /** get mining info */
 UniValue getMiningInfo(const JSONRPCRequest& request);
 
+/** get address plot id info */
+UniValue getAddressplotid(const JSONRPCRequest& request);
 #endif

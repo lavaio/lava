@@ -17,20 +17,19 @@
 
 #include <algorithm>
 #include <queue>
+#include <wallet/rpcwallet.h>
 
 
 const uint32_t wordsSize = 1626;
 
 static UniValue registerMinerAccount(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() != 0) {
+    if (request.fHelp || request.params.size() != 1) {
         throw std::runtime_error(
             RPCHelpMan{
                 "registermineraccount",
                 "\nReturns a plot id for poc mining.",
-                {
-                    {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "Your miner address"}
-                },
+                {{"address", RPCArg::Type::STR, RPCArg::Optional::NO, "Your miner address"}},
                 RPCResult{
                     "{\n"
                     "  \"plotid\": nnn, (numeric) The plot id\n"
@@ -42,11 +41,57 @@ static UniValue registerMinerAccount(const JSONRPCRequest& request)
             }
                 .ToString());
     }
-
     LOCK(cs_main);
 
     UniValue obj(UniValue::VOBJ);
 
+    return obj;
+}
+
+UniValue getAddressPlotId(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1) {
+        throw std::runtime_error(
+            RPCHelpMan{
+                "getaddressplotid",
+                "\nReturns a plot id for poc mining.",
+                {{"address", RPCArg::Type::STR, RPCArg::Optional::NO, "Your miner address"}},
+                RPCResult{
+                    "{\n"
+                    "  \"plotid\": nnn, (numeric) The plot id\n"
+                    "  \"address\": \"xxx\"\n"
+                    "  \"tx\": \"xxx\"\n"
+                    "}\n"},
+                RPCExamples{
+                    HelpExampleCli("getaddressplotid", "\"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XX\"") + HelpExampleRpc("getaddressplotid", "\"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XX\"")},
+            }
+                .ToString());
+    }
+	
+	std::vector<std::shared_ptr<CWallet>> wallets = GetWallets();
+    auto wallet = wallets.size() == 1 || (request.fHelp && wallets.size() > 0) ? wallets[0] : nullptr;
+    if (wallet == nullptr) {
+        return NullUniValue;
+    }
+    CWallet* const pwallet = wallet.get();
+    auto locked_chain = pwallet->chain().lock();
+    LOCK(pwallet->cs_wallet);
+    if (pwallet->IsLocked()) {
+        throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with walletpassphrase first.");
+    }
+    LOCK(cs_main);
+    std::string strAddress = request.params[0].get_str();
+    CTxDestination dest = DecodeDestination(strAddress);
+    if (!IsValidDestination(dest)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Bitcoin address");
+    }
+    auto keyid = GetKeyForDestination(*pwallet, dest);
+    if (keyid.IsNull()) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Address does not refer to a key");
+    }
+
+    UniValue obj(UniValue::VOBJ);
+    obj.pushKV("plotid", keyid.GetPlotID());
     return obj;
 }
 
@@ -121,19 +166,16 @@ UniValue submitNonce(const JSONRPCRequest& request)
             RPCHelpMan{
                 "submitnonce",
                 "\nSubmit the nonce form disk.",
-                {
-                    {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "Your miner address"},
+                {{"address", RPCArg::Type::STR, RPCArg::Optional::NO, "Your miner address"},
                     {"nonce", RPCArg::Type::STR, RPCArg::Optional::NO, "The nonce you found on disk"},
-                    {"deadline", RPCArg::Type::NUM, RPCArg::Optional::NO, "When the next block will be generate"}
-                },
+                    {"deadline", RPCArg::Type::NUM, RPCArg::Optional::NO, "When the next block will be generate"}},
                 RPCResult{
                     "{\n"
                     "  \"accetped\": ture or false\n"
                     "  \"deadline\": \"nnn\"\n"
                     "}\n"},
                 RPCExamples{
-                    HelpExampleCli("submitnonce", "\"3MhzFQAXQMsmtTmdkciLE3EJsgAQkzR4Sg\" 15032170525642997731 6170762982435") 
-                    + HelpExampleRpc("submitnonce", "\"3MhzFQAXQMsmtTmdkciLE3EJsgAQkzR4Sg\", 15032170525642997731, 6170762982435")},
+                    HelpExampleCli("submitnonce", "\"3MhzFQAXQMsmtTmdkciLE3EJsgAQkzR4Sg\" 15032170525642997731 6170762982435") + HelpExampleRpc("submitnonce", "\"3MhzFQAXQMsmtTmdkciLE3EJsgAQkzR4Sg\", 15032170525642997731, 6170762982435")},
             }
                 .ToString());
     }
@@ -167,7 +209,7 @@ UniValue submitNonce(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid nonce");
     }
     uint64_t deadline = request.params[2].get_int64();
-    
+
     //auto script = GetScriptForDestination(dest);
     UniValue obj(UniValue::VOBJ);
     if (blockAssember.UpdateDeadline(plotID, nonce, deadline, coinbaseScript->reserveScript)) {
@@ -189,6 +231,7 @@ static const CRPCCommand commands[] =
     { "poc",               "registermineraccount",    &registerMinerAccount,   {"address"} },
     { "poc",               "getmininginfo",           &getMiningInfo,          {} },
     { "poc",               "submitnonce",             &submitNonce,            {"address", "nonce", "deadline"} },
+	{ "poc",               "getaddressplotid",        &getAddressPlotId,       {"address"} },
 };
 
 void RegisterPocRPCCommands(CRPCTable& t)
