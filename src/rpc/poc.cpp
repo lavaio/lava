@@ -54,13 +54,11 @@ UniValue getAddressPlotId(const JSONRPCRequest& request)
         throw std::runtime_error(
             RPCHelpMan{
                 "getaddressplotid",
-                "\nReturns a plot id for poc mining.",
+                "\nReturns a plot id.",
                 {{"address", RPCArg::Type::STR, RPCArg::Optional::NO, "Your miner address"}},
                 RPCResult{
                     "{\n"
                     "  \"plotid\": nnn, (numeric) The plot id\n"
-                    "  \"address\": \"xxx\"\n"
-                    "  \"tx\": \"xxx\"\n"
                     "}\n"},
                 RPCExamples{
                     HelpExampleCli("getaddressplotid", "\"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XX\"") + HelpExampleRpc("getaddressplotid", "\"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XX\"")},
