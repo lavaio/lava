@@ -9,7 +9,7 @@
 #include <univalue.h>
 
 /** Register a new account for mining. */
-UniValue registerMinerAccount(const JSONRPCRequest& request);
+//UniValue registerMinerAccount(const JSONRPCRequest& request);
 
 /** List all miners in network. */
 UniValue listMinerAccounts(const JSONRPCRequest& request);

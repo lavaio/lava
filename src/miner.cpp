@@ -168,7 +168,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     pblock->nPlotID = plotID;
     // Adjust baseTarget
     AdjustBaseTarget(chainActive.Tip(), pblock);
-    pblock->nCumulativeDiff = pindexPrev->nCumulativeDiff + (18446744073709551615 / pblock->nBaseTarget);
+    pblock->nCumulativeDiff = pindexPrev->nCumulativeDiff + (CUMULATIVE_DIFF_DENOM / pblock->nBaseTarget);
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 
     CValidationState state;

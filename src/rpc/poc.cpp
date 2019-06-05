@@ -18,9 +18,7 @@
 #include <algorithm>
 #include <queue>
 
-
-const uint32_t wordsSize = 1626;
-
+/*
 static UniValue registerMinerAccount(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 0) {
@@ -49,6 +47,7 @@ static UniValue registerMinerAccount(const JSONRPCRequest& request)
 
     return obj;
 }
+*/
 
 static UniValue listMinerAccounts(const JSONRPCRequest& request)
 {
@@ -186,7 +185,7 @@ UniValue submitNonce(const JSONRPCRequest& request)
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
-    { "poc",               "registermineraccount",    &registerMinerAccount,   {"address"} },
+    //{ "poc",               "registermineraccount",    &registerMinerAccount,   {"address"} },
     { "poc",               "getmininginfo",           &getMiningInfo,          {} },
     { "poc",               "submitnonce",             &submitNonce,            {"address", "nonce", "deadline"} },
 };

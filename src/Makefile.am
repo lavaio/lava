@@ -275,6 +275,7 @@ libbitcoin_server_a_SOURCES = \
   rpc/rawtransaction.cpp \
   rpc/server.cpp \
   rpc/util.cpp \
+  rpc/poc.cpp \
   script/sigcache.cpp \
   shutdown.cpp \
   timedata.cpp \
@@ -431,6 +432,7 @@ libbitcoin_common_a_SOURCES = \
   psbt.cpp \
   protocol.cpp \
   scheduler.cpp \
+  poc.cpp \
   script/descriptor.cpp \
   script/ismine.cpp \
   script/sign.cpp \

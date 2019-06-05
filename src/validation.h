@@ -135,6 +135,8 @@ static const int MAX_UNCONNECTING_HEADERS = 10;
 
 static const bool DEFAULT_PEERBLOOMFILTERS = true;
 
+static const uint64_t CUMULATIVE_DIFF_DENOM = 18446744073709551615;
+
 /** Default for -stopatheight */
 static const int DEFAULT_STOPATHEIGHT = 0;
 

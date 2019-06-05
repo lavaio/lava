@@ -77,10 +77,11 @@ BOOST_AUTO_TEST_CASE(address2plotid)
 {
     SelectParams(CBaseChainParams::MAIN);
     string addr("MhzFQAXQMsmtTmdkciLE3EJsgAQkzR4Sg");
-    string secret("L32CxJhTE3MnxnrxGJNjxFvjUHGifAADEpA3HHi6W1dDF4waYFfn");
+    string secret("KwWKWSfxHSZEWi3Nt7wzbem4D2ksgypT5N24LnnsNhz881d84us7");
     ECC_Start();
     auto key = DecodeSecret(secret);
     auto plotID = key.GetPubKey().GetID().GetPlotID();
+    
     ECC_Stop();
 }
 

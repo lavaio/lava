@@ -106,10 +106,104 @@ uint64_t CalcDeadline(const uint256 genSig, const uint64_t height, const uint64_
     return *wertung;
 }
 
+uint64_t CalcDeadline(const CBlockHeader* block, const CBlockIndex* prevBlock)
+{
+    auto generationSig = CalcGenerationSignature(prevBlock->genSign, prevBlock->nPlotID);
+    return CalcDeadline(generationSig, prevBlock->nHeight+1, block->nPlotID, block->nNonce);
+}
+
 bool CheckProofOfCapacity(const uint256 genSig, const uint64_t height, const uint64_t plotID, const uint64_t nonce, const uint64_t baseTarget, const uint64_t deadline, const uint64_t targetDeadline)
 {
     auto dl = CalcDeadline(genSig, height, plotID, nonce);
     return (dl == deadline) && (targetDeadline >= dl / baseTarget);
+}
+
+uint64_t AdjustBaseTarget(const CBlockIndex* prevBlock, const uint32_t nTime)
+{
+    if (prevBlock == nullptr) 
+        return INITIAL_BASE_TARGET;
+    auto height = prevBlock->nHeight + 1;
+    if (height < 4) {
+        return INITIAL_BASE_TARGET;
+    }
+    if (height < 31) {
+        auto itBlock = prevBlock;
+        uint64_t avgBaseTarget = itBlock->nBaseTarget;
+
+        do {
+            itBlock = itBlock->pprev;
+            avgBaseTarget += itBlock->nBaseTarget;
+        } while (itBlock->nHeight > height - 4);
+
+        avgBaseTarget = avgBaseTarget / 4;
+
+        uint64_t difTime = nTime - itBlock->nTime;
+
+        uint64_t curBaseTarget = avgBaseTarget;
+        uint64_t newBaseTarget = curBaseTarget * difTime / (300 * 4);
+
+        if (newBaseTarget < 0 || newBaseTarget > MAX_BASE_TARGET) {
+            newBaseTarget = MAX_BASE_TARGET;
+        }
+
+        if (newBaseTarget == 0) {
+            newBaseTarget = 1;
+        }
+
+        // Adjust range should at [0.9, 1.1]
+        if (newBaseTarget < (curBaseTarget * 9 / 10)) {
+            newBaseTarget = curBaseTarget * 9 / 10;
+        }
+
+        if (newBaseTarget > (curBaseTarget * 11 / 10)) {
+            newBaseTarget = curBaseTarget * 11 / 10;
+        }
+
+        return newBaseTarget; 
+    }
+    auto itBlock = prevBlock;
+    uint64_t expBaseTarget = itBlock->nBaseTarget;
+    int blockCounter = 1;
+
+    // Calculate EV of last 30 blocks
+    do {
+        itBlock = itBlock->pprev;
+        blockCounter++;
+        expBaseTarget = (expBaseTarget * blockCounter + itBlock->nBaseTarget) / (blockCounter + 1);
+    } while (blockCounter < 30);
+
+    uint64_t difTime = nTime - itBlock->nTime;
+    uint64_t targetTimespan = 30 * 300;
+
+    if (difTime < targetTimespan / 2) {
+        difTime = targetTimespan / 2;
+    }
+
+    if (difTime > targetTimespan * 2) {
+        difTime = targetTimespan * 2;
+    }
+
+    uint64_t curBaseTarget = prevBlock->nBaseTarget;
+    uint64_t newBaseTarget = expBaseTarget * difTime / targetTimespan;
+
+    if (newBaseTarget < 0 || newBaseTarget > MAX_BASE_TARGET) {
+        newBaseTarget = MAX_BASE_TARGET;
+    }
+
+    if (newBaseTarget == 0) {
+        newBaseTarget = 1;
+    }
+
+    if (newBaseTarget < (curBaseTarget * 8 / 10)) {
+        newBaseTarget = curBaseTarget * 8 / 10;
+    }
+
+    if (newBaseTarget > (curBaseTarget * 12 / 10)) {
+        newBaseTarget = curBaseTarget * 12 / 10;
+    }
+
+    return newBaseTarget;
+
 }
 
 void AdjustBaseTarget(const CBlockIndex* prevBlock, CBlock* block)
@@ -119,7 +213,7 @@ void AdjustBaseTarget(const CBlockIndex* prevBlock, CBlock* block)
     if (prevBlock != nullptr) {
         height = prevBlock->nHeight + 1;
     }
-    if (prevBlock == NULL || height == 0) {
+    if (prevBlock == nullptr || height == 0) {
         block->nBaseTarget = INITIAL_BASE_TARGET;
         // 2. First 4 blocks
     } else if (height < 4) {
@@ -159,9 +253,7 @@ void AdjustBaseTarget(const CBlockIndex* prevBlock, CBlock* block)
         }
 
         block->nBaseTarget = newBaseTarget;
-    }
-    // 4. Later blocks
-    else {
+    } else { // 4. Later blocks
         auto itBlock = prevBlock;
         uint64_t expBaseTarget = itBlock->nBaseTarget;
         int blockCounter = 1;

@@ -24,8 +24,9 @@ CPOCBlockAssember::~CPOCBlockAssember()
 
 bool CPOCBlockAssember::UpdateDeadline(const uint64_t plotID, const uint64_t nonce, const uint64_t deadline, CScript& script)
 {
+    auto indexPrev = chainActive.Tip();
     auto params = Params();
-    if (deadline / chainActive.Tip()->nBaseTarget > params.GetTargetDeadline()) {
+    if (deadline / indexPrev->nBaseTarget > params.GetTargetDeadline()) {
         LogPrintf("Invalid deadline %uul\n", deadline);
         return false;
     }
@@ -34,16 +35,15 @@ bool CPOCBlockAssember::UpdateDeadline(const uint64_t plotID, const uint64_t non
         LogPrintf("Invalid deadline %uul\n", deadline);
         return false;
     }
-    auto block = chainActive.Tip()->GetBlockHeader();
-    auto generationSignature = CalcGenerationSignature(block.genSign, block.nPlotID);
-    if (CalcDeadline(generationSignature, chainActive.Tip()->nHeight + 1, plotID, nonce) != deadline) {
-        //TODO... log
+    
+    auto generationSignature = CalcGenerationSignature(indexPrev->genSign, indexPrev->nPlotID);
+    if (CalcDeadline(generationSignature, indexPrev->nHeight + 1, plotID, nonce) != deadline) {
         LogPrintf("Deadline inconformity %uul\n", deadline);
         return false;
     }
-    auto ts = (deadline / chainActive.Tip()->nBaseTarget);
-    LogPrintf("Update new deadline: %u, now: %u\n", ts, GetTimeMillis() / 1000);
-    this->genSig = genSig;
+    auto ts = (deadline / indexPrev->nBaseTarget);
+    LogPrintf("Update new deadline: %u, now: %u, target: %u\n", ts, GetTimeMillis() / 1000, indexPrev->nTime + ts);
+    this->genSig.exchange(genSig);
     this->plotID = plotID;
     this->deadline = deadline;
     this->nonce = nonce;
@@ -53,7 +53,7 @@ bool CPOCBlockAssember::UpdateDeadline(const uint64_t plotID, const uint64_t non
 
 void CPOCBlockAssember::CreateNewBlock(const CScript& scriptPubKeyIn)
 {
-    LogPrintf("CPOCBlockAssember CreateNewBlock, plotid: %u nonce:%u deadline:%u\n", plotID, nonce, deadline);
+    LogPrintf("CPOCBlockAssember CreateNewBlock, plotid: %u nonce:%u deadline:%u utc:%u\n", plotID, nonce, deadline, GetTimeMillis()/1000);
     auto params = Params();
     auto blk = BlockAssembler(params).CreateNewBlock(scriptPubKeyIn, nonce, plotID, deadline);
     if (blk) {
@@ -87,8 +87,8 @@ void CPOCBlockAssember::setNull()
     plotID = 0;
     nonce = 0;
     deadline = 0;
-    genSig.SetNull();
-    scriptPubKeyIn.clear();
+    genSig.exchange(uint256());
+    scriptPubKeyIn.exchange(CScript());
 }
 
 void CPOCBlockAssember::Interrupt()

@@ -24,6 +24,7 @@
 #include <pow.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
+#include <pubkey.h>
 #include <random.h>
 #include <reverse_iterator.h>
 #include <script/script.h>
@@ -1155,10 +1156,10 @@ bool IsInitialBlockDownload()
     if (chainActive.Tip() == nullptr)
         return true;
     //TODO...
-    //if (chainActive.Tip()->nChainWork < nMinimumChainWork)
-        //return true;
-    //if (chainActive.Tip()->GetBlockTime() < (GetTime() - nMaxTipAge))
-        //return true;
+    if (chainActive.Tip()->nChainWork < nMinimumChainWork)
+        return true;
+    if (chainActive.Tip()->GetBlockTime() < (GetTime() - nMaxTipAge))
+        return true;
     LogPrintf("Leaving InitialBlockDownload (latching to false)\n");
     latchToFalse.store(true, std::memory_order_relaxed);
     return false;
@@ -3271,6 +3272,31 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
         return state.Invalid(false, REJECT_OBSOLETE, strprintf("bad-version(0x%08x)", block.nVersion),
             strprintf("rejected nVersion=0x%08x block", block.nVersion));
 
+
+    // Check deadline
+    auto dl = CalcDeadline(&block, pindexPrev);
+    if (dl != block.nDeadline) {
+        return state.Invalid(false, REJECT_INVALID, "error-deadline",
+            strprintf("header deadline=%u, calc result=%u", block.nDeadline, dl));
+    }
+
+    // TODO..
+    // Check timestamp
+    dl /= pindexPrev->nBaseTarget;
+    if (pindexPrev->nTime + dl < block.nTime) {
+        return state.Invalid(false, REJECT_INVALID, "time-too-new", "block deadline too far in the future");
+    }
+
+    // TODO.. Check baseTarget
+    if (block.nBaseTarget != AdjustBaseTarget(pindexPrev, block.nTime)) {
+        return state.Invalid(false, REJECT_INVALID, "base-target-error", "block basetarget error");
+    }
+
+    // Check cumulative difficulty
+    if (block.nCumulativeDiff != pindexPrev->nCumulativeDiff + (CUMULATIVE_DIFF_DENOM / block.nBaseTarget)) {
+        return state.Invalid(false, REJECT_INVALID, "cumulative-diff-error", "block cumulativeDiff error");
+    }
+
     return true;
 }
 
@@ -3356,6 +3382,17 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-weight", false, strprintf("%s : weight limit failed", __func__));
     }
 
+    // TODO...
+    // check plotid
+    /*
+    auto script = block.vtx[0]->vout[0].scriptPubKey;
+    CTxDestination dest;
+    auto result = ExtractDestination(script, dest);
+    auto keyid = boost::get<CKeyID>(dest);
+    if (block.nPlotID != keyid.GetPlotID()) {
+        return state.DoS(100, false, REJECT_INVALID, "bad-coinbase-plotid", false, "coinbase public key error plot id");
+    }
+    */
     return true;
 }
 
