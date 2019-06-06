@@ -53,5 +53,9 @@ The instructions below use `vcpkg` to install the dependencies.
 ```
     PS >.\vcpkg install --triplet x64-windows-static boost-filesystem boost-signals2 boost-test libevent openssl zeromq berkeleydb secp256k1 leveldb
 ```
+- Run the `msvc-autogen.py`:
+```
+    PS >python .\msvc-autogen.py
+```
 - Open `bitcoin.sln`.
 - Build in Visual Studio.
