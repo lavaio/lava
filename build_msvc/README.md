@@ -33,13 +33,13 @@ Set environmental variables
 ---------------------
 ```
     N: DEPENDS_DEBUG_LIB_PATH
-    V: ..\..\vcpkg\installed\x64-windows-static\debug\lib
+    V: VCPKG_PATH\installed\x64-windows-static\debug\lib
     
     N: DEPENDS_INCLUDE
-    V: ..\..\vcpkg\installed\x64-windows-static\include
+    V: VCPKG_PATH\installed\x64-windows-static\include
     
     N: DEPENDS_LIB_PATH
-    V: ..\..\vcpkg\installed\x64-windows-static\lib
+    V: VCPKG_PATH\installed\x64-windows-static\lib
 ```
 
 Building
