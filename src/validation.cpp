@@ -1156,8 +1156,8 @@ bool IsInitialBlockDownload()
     if (chainActive.Tip() == nullptr)
         return true;
     //TODO...
-    if (chainActive.Tip()->nChainWork < nMinimumChainWork)
-        return true;
+    //if (chainActive.Tip()->nChainWork < nMinimumChainWork)
+        //return true;
     if (chainActive.Tip()->GetBlockTime() < (GetTime() - nMaxTipAge))
         return true;
     LogPrintf("Leaving InitialBlockDownload (latching to false)\n");
@@ -3283,7 +3283,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
     // TODO..
     // Check timestamp
     dl /= pindexPrev->nBaseTarget;
-    if (pindexPrev->nTime + dl < block.nTime) {
+    if (pindexPrev->nTime + dl > block.nTime) {
         return state.Invalid(false, REJECT_INVALID, "time-too-new", "block deadline too far in the future");
     }
 

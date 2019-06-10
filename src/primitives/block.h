@@ -76,7 +76,7 @@ public:
 
     bool IsNull() const
     {
-        return (nBits == 0);
+        return (nDeadline == 0);
     }
 
     uint256 GetHash() const;

@@ -146,7 +146,7 @@ UniValue getMiningInfo(const JSONRPCRequest& request)
     auto height = chainActive.Height() + 1;
     auto block = chainActive.Tip()->GetBlockHeader();
     auto generationSignature = CalcGenerationSignature(block.genSign, block.nPlotID);
-    int nBaseTarget = block.nBaseTarget;
+    auto nBaseTarget = block.nBaseTarget;
     auto param = Params();
     UniValue obj(UniValue::VOBJ);
     obj.pushKV("height", height);
