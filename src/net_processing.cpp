@@ -496,8 +496,7 @@ static bool TipMayBeStale(const Consensus::Params &consensusParams) EXCLUSIVE_LO
 static bool CanDirectFetch(const Consensus::Params &consensusParams) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {
     //TODO... modify to poc
-    return true;
-    //return chainActive.Tip()->GetBlockTime() > GetAdjustedTime() - consensusParams.nPowTargetSpacing * 20;
+    return chainActive.Tip()->GetBlockTime() > GetAdjustedTime() - consensusParams.nPowTargetSpacing * 20;
 }
 
 static bool PeerHasHeader(CNodeState *state, const CBlockIndex *pindex) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
@@ -524,7 +523,7 @@ static void FindNextBlocksToDownload(NodeId nodeid, unsigned int count, std::vec
     ProcessBlockAvailability(nodeid);
 
     //if (state->pindexBestKnownBlock == nullptr || state->pindexBestKnownBlock->nChainWork < chainActive.Tip()->nChainWork || state->pindexBestKnownBlock->nChainWork < nMinimumChainWork) {
-    if (state->pindexBestKnownBlock == nullptr || state->pindexBestKnownBlock->nChainWork < nMinimumChainWork) {
+    if (state->pindexBestKnownBlock == nullptr){// || state->pindexBestKnownBlock->nChainWork < nMinimumChainWork) {
         // This peer has nothing interesting.
         return;
     }
@@ -1561,7 +1560,7 @@ bool static ProcessHeadersMessage(CNode *pfrom, CConnman *connman, const std::ve
             // When nCount < MAX_HEADERS_RESULTS, we know we have no more
             // headers to fetch from this peer.
             //if (nodestate->pindexBestKnownBlock && nodestate->pindexBestKnownBlock->nChainWork < nMinimumChainWork) {
-            if (nodestate->pindexBestKnownBlock) {
+            if (nodestate->pindexBestKnownBlock && false) {
                 // This peer has too little work on their headers chain to help
                 // us sync -- disconnect if using an outbound slot (unless
                 // whitelisted or addnode).
