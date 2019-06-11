@@ -22,16 +22,12 @@ public:
 
     void Interrupt();
 
-	struct Pnds GetAllPnds();
-    void SetAllPnds(const uint64_t plotID, const uint64_t nonce, const uint64_t deadline, CScript& script);
-
 private:
     void checkDeadline();
 
     void setNull();
 
 private:
-    std::mutex g_mutex;
     boost::atomic<uint256> genSig;
     boost::atomic_uint64_t plotID;
     boost::atomic_uint64_t nonce;
@@ -39,13 +35,6 @@ private:
     boost::atomic<CScript> scriptPubKeyIn;
     std::shared_ptr<CScheduler> scheduler;
     std::shared_ptr<boost::thread> thread;
-};
-
-struct Pnds {
-    uint64_t plotID;
-    uint64_t nonce;
-    uint64_t deadline;
-    CScript scriptPubKeyIn;
 };
 
 #endif // BITCOIN_ASSEMBER_H

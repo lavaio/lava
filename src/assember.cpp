@@ -43,16 +43,19 @@ bool CPOCBlockAssember::UpdateDeadline(const uint64_t plotID, const uint64_t non
     }
     auto ts = (deadline / indexPrev->nBaseTarget);
     LogPrintf("Update new deadline: %u, now: %u, target: %u\n", ts, GetTimeMillis() / 1000, indexPrev->nTime + ts);
-    SetAllPnds(plotID, nonce, deadline, script);
+    this->genSig.exchange(genSig);
+    this->plotID = plotID;
+    this->deadline = deadline;
+    this->nonce = nonce;
+    this->scriptPubKeyIn = script;
     return true;
 }
 
 void CPOCBlockAssember::CreateNewBlock(const CScript& scriptPubKeyIn)
 {
-    struct Pnds pnds = GetAllPnds();
-    LogPrintf("CPOCBlockAssember CreateNewBlock, plotid: %u nonce:%u deadline:%u utc:%u\n", pnds.plotID, pnds.nonce, pnds.deadline, GetTimeMillis() / 1000);
+    LogPrintf("CPOCBlockAssember CreateNewBlock, plotid: %u nonce:%u deadline:%u utc:%u\n", plotID, nonce, deadline, GetTimeMillis()/1000);
     auto params = Params();
-    auto blk = BlockAssembler(params).CreateNewBlock(scriptPubKeyIn, pnds.nonce, pnds.plotID, pnds.deadline);
+    auto blk = BlockAssembler(params).CreateNewBlock(scriptPubKeyIn, nonce, plotID, deadline);
     if (blk) {
         uint32_t extraNonce = 0;
         IncrementExtraNonce(&blk->block, chainActive.Tip(), extraNonce);
@@ -91,31 +94,4 @@ void CPOCBlockAssember::setNull()
 void CPOCBlockAssember::Interrupt()
 {
     thread->interrupt();
-}
-
-
-struct Pnds CPOCBlockAssember::GetAllPnds()
-{
-    g_mutex.lock();
-
-    struct Pnds p;
-    p.plotID = plotID;
-    p.deadline = deadline;
-    p.nonce = nonce;
-    p.scriptPubKeyIn = scriptPubKeyIn;
-    
-	g_mutex.unlock();
-	return p;
-}
-
-void CPOCBlockAssember::SetAllPnds(const uint64_t plotID, const uint64_t nonce, const uint64_t deadline, CScript& script)
-{
-    g_mutex.lock();
-    this->genSig.exchange(genSig);
-    this->plotID = plotID;
-    this->deadline = deadline;
-    this->nonce = nonce;
-    this->scriptPubKeyIn = script;
-
-    g_mutex.unlock();
 }
