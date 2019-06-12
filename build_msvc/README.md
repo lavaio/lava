@@ -3,7 +3,7 @@ Building Lava Core with Visual Studio
 
 Introduction
 ---------------------
-Solution and project files to build the Lava Core applications (except Qt dependent ones) with Visual Studio 2017 can be found in the build_msvc directory.
+Solution and project files to build the Lava Core applications (except Qt dependent ones) with Visual Studio **2017** can be found in the build_msvc directory.
 
 Building with Visual Studio is an alternative to the Linux based [cross-compiler build](https://github.com/bitcoin/bitcoin/blob/master/doc/build-windows.md).
 
@@ -29,33 +29,23 @@ Additional dependencies required from the [bitcoin-core](https://github.com/bitc
 - SECP256K1,
 - LevelDB
 
-Set environmental variables
----------------------
-```
-    N: DEPENDS_DEBUG_LIB_PATH
-    V: VCPKG_PATH\installed\x64-windows-static\debug\lib
-    
-    N: DEPENDS_INCLUDE
-    V: VCPKG_PATH\installed\x64-windows-static\include
-    
-    N: DEPENDS_LIB_PATH
-    V: VCPKG_PATH\installed\x64-windows-static\lib
-```
-
 Building
 ---------------------
 The instructions below use `vcpkg` to install the dependencies.
 
-- Clone `vcpkg` from the [github repository](https://github.com/Microsoft/vcpkg) and install as per the instructions in the main README.md.
-- Checkout the dev branch.
+- Clone vcpkg from the [github repository](https://github.com/Microsoft/vcpkg) and install as per the instructions in the main README.md. Make sure you already **only** install the *VC++ 2017 tools*.
 - Install the required packages (replace x64 with x86 as required):
 
-```
+```powershell
     PS >.\vcpkg install --triplet x64-windows-static boost-filesystem boost-signals2 boost-test libevent openssl zeromq berkeleydb secp256k1 leveldb
 ```
 - Run the `msvc-autogen.py`:
-```
+```powershell
     PS >python .\msvc-autogen.py
 ```
 - Open `bitcoin.sln`.
+- Integrate `vcpkg` install packages to `MSBuild C++`:
+```powershell
+    PS >.\vcpkg integrate install
+``` 
 - Build in Visual Studio.
