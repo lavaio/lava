@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(outbound_slow_chain_eviction)
     {
         LOCK(cs_main);
         BOOST_CHECK(chainActive.Tip() != nullptr);
-        BOOST_CHECK(chainActive.Tip()->nChainWork > 0);
+        BOOST_CHECK(chainActive.Tip()->nCumulativeDiff > 0);
     }
 
     // Test starts here
