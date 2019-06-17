@@ -13,12 +13,12 @@ static bool DoubleEquals(double a, double b, double epsilon)
     return std::abs(a - b) < epsilon;
 }
 
-static CBlockIndex* CreateBlockIndexWithNbits(uint32_t nbits)
+static CBlockIndex* CreateBlockIndexWithNBaseTarget(uint64_t baseTarget)
 {
     CBlockIndex* block_index = new CBlockIndex();
     block_index->nHeight = 46367;
     block_index->nTime = 1269211443;
-    block_index->nBits = nbits;
+    block_index->nBaseTarget = baseTarget;
     return block_index;
 }
 
