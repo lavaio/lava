@@ -61,22 +61,7 @@ double GetDifficulty(const CBlockIndex* blockindex)
 {
     assert(blockindex);
 
-    int nShift = (blockindex->nBits >> 24) & 0xff;
-    double dDiff =
-        (double)0x0000ffff / (double)(blockindex->nBits & 0x00ffffff);
-
-    while (nShift < 29)
-    {
-        dDiff *= 256.0;
-        nShift++;
-    }
-    while (nShift > 29)
-    {
-        dDiff /= 256.0;
-        nShift--;
-    }
-
-    return dDiff;
+    return blockindex->nBaseTarget;
 }
 
 static int ComputeNextBlockAndDepth(const CBlockIndex* tip, const CBlockIndex* blockindex, const CBlockIndex*& next)
@@ -103,9 +88,9 @@ UniValue blockheaderToJSON(const CBlockIndex* tip, const CBlockIndex* blockindex
     result.pushKV("time", (int64_t)blockindex->nTime);
     result.pushKV("mediantime", (int64_t)blockindex->GetMedianTimePast());
     result.pushKV("nonce", (uint64_t)blockindex->nNonce);
-    result.pushKV("bits", strprintf("%08x", blockindex->nBits));
+    //result.pushKV("bits", strprintf("%08x", blockindex->nBits));
     result.pushKV("difficulty", GetDifficulty(blockindex));
-    result.pushKV("chainwork", blockindex->nChainWork.GetHex());
+    result.pushKV("cumulativeDiff", blockindex->nCumulativeDiff.GetHex());
     result.pushKV("nTx", (uint64_t)blockindex->nTx);
 
     if (blockindex->pprev)
@@ -145,15 +130,14 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
     result.pushKV("time", block.GetBlockTime());
     result.pushKV("mediantime", (int64_t)blockindex->GetMedianTimePast());
     result.pushKV("nonce", (uint64_t)block.nNonce);
-    result.pushKV("bits", strprintf("%08x", block.nBits));
+    //result.pushKV("bits", strprintf("%08x", block.nBits));
     //result.pushKV("difficulty", GetDifficulty(blockindex));
     result.pushKV("difficulty", 0.0);
     result.pushKV("deadline", block.nDeadline/block.nBaseTarget);
     result.pushKV("plotid", block.nPlotID);
-    result.pushKV("cumulativedifficulty", block.nCumulativeDiff);
     result.pushKV("generationsignature", block.genSign.ToString());
     result.pushKV("basetarget", block.nBaseTarget);
-    result.pushKV("chainwork", blockindex->nChainWork.GetHex());
+    result.pushKV("cumulativeDiff", blockindex->nCumulativeDiff.GetHex());
     result.pushKV("nTx", (uint64_t)blockindex->nTx);
 
     if (blockindex->pprev)
