@@ -200,7 +200,7 @@ public:
     unsigned int nUndoPos;
 
     //! (memory only) Total amount of work (expected number of hashes) in the chain up to and including this block
-    arith_uint256 nChainWork;
+    arith_uint256 nCumulativeDiff;
 
     //! Number of transactions in this block.
     //! Note: in a potential headers-first mode, this number cannot be relied upon
@@ -218,14 +218,13 @@ public:
     int32_t nVersion;
     uint256 hashMerkleRoot;
     uint32_t nTime;
-    uint32_t nBits;
     uint64_t nNonce;
+
     //! block header poc
     uint256 genSign;
     uint64_t nPlotID;
     uint64_t nBaseTarget;
     uint64_t nDeadline;
-    uint64_t nCumulativeDiff;
 
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
     int32_t nSequenceId;
@@ -242,7 +241,7 @@ public:
         nFile = 0;
         nDataPos = 0;
         nUndoPos = 0;
-        nChainWork = arith_uint256();
+        nCumulativeDiff = arith_uint256();
         nTx = 0;
         nChainTx = 0;
         nStatus = 0;
@@ -252,14 +251,12 @@ public:
         nVersion       = 0;
         hashMerkleRoot = uint256();
         nTime          = 0;
-        nBits          = 0;
         nNonce         = 0;
 
-        nPlotID = 0;
+        nPlotID        = 0;
         genSign.SetNull();
-        nBaseTarget = 0;
-        nDeadline = 0;
-        nCumulativeDiff = 0;
+        nBaseTarget    = 0;
+        nDeadline      = 0;
     }
 
     CBlockIndex()
@@ -274,14 +271,12 @@ public:
         nVersion       = block.nVersion;
         hashMerkleRoot = block.hashMerkleRoot;
         nTime          = block.nTime;
-        nBits          = block.nBits;
         nNonce         = block.nNonce;
 
         nPlotID        = block.nPlotID;
         genSign        = block.genSign;
         nBaseTarget    = block.nBaseTarget;
         nDeadline      = block.nDeadline;
-        nCumulativeDiff = block.nCumulativeDiff;
     }
 
     CDiskBlockPos GetBlockPos() const {
@@ -310,14 +305,12 @@ public:
             block.hashPrevBlock = pprev->GetBlockHash();
         block.hashMerkleRoot = hashMerkleRoot;
         block.nTime          = nTime;
-        block.nBits          = nBits;
         block.nNonce         = nNonce;
 
         block.nBaseTarget    = nBaseTarget;
         block.genSign        = genSign;
         block.nPlotID        = nPlotID;
         block.nDeadline      = nDeadline;
-        block.nCumulativeDiff = nCumulativeDiff;
         return block;
     }
 
@@ -460,13 +453,11 @@ public:
         block.hashPrevBlock   = hashPrev;
         block.hashMerkleRoot  = hashMerkleRoot;
         block.nTime           = nTime;
-        block.nBits           = nBits;
         block.nNonce          = nNonce;
-        block.genSign = genSign;
-        block.nDeadline = nDeadline;
-        block.nPlotID = nPlotID;
-        block.nBaseTarget = nBaseTarget;
-        block.nCumulativeDiff = nCumulativeDiff;
+        block.genSign         = genSign;
+        block.nDeadline       = nDeadline;
+        block.nPlotID         = nPlotID;
+        block.nBaseTarget     = nBaseTarget;
         return block.GetHash();
     }
 
