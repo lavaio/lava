@@ -412,7 +412,7 @@ static void ProcessBlockAvailability(NodeId nodeid) EXCLUSIVE_LOCKS_REQUIRED(cs_
 
     if (!state->hashLastUnknownBlock.IsNull()) {
         const CBlockIndex* pindex = LookupBlockIndex(state->hashLastUnknownBlock);
-        if (pindex && pindex->nChainWork > 0) {
+        if (pindex && pindex->nCumulativeDiff > 0) {
             //if (state->pindexBestKnownBlock == nullptr || pindex->nChainWork >= state->pindexBestKnownBlock->nChainWork) {
             if (state->pindexBestKnownBlock == nullptr) {
                 state->pindexBestKnownBlock = pindex;
@@ -430,7 +430,7 @@ static void UpdateBlockAvailability(NodeId nodeid, const uint256 &hash) EXCLUSIV
     ProcessBlockAvailability(nodeid);
 
     const CBlockIndex* pindex = LookupBlockIndex(hash);
-    if (pindex && pindex->nChainWork > 0) {
+    if (pindex && pindex->nCumulativeDiff > 0) {
         // An actually better block was announced.
         //if (state->pindexBestKnownBlock == nullptr || pindex->nChainWork >= state->pindexBestKnownBlock->nChainWork) {
         if (state->pindexBestKnownBlock == nullptr) {
@@ -522,8 +522,8 @@ static void FindNextBlocksToDownload(NodeId nodeid, unsigned int count, std::vec
     // Make sure pindexBestKnownBlock is up to date, we'll need it.
     ProcessBlockAvailability(nodeid);
 
-    //if (state->pindexBestKnownBlock == nullptr || state->pindexBestKnownBlock->nChainWork < chainActive.Tip()->nChainWork || state->pindexBestKnownBlock->nChainWork < nMinimumChainWork) {
-    if (state->pindexBestKnownBlock == nullptr){// || state->pindexBestKnownBlock->nChainWork < nMinimumChainWork) {
+    //if (state->pindexBestKnownBlock == nullptr || state->pindexBestKnownBlock->nChainWork < chainActive.Tip()->nChainWork || state->pindexBestKnownBlock->nChainWork < nMinimumCumulativeDiff) {
+    if (state->pindexBestKnownBlock == nullptr){// || state->pindexBestKnownBlock->nChainWork < nMinimumCumulativeDiff) {
         // This peer has nothing interesting.
         return;
     }
@@ -1559,15 +1559,15 @@ bool static ProcessHeadersMessage(CNode *pfrom, CConnman *connman, const std::ve
         if (IsInitialBlockDownload() && nCount != MAX_HEADERS_RESULTS) {
             // When nCount < MAX_HEADERS_RESULTS, we know we have no more
             // headers to fetch from this peer.
-            //if (nodestate->pindexBestKnownBlock && nodestate->pindexBestKnownBlock->nChainWork < nMinimumChainWork) {
+            //if (nodestate->pindexBestKnownBlock && nodestate->pindexBestKnownBlock->nChainWork < nMinimumCumulativeDiff) {
             if (nodestate->pindexBestKnownBlock && false) {
                 // This peer has too little work on their headers chain to help
                 // us sync -- disconnect if using an outbound slot (unless
                 // whitelisted or addnode).
-                // Note: We compare their tip to nMinimumChainWork (rather than
+                // Note: We compare their tip to nMinimumCumulativeDiff (rather than
                 // chainActive.Tip()) because we won't start block download
                 // until we have a headers chain that has at least
-                // nMinimumChainWork, even if a peer has a chain past our tip,
+                // nMinimumCumulativeDiff, even if a peer has a chain past our tip,
                 // as an anti-DoS measure.
                 if (IsOutboundDisconnectionCandidate(pfrom)) {
                     LogPrintf("Disconnecting outbound peer %d -- headers chain has insufficient work\n", pfrom->GetId());
@@ -2620,7 +2620,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             // (eg disk space). Because we only try to reconstruct blocks when
             // we're close to caught up (via the CanDirectFetch() requirement
             // above, combined with the behavior of not requesting blocks until
-            // we have a chain with at least nMinimumChainWork), and we ignore
+            // we have a chain with at least nMinimumCumulativeDiff), and we ignore
             // compact blocks with less work than our tip, it is safe to treat
             // reconstructed compact blocks as having been requested.
             ProcessNewBlock(chainparams, pblock, /*fForceProcessing=*/true, &fNewBlock);

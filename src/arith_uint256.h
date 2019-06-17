@@ -14,6 +14,9 @@
 #include <string>
 #include <vector>
 
+// Initial cumulative diff
+static constexpr uint64_t CUMULATIVE_DIFF_DENOM = 18446744073709551615;
+
 class uint256;
 
 class uint_error : public std::runtime_error {
@@ -276,7 +279,7 @@ public:
      * complexities of the sign bit and using base 256 are probably an
      * implementation accident.
      */
-    arith_uint256& SetCompact(uint32_t nCompact, bool *pfNegative = nullptr, bool *pfOverflow = nullptr);
+    arith_uint256& SetCompact(uint64_t nBaseTarget, bool *pfNegative = nullptr, bool *pfOverflow = nullptr);
     uint32_t GetCompact(bool fNegative = false) const;
 
     friend uint256 ArithToUint256(const arith_uint256 &);

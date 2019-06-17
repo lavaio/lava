@@ -1024,17 +1024,17 @@ bool AppInitParameterInteraction()
         LogPrintf("Validating signatures for all blocks.\n");
 
     if (gArgs.IsArgSet("-minimumchainwork")) {
-        const std::string minChainWorkStr = gArgs.GetArg("-minimumchainwork", "");
-        if (!IsHexNumber(minChainWorkStr)) {
-            return InitError(strprintf("Invalid non-hex (%s) minimum chain work value specified", minChainWorkStr));
+        const std::string minCumulativeDiffStr = gArgs.GetArg("-minimumchainwork", "");
+        if (!IsHexNumber(minCumulativeDiffStr)) {
+            return InitError(strprintf("Invalid non-hex (%s) minimum chain work value specified", minCumulativeDiffStr));
         }
-        nMinimumChainWork = UintToArith256(uint256S(minChainWorkStr));
+        nMinimumCumulativeDiff = UintToArith256(uint256S(minCumulativeDiffStr));
     } else {
-        nMinimumChainWork = UintToArith256(chainparams.GetConsensus().nMinimumChainWork);
+        nMinimumCumulativeDiff = UintToArith256(chainparams.GetConsensus().nMinimumChainWork);
     }
-    LogPrintf("Setting nMinimumChainWork=%s\n", nMinimumChainWork.GetHex());
-    if (nMinimumChainWork < UintToArith256(chainparams.GetConsensus().nMinimumChainWork)) {
-        LogPrintf("Warning: nMinimumChainWork set below default value of %s\n", chainparams.GetConsensus().nMinimumChainWork.GetHex());
+    LogPrintf("Setting nMinimumCumulativeDiff=%s\n", nMinimumCumulativeDiff.GetHex());
+    if (nMinimumCumulativeDiff < UintToArith256(chainparams.GetConsensus().nMinimumChainWork)) {
+        LogPrintf("Warning: nMinimumCumulativeDiff set below default value of %s\n", chainparams.GetConsensus().nMinimumChainWork.GetHex());
     }
 
     // mempool limits
