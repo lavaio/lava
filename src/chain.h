@@ -437,7 +437,6 @@ public:
         READWRITE(hashPrev);
         READWRITE(hashMerkleRoot);
         READWRITE(nTime);
-        READWRITE(nBits);
         READWRITE(nNonce);
         READWRITE(genSign);
         READWRITE(nDeadline);

@@ -14,9 +14,6 @@
 #include <string>
 #include <vector>
 
-// Initial cumulative diff
-static constexpr uint64_t CUMULATIVE_DIFF_DENOM = 18446744073709551615;
-
 class uint256;
 
 class uint_error : public std::runtime_error {
