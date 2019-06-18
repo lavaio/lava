@@ -133,6 +133,7 @@ UniValue getMiningInfo(const JSONRPCRequest& request)
                     "{\n"
                     "  \"height\": nnn\n"
                     "  \"generationSignature\": \"xxx\"\n"
+                    "  \"cumulativeDiff\": \"xxx\"\n"
                     "  \"basetarget\": nnn\n"
                     "  \"targetDeadline\": nnn\n"
                     "}\n"},
@@ -144,6 +145,7 @@ UniValue getMiningInfo(const JSONRPCRequest& request)
     LOCK(cs_main);
 
     auto height = chainActive.Height() + 1;
+    auto diff = chainActive.Tip()->nCumulativeDiff;
     auto block = chainActive.Tip()->GetBlockHeader();
     auto generationSignature = CalcGenerationSignature(block.genSign, block.nPlotID);
     auto nBaseTarget = block.nBaseTarget;
@@ -151,6 +153,7 @@ UniValue getMiningInfo(const JSONRPCRequest& request)
     UniValue obj(UniValue::VOBJ);
     obj.pushKV("height", height);
     obj.pushKV("generationSignature", HexStr<uint256>(generationSignature));
+    obj.pushKV("cumulativeDiff", diff.GetHex());
     obj.pushKV("baseTarget", nBaseTarget);
     obj.pushKV("targetDeadline", param.GetTargetDeadline());
     return obj;
