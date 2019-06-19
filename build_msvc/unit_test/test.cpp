@@ -1,8 +1,4 @@
 #define BOOST_TEST_MODULE maintest
-#include <boost/test/unit_test.hpp>
-#include <string>
-#include <immintrin.h>
-#include <stdint.h>
 
 #include "../../src/config/bitcoin-config.h"
 #include "../../src/poc.h"
@@ -12,11 +8,15 @@
 #include "../../src/key_io.h"
 #include "../../src/outputtype.h"
 
+#include <string>
+#include <immintrin.h>
+#include <stdint.h>
+
 using namespace std;
 
 const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
 
-static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesisOutputScript, uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
+static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesisOutputScript, uint32_t nTime, uint32_t nNonce, uint64_t nBaseTarget, int32_t nVersion, const CAmount& genesisReward)
 {
     CMutableTransaction txNew;
     txNew.nVersion = 1;
@@ -28,7 +28,7 @@ static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesi
 
     CBlock genesis;
     genesis.nTime = nTime;
-    genesis.nBits = nBits;
+    genesis.nBaseTarget = nBaseTarget;
     genesis.nNonce = nNonce;
     genesis.nVersion = nVersion;
     genesis.vtx.push_back(MakeTransactionRef(std::move(txNew)));
@@ -38,14 +38,30 @@ static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesi
     return genesis;
 }
 
-static CBlock CreateGenesisBlock(uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
+static CBlock CreateGenesisBlock(uint32_t nTime, uint32_t nNonce, uint64_t nBaseTarget, int32_t nVersion, const CAmount& genesisReward)
 {
     const char* pszTimestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
     const CScript genesisOutputScript = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
-    return CreateGenesisBlock(pszTimestamp, genesisOutputScript, nTime, nNonce, nBits, nVersion, genesisReward);
+    return CreateGenesisBlock(pszTimestamp, genesisOutputScript, nTime, nNonce, nBaseTarget, nVersion, genesisReward);
 }
 
-BOOST_AUTO_TEST_CASE(test_gen_sig)
+int main(int argc, char* argv[])
+{
+	auto genesis = CreateGenesisBlock(1231006505, 2083236893, 14660155037L, 1, 50 * COIN);
+    auto hash = genesis.GetHash().ToString();
+    auto merkle = genesis.hashMerkleRoot.GetHex();
+
+    //BOOST_CHECK_EQUAL(genesis, uint256S("0x000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"));
+
+    auto genesis_test = CreateGenesisBlock(1296688602, 414098458, 14660155037L, 1, 50 * COIN);
+    hash = genesis_test.GetHash().ToString();
+
+    auto genesis_reg = CreateGenesisBlock(1296688602, 2, 14660155037L, 1, 50 * COIN);
+    hash = genesis_reg.GetHash().ToString();	
+}
+
+
+/*BOOST_AUTO_TEST_CASE(test_gen_sig)
 {
     string hex("b669bf4065a85b7183f423dabdf5d3cca1ddaebbaf2c58739f549c9010170931");
     auto ba = ParseHex(hex);
@@ -113,4 +129,4 @@ BOOST_AUTO_TEST_CASE(get_address)
     CTxDestination dest = GetDestinationForKey(pubkey, OutputType::LEGACY);
     auto addr = EncodeDestination(dest);
     ECC_Stop();
-}
+}*/
