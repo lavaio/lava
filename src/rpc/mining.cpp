@@ -583,6 +583,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
     UniValue aux(UniValue::VOBJ);
     aux.pushKV("flags", HexStr(COINBASE_FLAGS.begin(), COINBASE_FLAGS.end()));
 
+    //TODO: remove this value, function SetCompact is wrong use
     arith_uint256 hashTarget = arith_uint256().SetCompact(pblock->nBaseTarget);
 
     UniValue aMutable(UniValue::VARR);
@@ -671,7 +672,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
         result.pushKV("weightlimit", (int64_t)MAX_BLOCK_WEIGHT);
     }
     result.pushKV("curtime", pblock->GetBlockTime());
-    result.pushKV("bits", strprintf("%u", pblock->nBaseTarget));
+    result.pushKV("nBaseTarget", strprintf("%u", pblock->nBaseTarget));
     result.pushKV("height", (int64_t)(pindexPrev->nHeight+1));
 
     if (!pblocktemplate->vchCoinbaseCommitment.empty()) {

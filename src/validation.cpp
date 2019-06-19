@@ -3243,8 +3243,9 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
 
     // Check proof of work
     const Consensus::Params& consensusParams = params.GetConsensus();
-    if (block.nBaseTarget != 0)
+    /*if (block.nBaseTarget != 0)
         return state.DoS(100, false, REJECT_INVALID, "bad-diffbits", false, "incorrect proof of work");
+        */
 
     // Check against checkpoints
     if (fCheckpointsEnabled) {
