@@ -4,7 +4,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <validation.h>
-
+#include <key_io.h>
 #include <arith_uint256.h>
 #include <chain.h>
 #include <chainparams.h>
@@ -1764,7 +1764,7 @@ static int64_t nBlocksTotal = 0;
  *  can fail if those validity checks fail (among other reasons). */
 bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pindex, CCoinsViewCache& view, const CChainParams& chainparams, bool fJustCheck)
 {
-    AssertLockHeld(cs_main);
+	AssertLockHeld(cs_main);
     assert(pindex);
     assert(*pindex->phashBlock == block.GetHash());
     int64_t nTimeStart = GetTimeMicros();
@@ -2026,7 +2026,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         return true;
 
     if (!WriteUndoDataForBlock(blockundo, state, pindex, chainparams))
-        return false;
+		return false;
 
     if (!pindex->IsValid(BLOCK_VALID_SCRIPTS)) {
         pindex->RaiseValidity(BLOCK_VALID_SCRIPTS);
@@ -2583,6 +2583,8 @@ bool CChainState::ActivateBestChainStep(CValidationState& state, const CChainPar
                 }
             }
         }
+		//chainActive is updated, clean the plotid, nonce, dl and newblockheight
+        blockAssember.setNull();
     }
 
     if (fBlocksDisconnected) {
@@ -3238,14 +3240,14 @@ std::vector<unsigned char> GenerateCoinbaseCommitment(CBlock& block, const CBloc
  */
 static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& state, const CChainParams& params, const CBlockIndex* pindexPrev, int64_t nAdjustedTime)
 {
-    assert(pindexPrev != nullptr);
+	assert(pindexPrev != nullptr);
     const int nHeight = pindexPrev->nHeight + 1;
-
+  
     // Check proof of work
     const Consensus::Params& consensusParams = params.GetConsensus();
     if (block.nBits != 0)
         return state.DoS(100, false, REJECT_INVALID, "bad-diffbits", false, "incorrect proof of work");
-
+   
     // Check against checkpoints
     if (fCheckpointsEnabled) {
         // Don't accept any forks from the main chain prior to last checkpoint.
@@ -3255,15 +3257,15 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
         if (pcheckpoint && nHeight < pcheckpoint->nHeight)
             return state.DoS(100, error("%s: forked chain older than last checkpoint (height %d)", __func__, nHeight), REJECT_CHECKPOINT, "bad-fork-prior-to-checkpoint");
     }
-
+    
     // Check timestamp against prev
     if (block.GetBlockTime() <= pindexPrev->GetMedianTimePast())
         return state.Invalid(false, REJECT_INVALID, "time-too-old", "block's timestamp is too early");
-
+   
     // Check timestamp
     if (block.GetBlockTime() > nAdjustedTime + MAX_FUTURE_BLOCK_TIME)
         return state.Invalid(false, REJECT_INVALID, "time-too-new", "block timestamp too far in the future");
-
+  
     // Reject outdated version blocks when 95% (75% on testnet) of the network has upgraded:
     // check for version 2, 3 and 4 upgrades
     if ((block.nVersion < 2 && nHeight >= consensusParams.BIP34Height) ||
@@ -3277,26 +3279,26 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
     auto dl = CalcDeadline(&block, pindexPrev);
     if (dl != block.nDeadline) {
         return state.Invalid(false, REJECT_INVALID, "error-deadline",
-            strprintf("header deadline=%u, calc result=%u", block.nDeadline, dl));
+                    strprintf("header deadline=%u, calc result=%u, nheigth=%u, newheight=%u, header plotid=%u, header nonce=%u", block.nDeadline, dl, pindexPrev->nHeight, nHeight, block.nPlotID, block.nNonce));
     }
-
+  
     // TODO..
     // Check timestamp
     dl /= pindexPrev->nBaseTarget;
     if (pindexPrev->nTime + dl > block.nTime) {
         return state.Invalid(false, REJECT_INVALID, "time-too-new", "block deadline too far in the future");
     }
-
+   
     // TODO.. Check baseTarget
     if (block.nBaseTarget != AdjustBaseTarget(pindexPrev, block.nTime)) {
         return state.Invalid(false, REJECT_INVALID, "base-target-error", "block basetarget error");
     }
-
+  
     // Check cumulative difficulty
     if (block.nCumulativeDiff != pindexPrev->nCumulativeDiff + (CUMULATIVE_DIFF_DENOM / block.nBaseTarget)) {
         return state.Invalid(false, REJECT_INVALID, "cumulative-diff-error", "block cumulativeDiff error");
     }
-
+   
     return true;
 }
 
@@ -3382,17 +3384,15 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-weight", false, strprintf("%s : weight limit failed", __func__));
     }
 
-    // TODO...
     // check plotid
-    /*
     auto script = block.vtx[0]->vout[0].scriptPubKey;
     CTxDestination dest;
     auto result = ExtractDestination(script, dest);
-    auto keyid = boost::get<CKeyID>(dest);
-    if (block.nPlotID != keyid.GetPlotID()) {
+    uint64_t plotID = PlotEncodeDestination(dest);
+    if (block.nPlotID != plotID || plotID == 0) {
         return state.DoS(100, false, REJECT_INVALID, "bad-coinbase-plotid", false, "coinbase public key error plot id");
     }
-    */
+    
     return true;
 }
 
@@ -3652,15 +3652,15 @@ bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams,
     indexDummy.pprev = pindexPrev;
     indexDummy.nHeight = pindexPrev->nHeight + 1;
     indexDummy.phashBlock = &block_hash;
-
+	
     // NOTE: CheckBlockHeader is called by CheckBlock
     if (!ContextualCheckBlockHeader(block, state, chainparams, pindexPrev, GetAdjustedTime()))
-        return error("%s: Consensus::ContextualCheckBlockHeader: %s", __func__, FormatStateMessage(state));
+		return error("%s: Consensus::ContextualCheckBlockHeader: %s", __func__, FormatStateMessage(state));
     if (!CheckBlock(block, state, chainparams.GetConsensus(), fCheckPOW, fCheckMerkleRoot))
         return error("%s: Consensus::CheckBlock: %s", __func__, FormatStateMessage(state));
     if (!ContextualCheckBlock(block, state, chainparams.GetConsensus(), pindexPrev))
         return error("%s: Consensus::ContextualCheckBlock: %s", __func__, FormatStateMessage(state));
-    if (!g_chainstate.ConnectBlock(block, state, &indexDummy, viewNew, chainparams, true))
+    if (!g_chainstate.ConnectBlock(block, state, &indexDummy, viewNew, chainparams, true)) 
         return false;
     assert(state.IsValid());
 
