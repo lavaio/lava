@@ -122,10 +122,11 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
             LOCK(cs_main);
             IncrementExtraNonce(pblock, chainActive.Tip(), nExtraNonce);
         }
-        while (nMaxTries > 0 && pblock->nNonce < nInnerLoopCount 
+        while (nMaxTries > 0 && pblock->nNonce < nInnerLoopCount
+            && Params().NetworkIDString() != CBaseChainParams::REGTEST
             && !CheckProofOfCapacity(pblock->genSign, nHeight, pblock->nPlotID, pblock->nNonce, pblock->nBaseTarget, pblock->nDeadline, params.GetTargetDeadline())) {
-            ++pblock->nNonce;
-            --nMaxTries;
+                ++pblock->nNonce;
+                --nMaxTries;
         }
         if (nMaxTries == 0) {
             break;
