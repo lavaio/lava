@@ -27,7 +27,6 @@ public:
     void setNull();
 
 private:
-    boost::mutex mtx;
     void checkDeadline();
 
 private:

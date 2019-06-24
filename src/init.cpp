@@ -184,6 +184,7 @@ void Interrupt()
     InterruptREST();
     InterruptTorControl();
     InterruptMapPort();
+    blockAssember.Interrupt();
     if (g_connman)
         g_connman->Interrupt();
     if (g_txindex) {
