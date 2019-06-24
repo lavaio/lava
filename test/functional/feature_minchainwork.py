@@ -2,17 +2,17 @@
 # Copyright (c) 2017-2018 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
-"""Test logic for setting nMinimumChainWork on command line.
+"""Test logic for setting nMinimumCumulativeDiff on command line.
 
 Nodes don't consider themselves out of "initial block download" until
-their active chain has more work than nMinimumChainWork.
+their active chain has more work than nMinimumCumulativeDiff.
 
 Nodes don't download blocks from a peer unless the peer's best known block
-has more work than nMinimumChainWork.
+has more work than nMinimumCumulativeDiff.
 
 While in initial block download, nodes won't relay blocks to their peers, so
 test that this parameter functions as intended by verifying that block relay
-only succeeds past a given node once its nMinimumChainWork has been exceeded.
+only succeeds past a given node once its nMinimumCumulativeDiff has been exceeded.
 """
 
 import time
@@ -28,7 +28,7 @@ class MinimumChainWorkTest(BitcoinTestFramework):
         self.setup_clean_chain = True
         self.num_nodes = 3
 
-        self.extra_args = [[], ["-minimumchainwork=0x65"], ["-minimumchainwork=0x65"]]
+        self.extra_args = [[], ["-minimumcumulativediff=0x65"], ["-minimumcumulativediff=0x65"]]
         self.node_min_work = [0, 101, 101]
 
     def setup_network(self):

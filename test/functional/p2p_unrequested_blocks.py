@@ -5,7 +5,7 @@
 """Test processing of unrequested blocks.
 
 Setup: two nodes, node0+node1, not connected to each other. Node1 will have
-nMinimumChainWork set to 0x10, so it won't process low-work unrequested blocks.
+nMinimumCumulativeDiff set to 0x10, so it won't process low-work unrequested blocks.
 
 We have one P2PInterface connection to node0 called test_node, and one to node1
 called min_work_node.
@@ -15,7 +15,7 @@ The test:
 
 2. Mine a new block on each tip, and deliver to each node from node's peer.
    The tip should advance for node0, but node1 should skip processing due to
-   nMinimumChainWork.
+   nMinimumCumulativeDiff.
 
 Node1 is unused in tests 3-7:
 
@@ -53,7 +53,7 @@ Node1 is unused in tests 3-7:
 
 import time
 
-from test_framework.blocktools import create_block, create_coinbase, create_tx_with_script
+from test_framework.blocktools iminimumcumulativediffmport create_block, create_coinbase, create_tx_with_script
 from test_framework.messages import CBlockHeader, CInv, msg_block, msg_headers, msg_inv
 from test_framework.mininode import mininode_lock, P2PInterface
 from test_framework.test_framework import BitcoinTestFramework
@@ -64,14 +64,14 @@ class AcceptBlockTest(BitcoinTestFramework):
     def set_test_params(self):
         self.setup_clean_chain = True
         self.num_nodes = 2
-        self.extra_args = [[], ["-minimumchainwork=0x10"]]
+        self.extra_args = [[], ["-minimumcumulativediff=0x10"]]
 
     def setup_network(self):
         # Node0 will be used to test behavior of processing unrequested blocks
         # from peers which are not whitelisted, while Node1 will be used for
         # the whitelisted case.
         # Node2 will be used for non-whitelisted peers to test the interaction
-        # with nMinimumChainWork.
+        # with nMinimumCumulativeDiff.
         self.setup_nodes()
 
     def run_test(self):
