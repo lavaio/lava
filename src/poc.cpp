@@ -12,8 +12,8 @@ using namespace std;
 #define SCOOP_SIZE 64
 #define PLOT_SIZE (HASH_CAP * SCOOP_SIZE) // 4096*64
 
-const uint64_t INITIAL_BASE_TARGET = 14660155037L;
-const uint64_t MAX_BASE_TARGET = 14660155037L;
+const uint64_t INITIAL_BASE_TARGET = 18325193796L;
+const uint64_t MAX_BASE_TARGET = 18325193796L;
 
 uint256 CalcGenerationSignature(uint256 lastSig, uint64_t lastPlotID)
 {
@@ -126,7 +126,7 @@ uint64_t AdjustBaseTarget(const CBlockIndex* prevBlock, const uint32_t nTime)
     if (height < 4) {
         return INITIAL_BASE_TARGET;
     }
-    if (height < 31) {
+    if (height < 2700) {
         auto itBlock = prevBlock;
         uint64_t avgBaseTarget = itBlock->nBaseTarget;
 
@@ -140,7 +140,7 @@ uint64_t AdjustBaseTarget(const CBlockIndex* prevBlock, const uint32_t nTime)
         uint64_t difTime = nTime - itBlock->nTime;
 
         uint64_t curBaseTarget = avgBaseTarget;
-        uint64_t newBaseTarget = curBaseTarget * difTime / (300 * 4);
+        uint64_t newBaseTarget = curBaseTarget * difTime / (240 * 4);
 
         if (newBaseTarget < 0 || newBaseTarget > MAX_BASE_TARGET) {
             newBaseTarget = MAX_BASE_TARGET;
@@ -170,10 +170,10 @@ uint64_t AdjustBaseTarget(const CBlockIndex* prevBlock, const uint32_t nTime)
         itBlock = itBlock->pprev;
         blockCounter++;
         expBaseTarget = (expBaseTarget * blockCounter + itBlock->nBaseTarget) / (blockCounter + 1);
-    } while (blockCounter < 30);
+    } while (blockCounter < 24);
 
     uint64_t difTime = nTime - itBlock->nTime;
-    uint64_t targetTimespan = 30 * 300;
+    uint64_t targetTimespan = 24 * 4 * 60;
 
     if (difTime < targetTimespan / 2) {
         difTime = targetTimespan / 2;
@@ -218,8 +218,8 @@ void AdjustBaseTarget(const CBlockIndex* prevBlock, CBlock* block)
         // 2. First 4 blocks
     } else if (height < 4) {
         block->nBaseTarget = INITIAL_BASE_TARGET;
-        // 3. First 30 blocks
-    } else if (height < 31) {
+        // 3. First 2700 blocks
+    } else if (height < 2700) {
         auto itBlock = prevBlock;
         uint64_t avgBaseTarget = itBlock->nBaseTarget;
 
@@ -233,7 +233,7 @@ void AdjustBaseTarget(const CBlockIndex* prevBlock, CBlock* block)
         uint64_t difTime = block->nTime - itBlock->nTime;
 
         uint64_t curBaseTarget = avgBaseTarget;
-        uint64_t newBaseTarget = curBaseTarget * difTime / (300 * 4);
+        uint64_t newBaseTarget = curBaseTarget * difTime / (240 * 4);
 
         if (newBaseTarget < 0 || newBaseTarget > MAX_BASE_TARGET) {
             newBaseTarget = MAX_BASE_TARGET;
@@ -263,10 +263,10 @@ void AdjustBaseTarget(const CBlockIndex* prevBlock, CBlock* block)
             itBlock = itBlock->pprev;
             blockCounter++;
             expBaseTarget = (expBaseTarget * blockCounter + itBlock->nBaseTarget) / (blockCounter + 1);
-        } while (blockCounter < 30);
+        } while (blockCounter < 24);
 
         uint64_t difTime = block->nTime - itBlock->nTime;
-        uint64_t targetTimespan = 30 * 300;
+        uint64_t targetTimespan = 24 * 4 * 60;
 
         if (difTime < targetTimespan / 2) {
             difTime = targetTimespan / 2;

@@ -91,7 +91,8 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = 1510704000; // November 15th, 2017.
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000051dc8b82f450202ecb3d471");
+        // TODO: better minimumChainWork?
+        consensus.nMinimumCumulativeDiff = uint256S("0x000000000000000000000000000000000000000000000001000000004affffff");
 
         // By default assume that the signatures in ancestors of this block are valid.
         consensus.defaultAssumeValid = uint256S("0x0000000000000000000f1c54590ee18d15ec70e68c8cd4cfbadb1b4f11697eee"); //563378
@@ -110,9 +111,10 @@ public:
         m_assumed_blockchain_size = 240;
         m_assumed_chain_state_size = 3;
 
-        genesis = CreateGenesisBlock(1231006505, 2083236893, 14660155037L, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1231006505, 2083236893, 18325193796L, 1, 50 * COIN);
+        auto tmp = genesis.GetHash().ToString();
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x2338bb489d0c7d141031033510a44501f540249267613f5d9e36b131578ed24e"));
+        assert(consensus.hashGenesisBlock == uint256S("0xafba8e143014b8c1d8df690bcf00b9f4eedb8e3ddcceaf90b156e9db34458321"));
         assert(genesis.hashMerkleRoot == uint256S("0x4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"));
 
         // Note that of those which support the service bits prefix, most only support a subset of
@@ -208,7 +210,7 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = 1493596800; // May 1st 2017
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000000007dbe94253893cbd463");
+        consensus.nMinimumCumulativeDiff = uint256S("0x00000000000000000000000000000000000000000000007dbe94253893cbd463");
 
         // By default assume that the signatures in ancestors of this block are valid.
         consensus.defaultAssumeValid = uint256S("0x0000000000000037a8cd3e06cd5edbfe9dd1dbcc5dacab279376ef7cfc2b4c75"); //1354312
@@ -222,9 +224,9 @@ public:
         m_assumed_blockchain_size = 30;
         m_assumed_chain_state_size = 2;
 
-        genesis = CreateGenesisBlock(1296688602, 414098458, 14660155037L, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1296688602, 414098458, 18325193796L, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x38ee631907848e51befede16ea8679b246bc6b684bf17ac4016f117568e13911"));
+        assert(consensus.hashGenesisBlock == uint256S("0x561d65b41446a2f38771071a288dffa519c9c7eaa15209f7b8433dceaa6d8cc6"));
         assert(genesis.hashMerkleRoot == uint256S("0x4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"));
 
         vFixedSeeds.clear();
@@ -299,7 +301,7 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x00");
+        consensus.nMinimumCumulativeDiff = uint256S("0x00");
 
         // By default assume that the signatures in ancestors of this block are valid.
         consensus.defaultAssumeValid = uint256S("0x00");
@@ -315,9 +317,9 @@ public:
 
         UpdateVersionBitsParametersFromArgs(args);
 
-        genesis = CreateGenesisBlock(1296688602, 2, 14660155037L, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1296688602, 2, 18325193796L, 1, 50 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x48cb585e990aed0ff7f85201ff2a22f45b98aaae1e96e714cd281c50a2fcc2e0"));
+        assert(consensus.hashGenesisBlock == uint256S("0xa1e95f795ea37dd3229cb303ee349eb329dca8ee03a9fd653ee71fb300cb4c73"));
         assert(genesis.hashMerkleRoot == uint256S("0x4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"));
 
         vFixedSeeds.clear(); //!< Regtest mode doesn't have any fixed seeds.
