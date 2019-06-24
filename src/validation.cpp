@@ -3289,7 +3289,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
     if (block.nBaseTarget != AdjustBaseTarget(pindexPrev, block.nTime)) {
         return state.Invalid(false, REJECT_INVALID, "base-target-error", "block basetarget error");
     }
-
+    
     return true;
 }
 
