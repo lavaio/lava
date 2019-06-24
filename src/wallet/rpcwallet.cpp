@@ -205,10 +205,96 @@ static UniValue getnewaddress(const JSONRPCRequest& request)
 
     pwallet->SetAddressBook(dest, label, "receive");
 
-    UniValue obj(UniValue::VOBJ);
-    obj.pushKV("address", EncodeDestination(dest));
-    obj.pushKV("plotid", newKey.GetID().GetPlotID());
-    return obj;
+    return EncodeDestination(dest);
+}
+
+static UniValue getmineraddress(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() != 0)
+        throw std::runtime_error(
+            RPCHelpMan{
+                "getmineraddress",
+                "\nReturns a new Bitcoin address for receiving coinbase output.\n",
+                {},
+                RPCResult{
+                    "\"address\"    (string) The miner bitcoin address\n"},
+                RPCExamples{
+                    HelpExampleCli("getmineraddress", "") + HelpExampleRpc("getmineraddress", "")},
+            }
+                .ToString());
+
+    LOCK(pwallet->cs_wallet);
+
+    if (!pwallet->CanGetAddresses()) {
+        throw JSONRPCError(RPC_WALLET_ERROR, "Error: This wallet has no available keys");
+    }
+
+    std::string label;
+    auto output_type = OutputType::LEGACY;
+
+    if (!pwallet->IsLocked()) {
+        pwallet->TopUpKeyPool();
+    }
+
+    CKey key;
+    auto locked_chain = pwallet->chain().lock();
+    std::map<CTxDestination, int64_t> mapKeyBirth;
+    pwallet->GetKeyBirthTimes(*locked_chain, mapKeyBirth);
+
+    // sort time/key pairs
+    std::vector<std::pair<int64_t, CKeyID>> vKeyBirth;
+    for (const auto& entry : mapKeyBirth) {
+        if (const CKeyID* keyID = boost::get<CKeyID>(&entry.first)) { // set and test
+            vKeyBirth.push_back(std::make_pair(entry.second, *keyID));
+        }
+    }
+    mapKeyBirth.clear();
+    std::sort(vKeyBirth.begin(), vKeyBirth.end());
+
+    std::vector<std::pair<int64_t, CKeyID>>::const_iterator firstItem = vKeyBirth.begin();
+    // if the wallet already has a key, oupt put the legacy address of it
+    if (firstItem != vKeyBirth.end()) {
+        const CKeyID& keyid = firstItem->second;
+        if (pwallet->GetKey(keyid, key)) {
+            auto pubkey = key.GetPubKey();
+            pwallet->LearnRelatedScripts(pubkey, output_type);
+            CTxDestination dest = GetDestinationForKey(pubkey, output_type);
+
+            pwallet->SetAddressBook(dest, label, "receive");
+
+            UniValue obj(UniValue::VOBJ);
+            obj.pushKV("address", EncodeDestination(dest));
+            obj.pushKV("plotid", pubkey.GetID().GetPlotID());
+            return obj;
+        } else {
+            UniValue obj(UniValue::VOBJ);
+            obj.pushKV("error", "invalid address!");
+            return obj;
+        }
+    } else {
+        // Generate a new key that is added to wallet
+        CPubKey newKey;
+        if (!pwallet->GetKeyFromPool(newKey)) {
+            throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, "Error: Keypool ran out, please call keypoolrefill first");
+        }
+
+        pwallet->LearnRelatedScripts(newKey, output_type);
+        CTxDestination dest = GetDestinationForKey(newKey, output_type);
+
+        pwallet->SetAddressBook(dest, label, "receive");
+
+        UniValue obj(UniValue::VOBJ);
+        obj.pushKV("address", EncodeDestination(dest));
+        obj.pushKV("plotid", newKey.GetID().GetPlotID());
+        return obj;
+    }
 }
 
 static UniValue getrawchangeaddress(const JSONRPCRequest& request)
@@ -4166,6 +4252,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "getaddressinfo",                   &getaddressinfo,                {"address"} },
     { "wallet",             "getbalance",                       &getbalance,                    {"dummy","minconf","include_watchonly"} },
     { "wallet",             "getnewaddress",                    &getnewaddress,                 {"label","address_type"} },
+	{ "wallet",             "getmineraddress",                  &getmineraddress,               {} },
     { "wallet",             "getrawchangeaddress",              &getrawchangeaddress,           {"address_type"} },
     { "wallet",             "getreceivedbyaddress",             &getreceivedbyaddress,          {"address","minconf"} },
     { "wallet",             "getreceivedbylabel",               &getreceivedbylabel,            {"label","minconf"} },

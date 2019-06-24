@@ -16,7 +16,7 @@
 #include <string.h>
 #include <algorithm>
 
-namespace
+namespace 
 {
 class DestinationEncoder : public boost::static_visitor<std::string>
 {
@@ -213,6 +213,14 @@ std::string EncodeDestination(const CTxDestination& dest)
     return boost::apply_visitor(DestinationEncoder(Params()), dest);
 }
 
+
+uint64_t PlotEncodeDestination(const CTxDestination& dest)
+{
+    if (auto id = boost::get<CKeyID>(&dest)) {
+        return id->GetPlotID();
+	}
+    return 0;
+}
 CTxDestination DecodeDestination(const std::string& str)
 {
     return DecodeDestination(str, Params());

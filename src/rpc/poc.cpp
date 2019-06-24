@@ -64,8 +64,8 @@ UniValue getAddressPlotId(const JSONRPCRequest& request)
             }
                 .ToString());
     }
-	
-	std::vector<std::shared_ptr<CWallet>> wallets = GetWallets();
+
+    std::vector<std::shared_ptr<CWallet>> wallets = GetWallets();
     auto wallet = wallets.size() == 1 || (request.fHelp && wallets.size() > 0) ? wallets[0] : nullptr;
     if (wallet == nullptr) {
         return NullUniValue;
@@ -161,14 +161,15 @@ UniValue getMiningInfo(const JSONRPCRequest& request)
 
 UniValue submitNonce(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() != 3) {
+    if (request.fHelp || request.params.size() != 4) {
         throw std::runtime_error(
             RPCHelpMan{
                 "submitnonce",
                 "\nSubmit the nonce form disk.",
                 {{"address", RPCArg::Type::STR, RPCArg::Optional::NO, "Your miner address"},
                     {"nonce", RPCArg::Type::STR, RPCArg::Optional::NO, "The nonce you found on disk"},
-                    {"deadline", RPCArg::Type::NUM, RPCArg::Optional::NO, "When the next block will be generate"}},
+                    {"deadline", RPCArg::Type::NUM, RPCArg::Optional::NO, "When the next block will be generate"},
+                    {"height", RPCArg::Type::NUM, RPCArg::Optional::NO, "The block height you want to mine"},},
                 RPCResult{
                     "{\n"
                     "  \"accetped\": ture or false\n"
@@ -209,10 +210,10 @@ UniValue submitNonce(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid nonce");
     }
     uint64_t deadline = request.params[2].get_int64();
-
+    int height = request.params[3].get_int();
     //auto script = GetScriptForDestination(dest);
     UniValue obj(UniValue::VOBJ);
-    if (blockAssember.UpdateDeadline(plotID, nonce, deadline, coinbaseScript->reserveScript)) {
+    if (blockAssember.UpdateDeadline(height, plotID, nonce, deadline, coinbaseScript->reserveScript)) {
         obj.pushKV("plotid", plotID);
         obj.pushKV("deadline", deadline);
         auto params = Params();
