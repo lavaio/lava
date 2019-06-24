@@ -3294,10 +3294,10 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
         return state.Invalid(false, REJECT_INVALID, "base-target-error", "block basetarget error");
     }
   
-    // Check cumulative difficulty
-    if (block.nCumulativeDiff != pindexPrev->nCumulativeDiff + (CUMULATIVE_DIFF_DENOM / block.nBaseTarget)) {
+    // TODO: Remove this logic?
+    /*if (block.nCumulativeDiff != pindexPrev->nCumulativeDiff + (CUMULATIVE_DIFF_DENOM / block.nBaseTarget)) {
         return state.Invalid(false, REJECT_INVALID, "cumulative-diff-error", "block cumulativeDiff error");
-    }
+    }*/
    
     return true;
 }
