@@ -12,7 +12,7 @@
 //UniValue registerMinerAccount(const JSONRPCRequest& request);
 
 /** List all miners in network. */
-UniValue listMinerAccounts(const JSONRPCRequest& request);
+//UniValue listMinerAccounts(const JSONRPCRequest& request);
 
 /** get mining info */
 UniValue getMiningInfo(const JSONRPCRequest& request);

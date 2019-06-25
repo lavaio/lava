@@ -1,6 +1,14 @@
 #include "poc.h"
-#include "shabal/shabal.h"
+//#include "shabal/shabal.h"
 #include "chain.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include <crypto/sph_shabal.h>
+#ifdef __cplusplus
+}
+#endif
 
 #include <vector>
 #include <immintrin.h>
@@ -14,6 +22,11 @@ using namespace std;
 
 const uint64_t INITIAL_BASE_TARGET = 14660155037L;
 const uint64_t MAX_BASE_TARGET = 14660155037L;
+
+typedef sph_shabal_context shabal_context;
+#define shabal_init sph_shabal256_init;
+#define shabal sph_shabal256;
+#define shabal_close sph_shabal256_close;
 
 uint256 CalcGenerationSignature(uint256 lastSig, uint64_t lastPlotID)
 {
@@ -34,7 +47,7 @@ uint256 CalcGenerationSignature(uint256 lastSig, uint64_t lastPlotID)
 vector<uint8_t> genNonceChunk(const uint64_t plotID, const uint64_t nonce)
 {
     shabal_context ctx;
-    _mm256_zeroupper();
+    //_mm256_zeroupper();
     vector<uint8_t> genData(16 + PLOT_SIZE);
     //put plotID
     uint8_t* xv = (uint8_t*)&plotID;
@@ -87,7 +100,7 @@ uint64_t CalcDeadline(const uint256 genSig, const uint64_t height, const uint64_
     scoopGen[38] = mov[1];
     scoopGen[39] = mov[0];
     shabal_context ctx;
-    _mm256_zeroupper();
+    //_mm256_zeroupper();
     shabal_init(&ctx, 256);
     shabal(&ctx, &scoopGen[0], 40);
     char genHash[32];

@@ -97,8 +97,8 @@ void CPOCBlockAssember::setNull()
 	plotID = 0;
     nonce = 0;
     deadline = 0;
-    genSig.exchange(uint256());
-    scriptPubKeyIn.exchange(CScript());
+    genSig = uint256();
+    scriptPubKeyIn = CScript();
 }
 
 void CPOCBlockAssember::Interrupt()
@@ -121,7 +121,7 @@ struct AssemberParams CPOCBlockAssember::AssemberItems()
 void CPOCBlockAssember::SetAssemberItems(const int height, const uint64_t plotID, const uint64_t nonce, const uint64_t deadline, CScript& script)
 {
     boost::lock_guard<boost::mutex> lock(mtx);
-    this->genSig.exchange(genSig);
+    this->genSig = genSig;
     this->height = height;
     this->plotID = plotID;
     this->deadline = deadline;
