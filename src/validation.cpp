@@ -1059,7 +1059,7 @@ bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const int& heigh
 
     // Check the header
     auto params = Params();
-    if (height != 0 && !CheckProofOfCapacity(block.genSign, height, block.nPlotID, block.nNonce, block.nBaseTarget, block.nDeadline, params.GetTargetDeadline()))
+    if (height != 0 && !CheckProofOfCapacity(block.genSign, height, block.nPlotID, block.nNonce, block.nBaseTarget, block.nDeadline, params.TargetDeadline()))
         return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
 
     return true;
@@ -3083,9 +3083,7 @@ static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state,
     auto params = Params();
     // Check proof of work matches claimed amount
     // TODO... check geneist block
-    if (fCheckPoc && height != 0 &&
-        Params().NetworkIDString() != CBaseChainParams::REGTEST &&
-        !CheckProofOfCapacity(block.genSign, height, block.nPlotID, block.nNonce, block.nBaseTarget, block.nDeadline, params.GetTargetDeadline()))
+    if (fCheckPoc && height != 0 && !CheckProofOfCapacity(block.genSign, height, block.nPlotID, block.nNonce, block.nBaseTarget, block.nDeadline, params.TargetDeadline()))
         return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of capacity failed");
 
     return true;

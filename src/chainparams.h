@@ -84,7 +84,7 @@ public:
     const std::vector<SeedSpec6>& FixedSeeds() const { return vFixedSeeds; }
     const CCheckpointData& Checkpoints() const { return checkpointData; }
     const ChainTxData& TxData() const { return chainTxData; }
-    const uint64_t GetTargetDeadline() { return 60 * 60 * 24; }
+    const uint64_t TargetDeadline() const { return 60 * 60 * 24; }
 protected:
     CChainParams() {}
 

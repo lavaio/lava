@@ -11,6 +11,7 @@
 #include "../../src/consensus/merkle.h"
 #include "../../src/key_io.h"
 #include "../../src/outputtype.h"
+#include "../../src/ticket.h"
 
 using namespace std;
 
@@ -112,5 +113,19 @@ BOOST_AUTO_TEST_CASE(get_address)
     auto pubkey = key.GetPubKey();
     CTxDestination dest = GetDestinationForKey(pubkey, OutputType::LEGACY);
     auto addr = EncodeDestination(dest);
+    ECC_Stop();
+}
+
+BOOST_AUTO_TEST_CASE(test_script)
+{
+    SelectParams(CBaseChainParams::TESTNET);
+    string secret = "cPxCPyn1CJNovHaVF2UqFh7QZACswJQPtk6GgSjwFFESrWepqvvQ";
+    ECC_Start();
+    auto key = DecodeSecret(secret);
+    auto pubkey = key.GetPubKey();
+    auto script = CScript() << CScriptNum(220) << OP_CHECKLOCKTIMEVERIFY << OP_DROP << ToByteVector(pubkey) << OP_CHECKSIG;
+    CPubKey pub2;
+    auto getRet = GetPublicKeyFromScript(script, pub2);
+    BOOST_CHECK_EQUAL(pub2==pubkey, true);
     ECC_Stop();
 }

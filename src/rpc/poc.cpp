@@ -152,7 +152,7 @@ UniValue getMiningInfo(const JSONRPCRequest& request)
     obj.pushKV("height", height);
     obj.pushKV("generationSignature", HexStr<uint256>(generationSignature));
     obj.pushKV("baseTarget", nBaseTarget);
-    obj.pushKV("targetDeadline", param.GetTargetDeadline());
+    obj.pushKV("targetDeadline", param.TargetDeadline());
     return obj;
 }
 
@@ -208,14 +208,12 @@ UniValue submitNonce(const JSONRPCRequest& request)
     }
     uint64_t deadline = request.params[2].get_int64();
     int height = request.params[3].get_int();
-    //auto script = GetScriptForDestination(dest);
     UniValue obj(UniValue::VOBJ);
     if (blockAssember.UpdateDeadline(height, plotID, nonce, deadline, coinbaseScript->reserveScript)) {
         obj.pushKV("plotid", plotID);
         obj.pushKV("deadline", deadline);
         auto params = Params();
-        obj.pushKV("targetdeadline", params.GetTargetDeadline());
-        //obj.pushKV("errordescription", "");
+        obj.pushKV("targetdeadline", params.TargetDeadline());
     } else {
         obj.pushKV("accept", false);
     }

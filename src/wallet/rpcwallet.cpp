@@ -37,6 +37,8 @@
 #include <wallet/wallet.h>
 #include <wallet/walletdb.h>
 #include <wallet/walletutil.h>
+#include <ticket.h>
+#include <wallet/fees.h>
 
 #include <stdint.h>
 
@@ -4221,6 +4223,146 @@ UniValue walletcreatefundedpsbt(const JSONRPCRequest& request)
     return result;
 }
 
+extern void ImportScript(CWallet* const pwallet, const CScript& script, const std::string& strLabel, bool isRedeemScript) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet); // in rpcdump.cpp
+
+UniValue freezefundsforticket(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            RPCHelpMan{
+                "freezefundsforticket",
+                "\nFreeze some funds to get miner ticket\n",
+                {
+                    {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The bitcoin address to recvie ticket(only keyid)."},
+                },
+                RPCResult{
+                    "\"txid\"                  (string) The ticket id.\n"},
+                RPCExamples{
+                    HelpExampleCli("freezefundsforticket", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
+            }
+    .ToString());
+
+    pwallet->BlockUntilSyncedToCurrentChain();
+
+    auto locked_chain = pwallet->chain().lock();
+    LOCK(pwallet->cs_wallet);
+
+    CTxDestination dest = DecodeDestination(request.params[0].get_str());
+    if (!IsValidDestination(dest)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
+    }
+    if (dest.type() != typeid(CKeyID)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Only support PUBKEYHASH");
+    }
+
+    auto pubkeyID = boost::get<CKeyID>(dest);
+    CPubKey pubkey;
+    if (!pwallet->GetPubKey(pubkeyID, pubkey)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Public key not found");
+    }
+    auto locktime = (((chainActive.Tip()->nHeight / 100) + 1) * 100);
+    auto redeemScript = GenerateTicketScript(pubkey, locktime);
+    dest = CTxDestination(CScriptID(redeemScript));
+    auto scriptPubkey = GetScriptForDestination(dest);
+    //test
+    auto str = HexStr(redeemScript);
+    // Amount
+    auto nAmount = 188 * COIN;
+    //set change dest
+    std::shared_ptr<CReserveKey> rKey = std::make_shared<CReserveKey>(pwallet);
+    CPubKey changePubKey;
+    if (!rKey->GetReservedKey(changePubKey))
+        throw JSONRPCError(RPC_WALLET_ERROR, "Error reserved key");
+    CCoinControl coin_control;
+    coin_control.destChange = CTxDestination(changePubKey.GetID());
+
+    mapValue_t mapValue;
+    CTransactionRef tx = SendMoney(*locked_chain, pwallet, dest, nAmount, false, coin_control, std::move(mapValue));
+    ImportScript(pwallet, redeemScript, "tickets", true);
+    return tx->GetHash().GetHex();
+}
+
+UniValue spendticket(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+            RPCHelpMan{
+                "spendticket",
+                "\nSpend freezed output to address.\n",
+                {
+                    {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The bitcoin address to recvie."},
+                },
+                RPCResult{
+                    "\"txid\"                  (string) The ticket id.\n"},
+                RPCExamples{
+                    HelpExampleCli("spendticket", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
+            }
+    .ToString());
+    CTxDestination dest = DecodeDestination(request.params[0].get_str());
+    if (!IsValidDestination(dest)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
+    }
+
+    std::vector<COutput> vecOutputs;
+    {
+        auto locked_chain = pwallet->chain().lock();
+        LOCK(pwallet->cs_wallet);
+        pwallet->AvailableCoins(*locked_chain, vecOutputs);
+    }
+    LOCK(pwallet->cs_wallet);
+    COutPoint prevout;
+    CScript redeemScript;
+    CAmount nAmount = 0;
+    for (auto out : vecOutputs) {
+        const CScript& scriptPubKey = out.tx->tx->vout[out.i].scriptPubKey;
+        if (scriptPubKey.IsPayToScriptHash()) {
+            CTxDestination address;
+            if (!ExtractDestination(scriptPubKey, address))
+                continue;
+            const CScriptID& hash = boost::get<CScriptID>(address);
+            if (pwallet->GetCScript(hash, redeemScript)) {
+                prevout.hash = out.tx->tx->GetHash();
+                prevout.n = out.i;
+                nAmount = out.tx->tx->vout[out.i].nValue;
+                break;
+            }
+        }
+    }
+    if (prevout.IsNull() || redeemScript.empty()) {
+        throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Not enough tickets in wallet");
+    }
+    LOCK(cs_main);
+    auto txSize = 4 + 2 + 153 + 1 + 34 + 4;
+    CCoinControl coin_control;
+    auto fees = GetMinimumFee(*pwallet, txSize, coin_control, ::mempool, ::feeEstimator, nullptr);
+    CMutableTransaction tx;
+    tx.vin.resize(1);
+    tx.vin[0].prevout = prevout;
+    tx.vin[0].nSequence = 0;
+    CScript scriptPubKey = GetScriptForDestination(dest);
+    tx.vout.push_back(CTxOut(nAmount - fees, scriptPubKey));
+    tx.nLockTime = chainActive.Height() + 1;
+    //get key
+    CKey key;
+    //CPubKey()
+    //pwallet->GetKey()
+    //pwallet->SignTransaction();
+}
+
 UniValue abortrescan(const JSONRPCRequest& request); // in rpcdump.cpp
 UniValue dumpprivkey(const JSONRPCRequest& request); // in rpcdump.cpp
 UniValue importprivkey(const JSONRPCRequest& request);
@@ -4293,6 +4435,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "walletpassphrase",                 &walletpassphrase,              {"passphrase","timeout"} },
     { "wallet",             "walletpassphrasechange",           &walletpassphrasechange,        {"oldpassphrase","newpassphrase"} },
     { "wallet",             "walletprocesspsbt",                &walletprocesspsbt,             {"psbt","sign","sighashtype","bip32derivs"} },
+    { "wallet",             "freezefundsforticket",             &freezefundsforticket,          {"address"} },
 };
 // clang-format on
 
