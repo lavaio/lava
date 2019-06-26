@@ -5,6 +5,8 @@
 
 using namespace std;
 
+#define UNUSED_PARAMETER(expr)  do { (void)(expr); } while (0)
+
 #ifndef _WIN32
 #include <crypto/sph_shabal.h>
 #define _shabal  sph_shabal256
@@ -18,7 +20,7 @@ typedef shabal_context _shabal_context;
 void _shabal_init(void* ctx, unsigned out_size)
 {
 #ifndef _WIN32
-    UNREFERENCED_PARAMETER(out_size);
+    UNUSED_PARAMETER(out_size);
     sph_shabal256_init(ctx);
 #else
     shabal_init((shabal_context*)ctx, out_size);
@@ -28,8 +30,8 @@ void _shabal_init(void* ctx, unsigned out_size)
 void _shabal_close(void* ctx, unsigned ub, unsigned n, void* dst)
 {
 #ifndef _WIN32
-    UNREFERENCED_PARAMETER(ub);
-    UNREFERENCED_PARAMETER(n);
+    UNUSED_PARAMETER(ub);
+    UNUSED_PARAMETER(n);
     sph_shabal256_close(ctx, dst);
 #else
     shabal_close((shabal_context*)ctx, ub, n, dst);
