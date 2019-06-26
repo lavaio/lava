@@ -1,19 +1,40 @@
 #include "poc.h"
-//#include "shabal/shabal.h"
 #include "chain.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include <crypto/sph_shabal.h>
-#ifdef __cplusplus
-}
-#endif
-
-#include <vector>
 #include <immintrin.h>
+#include <vector>
 
 using namespace std;
+
+#ifndef _WIN32
+#include <crypto/sph_shabal.h>
+#define _shabal  sph_shabal256
+typedef sph_shabal256_context _shabal_context;
+#else
+#include "shabal/shabal.h"
+#define _shabal  shabal
+typedef shabal_context _shabal_context;
+#endif
+
+void _shabal_init(void* ctx, unsigned out_size)
+{
+#ifndef _WIN32
+    UNREFERENCED_PARAMETER(out_size);
+    sph_shabal256_init(ctx);
+#else
+    shabal_init((shabal_context*)ctx, out_size);
+#endif
+}
+
+void _shabal_close(void* ctx, unsigned ub, unsigned n, void* dst)
+{
+#ifndef _WIN32
+    UNREFERENCED_PARAMETER(ub);
+    UNREFERENCED_PARAMETER(n);
+    sph_shabal256_close(ctx, dst);
+#else
+    shabal_close((shabal_context*)ctx, ub, n, dst);
+#endif
+}
 
 #define HASH_SIZE 32
 #define HASH_CAP 4096
@@ -23,10 +44,6 @@ using namespace std;
 const uint64_t INITIAL_BASE_TARGET = 14660155037L;
 const uint64_t MAX_BASE_TARGET = 14660155037L;
 
-typedef sph_shabal_context shabal_context;
-#define shabal_init sph_shabal256_init;
-#define shabal sph_shabal256;
-#define shabal_close sph_shabal256_close;
 
 uint256 CalcGenerationSignature(uint256 lastSig, uint64_t lastPlotID)
 {
@@ -36,17 +53,17 @@ uint256 CalcGenerationSignature(uint256 lastSig, uint64_t lastPlotID)
     for (auto i = 0; i < sizeof(lastPlotID); i++) {
         signature[lastSig.size() + i] = *(vx + 7 - i);
     }
-    shabal_context ctx;
-    shabal_init(&ctx, 256);
-    shabal(&ctx, &signature[0], signature.size());
+    _shabal_context ctx;
+    _shabal_init(&ctx, 256);
+    _shabal(&ctx, &signature[0], signature.size());
     vector<unsigned char> res(32);
-    shabal_close(&ctx, 0, 0, &res[0]);
+    _shabal_close(&ctx, 0, 0, &res[0]);
     return uint256(res);
 }
 
 vector<uint8_t> genNonceChunk(const uint64_t plotID, const uint64_t nonce)
 {
-    shabal_context ctx;
+    _shabal_context ctx;
     //_mm256_zeroupper();
     vector<uint8_t> genData(16 + PLOT_SIZE);
     //put plotID
@@ -60,16 +77,16 @@ vector<uint8_t> genNonceChunk(const uint64_t plotID, const uint64_t nonce)
         genData[PLOT_SIZE + i] = xv[15 - i];
     }
     for (auto i = PLOT_SIZE; i > 0; i -= HASH_SIZE) {
-        shabal_init(&ctx, 256);
+        _shabal_init(&ctx, 256);
         auto len = PLOT_SIZE + 16 - i;
         if (len > HASH_CAP) len = HASH_CAP;
-        shabal(&ctx, &genData[i], len);
-        shabal_close(&ctx, 0, 0, &genData[i - HASH_SIZE]);
+        _shabal(&ctx, &genData[i], len);
+        _shabal_close(&ctx, 0, 0, &genData[i - HASH_SIZE]);
     }
-    shabal_init(&ctx, 256);
-    shabal(&ctx, &genData[0], 16 + PLOT_SIZE);
+    _shabal_init(&ctx, 256);
+    _shabal(&ctx, &genData[0], 16 + PLOT_SIZE);
     vector<uint8_t> final(32);
-    shabal_close(&ctx, 0, 0, &final[0]);
+    _shabal_close(&ctx, 0, 0, &final[0]);
     // XOR with final
     for (size_t i = 0; i < PLOT_SIZE; i++) {
         genData[i] ^= (final[i % HASH_SIZE]);
@@ -99,22 +116,22 @@ uint64_t CalcDeadline(const uint256 genSig, const uint64_t height, const uint64_
     scoopGen[37] = mov[2];
     scoopGen[38] = mov[1];
     scoopGen[39] = mov[0];
-    shabal_context ctx;
+    _shabal_context ctx;
     //_mm256_zeroupper();
-    shabal_init(&ctx, 256);
-    shabal(&ctx, &scoopGen[0], 40);
+    _shabal_init(&ctx, 256);
+    _shabal(&ctx, &scoopGen[0], 40);
     char genHash[32];
-    shabal_close(&ctx, 0, 0, genHash);
+    _shabal_close(&ctx, 0, 0, genHash);
     uint32_t scoop = (((unsigned char)genHash[31]) + 256 * (unsigned char)genHash[30]) % 4096;
 
     auto chunk = genNonceChunk(plotID, nonce);
     vector<uint8_t> sig(32 + 64);
     memcpy(&sig[0], genSig.begin(), genSig.size());
     memcpy(&sig[32], &chunk[scoop * 64], sizeof(uint8_t) * 64);
-    shabal_init(&ctx, 256);
-    shabal(&ctx, &sig[0], 64 + 32);
+    _shabal_init(&ctx, 256);
+    _shabal(&ctx, &sig[0], 64 + 32);
     vector<uint8_t> res(32);
-    shabal_close(&ctx, 0, 0, &res[0]);
+    _shabal_close(&ctx, 0, 0, &res[0]);
     uint64_t* wertung = (uint64_t*)&res[0];
     return *wertung;
 }
