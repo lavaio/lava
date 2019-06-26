@@ -67,7 +67,7 @@ static UniValue GetNetworkHashPS(int lookup, int height) {
     if (minTime == maxTime)
         return 0;
 
-    arith_uint256 workDiff = pb->nChainWork - pb0->nChainWork;
+    arith_uint256 workDiff = pb->nCumulativeDiff - pb0->nCumulativeDiff;
     int64_t timeDiff = maxTime - minTime;
 
     return workDiff.getdouble() / timeDiff;
@@ -583,7 +583,8 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
     UniValue aux(UniValue::VOBJ);
     aux.pushKV("flags", HexStr(COINBASE_FLAGS.begin(), COINBASE_FLAGS.end()));
 
-    arith_uint256 hashTarget = arith_uint256().SetCompact(pblock->nBits);
+    //TODO: remove this value, function SetCompact is wrong use
+    arith_uint256 hashTarget = arith_uint256().SetCompact(pblock->nBaseTarget);
 
     UniValue aMutable(UniValue::VARR);
     aMutable.push_back("time");
@@ -671,7 +672,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
         result.pushKV("weightlimit", (int64_t)MAX_BLOCK_WEIGHT);
     }
     result.pushKV("curtime", pblock->GetBlockTime());
-    result.pushKV("bits", strprintf("%08x", pblock->nBits));
+    result.pushKV("nBaseTarget", strprintf("%u", pblock->nBaseTarget));
     result.pushKV("height", (int64_t)(pindexPrev->nHeight+1));
 
     if (!pblocktemplate->vchCoinbaseCommitment.empty()) {

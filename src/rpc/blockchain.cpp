@@ -89,9 +89,9 @@ UniValue blockheaderToJSON(const CBlockIndex* tip, const CBlockIndex* blockindex
     result.pushKV("time", (int64_t)blockindex->nTime);
     result.pushKV("mediantime", (int64_t)blockindex->GetMedianTimePast());
     result.pushKV("nonce", (uint64_t)blockindex->nNonce);
-    result.pushKV("bits", strprintf("%08x", blockindex->nBits));
+    //result.pushKV("bits", strprintf("%08x", blockindex->nBits));
     result.pushKV("difficulty", GetDifficulty(blockindex));
-    result.pushKV("chainwork", blockindex->nChainWork.GetHex());
+    result.pushKV("cumulativeDiff", blockindex->nCumulativeDiff.GetHex());
     result.pushKV("nTx", (uint64_t)blockindex->nTx);
 
     if (blockindex->pprev)
@@ -131,15 +131,14 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
     result.pushKV("time", block.GetBlockTime());
     result.pushKV("mediantime", (int64_t)blockindex->GetMedianTimePast());
     result.pushKV("nonce", (uint64_t)block.nNonce);
-    result.pushKV("bits", strprintf("%08x", block.nBits));
+    //result.pushKV("bits", strprintf("%08x", block.nBits));
     //result.pushKV("difficulty", GetDifficulty(blockindex));
     result.pushKV("difficulty", 0.0);
     result.pushKV("deadline", block.nDeadline/block.nBaseTarget);
     result.pushKV("plotid", block.nPlotID);
-    result.pushKV("cumulativedifficulty", block.nCumulativeDiff);
     result.pushKV("generationsignature", block.genSign.ToString());
     result.pushKV("basetarget", block.nBaseTarget);
-    result.pushKV("chainwork", blockindex->nChainWork.GetHex());
+    result.pushKV("cumulativeDiff", blockindex->nCumulativeDiff.GetHex());
     result.pushKV("nTx", (uint64_t)blockindex->nTx);
 
     if (blockindex->pprev)
@@ -1320,7 +1319,7 @@ UniValue getblockchaininfo(const JSONRPCRequest& request)
     obj.pushKV("mediantime",            (int64_t)tip->GetMedianTimePast());
     obj.pushKV("verificationprogress",  GuessVerificationProgress(Params().TxData(), tip));
     obj.pushKV("initialblockdownload",  IsInitialBlockDownload());
-    obj.pushKV("chainwork",             tip->nChainWork.GetHex());
+    obj.pushKV("cumulativeDiff",        tip->nCumulativeDiff.GetHex());
     obj.pushKV("size_on_disk",          CalculateCurrentUsage());
     obj.pushKV("pruned",                fPruneMode);
     if (fPruneMode) {

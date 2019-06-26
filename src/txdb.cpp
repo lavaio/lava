@@ -269,7 +269,6 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
                 pindexNew->nVersion       = diskindex.nVersion;
                 pindexNew->hashMerkleRoot = diskindex.hashMerkleRoot;
                 pindexNew->nTime          = diskindex.nTime;
-                pindexNew->nBits          = diskindex.nBits;
                 pindexNew->nNonce         = diskindex.nNonce;
                 pindexNew->nStatus        = diskindex.nStatus;
                 pindexNew->nTx            = diskindex.nTx;
@@ -277,7 +276,6 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
                 pindexNew->nPlotID        = diskindex.nPlotID;
                 pindexNew->nBaseTarget    = diskindex.nBaseTarget;
                 pindexNew->nDeadline      = diskindex.nDeadline;
-                pindexNew->nCumulativeDiff = diskindex.nCumulativeDiff;
 
                 auto params = Params();
                 //TODO... fix genesis block
