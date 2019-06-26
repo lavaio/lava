@@ -3244,7 +3244,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
 
     // Check proof of work
     const Consensus::Params& consensusParams = params.GetConsensus();
-    if (block.nBits != 0 && params.NetworkIDString() != CBaseChainParams::REGTEST)
+    if (block.nBits != 0)
         return state.DoS(100, false, REJECT_INVALID, "bad-diffbits", false, "incorrect proof of work");
 
     // Check against checkpoints
@@ -3272,10 +3272,6 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
         (block.nVersion < 4 && nHeight >= consensusParams.BIP65Height))
         return state.Invalid(false, REJECT_OBSOLETE, strprintf("bad-version(0x%08x)", block.nVersion),
             strprintf("rejected nVersion=0x%08x block", block.nVersion));
-
-    if (params.NetworkIDString() == CBaseChainParams::REGTEST) {
-        return true;
-    }
     // Check deadline
     auto dl = CalcDeadline(&block, pindexPrev);
     if (dl != block.nDeadline) {
@@ -3384,7 +3380,6 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
         return state.DoS(100, false, REJECT_INVALID, "bad-blk-weight", false, strprintf("%s : weight limit failed", __func__));
     }
 
-    if (Params().NetworkIDString() == CBaseChainParams::REGTEST) return true;
     // check plotid
     auto script = block.vtx[0]->vout[0].scriptPubKey;
     CTxDestination dest;
