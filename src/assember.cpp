@@ -104,11 +104,13 @@ void CPOCBlockAssember::setNull()
 void CPOCBlockAssember::Interrupt()
 {
     thread->interrupt();
+    thread->join();
+    LogPrintf("CPOCBlockAssember stopped\n");
 }
 
 struct AssemberParams CPOCBlockAssember::AssemberItems()
 {
-    boost::lock_guard<boost::mutex> lock(mtx);
+	boost::lock_guard<boost::mutex> lock(mtx);
     auto p = AssemberParams{
         height,
         plotID,
@@ -121,7 +123,7 @@ struct AssemberParams CPOCBlockAssember::AssemberItems()
 void CPOCBlockAssember::SetAssemberItems(const int height, const uint64_t plotID, const uint64_t nonce, const uint64_t deadline, CScript& script)
 {
     boost::lock_guard<boost::mutex> lock(mtx);
-    this->genSig.exchange(genSig);
+	this->genSig.exchange(genSig);
     this->height = height;
     this->plotID = plotID;
     this->deadline = deadline;
