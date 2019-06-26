@@ -31,7 +31,7 @@ bool CPOCBlockAssember::UpdateDeadline(const int height, const uint64_t plotID, 
 		return false;
 	}
     auto params = Params();
-    if (deadline / indexPrev->nBaseTarget > params.GetTargetDeadline()) {
+    if (deadline / indexPrev->nBaseTarget > params.TargetDeadline()) {
         LogPrintf("Invalid deadline %uul\n", deadline);
         return false;
     }
