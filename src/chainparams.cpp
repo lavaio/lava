@@ -91,8 +91,9 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = 1510704000; // November 15th, 2017.
 
         // The best chain should have at least this much work.
-        // TODO: better minimumChainWork?
-        consensus.nMinimumCumulativeDiff = uint256S("0x000000000000000000000000000000000000000000000001000000004affffff");
+        // TODO: better cumulative diff?
+        // minimumCumulativeDiff = initialCumulativeDiff + 1
+        consensus.nMinimumCumulativeDiff = uint256S("0x000000000000000000000000000000000000000000000001000000004b000000");
 
         // By default assume that the signatures in ancestors of this block are valid.
         consensus.defaultAssumeValid = uint256S("0x0000000000000000000f1c54590ee18d15ec70e68c8cd4cfbadb1b4f11697eee"); //563378
