@@ -217,16 +217,18 @@ static UniValue getmineraddress(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (request.fHelp || request.params.size() != 0)
+    if (request.fHelp || request.params.size() > 1)
         throw std::runtime_error(
             RPCHelpMan{
                 "getmineraddress",
                 "\nReturns a new Bitcoin address for receiving coinbase output.\n",
-                {},
+                {
+                    {"new", RPCArg::Type::BOOL, /* default */ "true", "create a new address"},
+				},
                 RPCResult{
                     "\"address\"    (string) The miner bitcoin address\n"},
                 RPCExamples{
-                    HelpExampleCli("getmineraddress", "") + HelpExampleRpc("getmineraddress", "")},
+                    HelpExampleCli("getmineraddress", "\"new\"") + HelpExampleRpc("getmineraddress", "false")},
             }
                 .ToString());
 
@@ -236,11 +238,16 @@ static UniValue getmineraddress(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_WALLET_ERROR, "Error: This wallet has no available keys");
     }
 
-    std::string label;
+    std::string label = "miner";
+    bool isCreate = false;
     auto output_type = OutputType::LEGACY;
 
     if (!pwallet->IsLocked()) {
         pwallet->TopUpKeyPool();
+    }
+
+	if (!request.params[0].isNull()) {
+        isCreate = request.params[0].get_bool();
     }
 
     CKey key;
@@ -260,7 +267,7 @@ static UniValue getmineraddress(const JSONRPCRequest& request)
 
     std::vector<std::pair<int64_t, CKeyID>>::const_iterator firstItem = vKeyBirth.begin();
     // if the wallet already has a key, oupt put the legacy address of it
-    if (firstItem != vKeyBirth.end()) {
+    if (firstItem != vKeyBirth.end() && !isCreate ) {
         const CKeyID& keyid = firstItem->second;
         if (pwallet->GetKey(keyid, key)) {
             auto pubkey = key.GetPubKey();
@@ -4252,7 +4259,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "getaddressinfo",                   &getaddressinfo,                {"address"} },
     { "wallet",             "getbalance",                       &getbalance,                    {"dummy","minconf","include_watchonly"} },
     { "wallet",             "getnewaddress",                    &getnewaddress,                 {"label","address_type"} },
-	{ "wallet",             "getmineraddress",                  &getmineraddress,               {} },
+	{ "wallet",             "getmineraddress",                  &getmineraddress,               {"new"} },
     { "wallet",             "getrawchangeaddress",              &getrawchangeaddress,           {"address_type"} },
     { "wallet",             "getreceivedbyaddress",             &getreceivedbyaddress,          {"address","minconf"} },
     { "wallet",             "getreceivedbylabel",               &getreceivedbylabel,            {"label","minconf"} },
