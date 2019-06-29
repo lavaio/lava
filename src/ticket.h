@@ -4,14 +4,10 @@
 #include <script/script.h>
 #include <pubkey.h>
 #include <script/script.h>
-#include <script/standard.h>
 
 CScript GenerateTicketScript(const CPubKey keyid, const int lockHeight);
 
 bool GetPublicKeyFromScript(const CScript script, CPubKey& pubkey);
-
-class CTicket;
-using CTicketRef = std::shared_ptr<const CTicket>;
 
 class CTicket {
 public:
@@ -32,7 +28,7 @@ public:
 
     const uint32_t LockTime()const;
 
-    CTxDestination Owner() const;
+    CPubKey PublicKey() const;
 
     bool Invalid() const;
 private:
@@ -42,4 +38,5 @@ private:
     CScript scriptPubkey;
 };
 
+typedef std::shared_ptr<const CTicket> CTicketRef;
 #endif

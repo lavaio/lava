@@ -48,9 +48,9 @@ const uint32_t CTicket::LockTime() const
     return 0;
 }
 
-CTxDestination CTicket::Owner() const
+CPubKey CTicket::PublicKey() const
 {
-    return CTxDestination();
+    return CPubKey();
 }
 
 bool CTicket::Invalid() const 
