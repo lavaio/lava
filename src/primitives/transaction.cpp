@@ -113,3 +113,13 @@ std::string CTransaction::ToString() const
         str += "    " + tx_out.ToString() + "\n";
     return str;
 }
+
+bool CTransaction::IsTicketTx() const
+{
+    return false;
+}
+
+CTicketRef CTransaction::Ticket()
+{
+    return CTicketRef();
+}

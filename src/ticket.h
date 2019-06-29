@@ -4,14 +4,19 @@
 #include <script/script.h>
 #include <pubkey.h>
 #include <script/script.h>
+#include <script/standard.h>
 
 CScript GenerateTicketScript(const CPubKey keyid, const int lockHeight);
 
 bool GetPublicKeyFromScript(const CScript script, CPubKey& pubkey);
 
+class CTicket;
+using CTicketRef = std::shared_ptr<const CTicket>;
+
 class CTicket {
-    static const int32_t VERSION = 1;
 public:
+    static const int32_t VERSION = 1;
+
     enum CTicketState {
         IMMATURATE = 0,
         USEABLE,
@@ -20,8 +25,8 @@ public:
 
     CTicket(const uint256& txid, const uint32_t n, const CScript& redeemScript, const CScript &scriptPubkey);
 
-    CTicket() = delete;
-    ~CTicket() = delete;
+    CTicket() = default;
+    ~CTicket() = default;
 
     CTicketState State() const;
 

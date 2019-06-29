@@ -1,5 +1,4 @@
 #include <ticket.h>
-#include <script/standard.h>
 
 #include <vector>
 
@@ -49,9 +48,9 @@ const uint32_t CTicket::LockTime() const
     return 0;
 }
 
-CTxDestination CTicket::Owner() const 
+CTxDestination CTicket::Owner() const
 {
-
+    return CTxDestination();
 }
 
 bool CTicket::Invalid() const 
