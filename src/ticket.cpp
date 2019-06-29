@@ -1,4 +1,6 @@
 #include <ticket.h>
+#include <script/standard.h>
+
 #include <vector>
 
 using namespace std;
@@ -29,4 +31,30 @@ bool GetPublicKeyFromScript(const CScript script, CPubKey &pubkey)
         }
     }
     return false;
+}
+
+CTicket::CTicket(const uint256& txid, const uint32_t n, const CScript& redeemScript, const CScript &scriptPubkey)
+    :txid(txid), n(n), redeemScript(redeemScript), scriptPubkey(scriptPubkey)
+{
+    
+}
+
+CTicket::CTicketState CTicket::State() const
+{
+    return CTicket::IMMATURATE;
+}
+
+const uint32_t CTicket::LockTime() const
+{
+    return 0;
+}
+
+CTxDestination CTicket::Owner() const 
+{
+
+}
+
+bool CTicket::Invalid() const 
+{
+    return true;
 }
