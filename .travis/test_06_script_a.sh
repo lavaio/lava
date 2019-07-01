@@ -23,11 +23,11 @@ else
 fi
 END_FOLD
 
-mkdir build
-cd build || (echo "could not enter build directory"; exit 1)
+# mkdir build
+# cd build || (echo "could not enter build directory"; exit 1)
 
 BEGIN_FOLD configure
-DOCKER_EXEC ../configure --cache-file=config.cache $BITCOIN_CONFIG_ALL $BITCOIN_CONFIG || ( cat config.log && false)
+DOCKER_EXEC ../configure --prefix=$PWD/depends/x86_64-unknown-linux-gnu || ( cat config.log && false)
 END_FOLD
 
 # BEGIN_FOLD distdir
@@ -37,18 +37,18 @@ END_FOLD
 cd "bitcoin-$HOST" || (echo "could not enter distdir bitcoin-$HOST"; exit 1)
 
 BEGIN_FOLD configure
-DOCKER_EXEC ./configure --cache-file=../config.cache $BITCOIN_CONFIG_ALL $BITCOIN_CONFIG || ( cat config.log && false)
+DOCKER_EXEC ./configure --prefix=$PWD/depends/x86_64-unknown-linux-gnu || ( cat config.log && false)
 END_FOLD
 
 set -o errtrace
 trap 'DOCKER_EXEC "cat ${TRAVIS_BUILD_DIR}/sanitizer-output/* 2> /dev/null"' ERR
 
-BEGIN_FOLD build
-DOCKER_EXEC make src/bitcoind $MAKEJOBS || ( echo "Build failure. Verbose build follows." && DOCKER_EXEC make $GOAL V=1 ; false )
+BEGIN_FOLD src
+DOCKER_EXEC make bitcoind $MAKEJOBS || ( echo "Build failure. Verbose build follows." && DOCKER_EXEC make $GOAL V=1 ; false )
 END_FOLD
 
-BEGIN_FOLD build
-DOCKER_EXEC make src/bitcoin-cli $MAKEJOBS || ( echo "Build failure. Verbose build follows." && DOCKER_EXEC make $GOAL V=1 ; false )
+BEGIN_FOLD src
+DOCKER_EXEC make bitcoin-cli $MAKEJOBS || ( echo "Build failure. Verbose build follows." && DOCKER_EXEC make $GOAL V=1 ; false )
 END_FOLD
 
 cd ${TRAVIS_BUILD_DIR} || (echo "could not enter travis build dir $TRAVIS_BUILD_DIR"; exit 1)
