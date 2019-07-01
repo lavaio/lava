@@ -12,7 +12,7 @@ stages:
   - test
 env:
   global:
-    - MAKEJOBS=-j3
+    - MAKEJOBS=-j4
     - RUN_UNIT_TESTS=true
     - RUN_FUNCTIONAL_TESTS=true
     - RUN_FUZZ_TESTS=false
@@ -41,18 +41,18 @@ after_script:
 jobs:
   include:
 
-    - stage: lint
-      name: 'lint'
-      env:
-      cache: false
-      language: python
-      python: '3.4' # Oldest supported version according to doc/dependencies.md
-      install:
-        - set -o errexit; source .travis/lint_04_install.sh
-      before_script:
-        - set -o errexit; source .travis/lint_05_before_script.sh
-      script:
-        - set -o errexit; source .travis/lint_06_script.sh
+    # - stage: lint
+    #   name: 'lint'
+    #   env:
+    #   cache: false
+    #   language: python
+    #   python: '3.4' # Oldest supported version according to doc/dependencies.md
+    #   install:
+    #     - set -o errexit; source .travis/lint_04_install.sh
+    #   before_script:
+    #     - set -o errexit; source .travis/lint_05_before_script.sh
+    #   script:
+    #     - set -o errexit; source .travis/lint_06_script.sh
 
     - stage: test
       name: 'ARM  [GOAL: install]  [no unit or functional tests]'
