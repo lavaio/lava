@@ -4232,6 +4232,47 @@ UniValue walletcreatefundedpsbt(const JSONRPCRequest& request)
 
 extern void ImportScript(CWallet* const pwallet, const CScript& script, const std::string& strLabel, bool isRedeemScript) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet); // in rpcdump.cpp
 
+static CTransactionRef SendMoneyWithOpRet(interfaces::Chain::Lock& locked_chain, CWallet * const pwallet, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CScript optScritp, const CCoinControl& coin_control, mapValue_t mapValue)
+{
+    CAmount curBalance = pwallet->GetBalance();
+
+    // Check amount
+    if (nValue <= 0)
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid amount");
+
+    if (nValue > curBalance)
+        throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Insufficient funds");
+
+    if (pwallet->GetBroadcastTransactions() && !g_connman) {
+        throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
+    }
+
+    // Parse Bitcoin address
+    CScript scriptPubKey = GetScriptForDestination(address);
+
+    // Create and send the transaction
+    CReserveKey reservekey(pwallet);
+    CAmount nFeeRequired;
+    std::string strError;
+    std::vector<CRecipient> vecSend;
+    int nChangePosRet = -1;
+    CRecipient recipient = { scriptPubKey, nValue, fSubtractFeeFromAmount };
+    vecSend.push_back(recipient);
+    vecSend.push_back(CRecipient{optScritp, 0, false});
+    CTransactionRef tx;
+    if (!pwallet->CreateTransaction(locked_chain, vecSend, tx, reservekey, nFeeRequired, nChangePosRet, strError, coin_control)) {
+        if (!fSubtractFeeFromAmount && nValue + nFeeRequired > curBalance)
+            strError = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
+        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+    }
+    CValidationState state;
+    if (!pwallet->CommitTransaction(tx, std::move(mapValue), {} /* orderForm */, reservekey, g_connman.get(), state)) {
+        strError = strprintf("Error: The transaction was rejected! Reason given: %s", FormatStateMessage(state));
+        throw JSONRPCError(RPC_WALLET_ERROR, strError);
+    }
+    return tx;
+}
+
 UniValue freezefundsforticket(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
@@ -4278,8 +4319,7 @@ UniValue freezefundsforticket(const JSONRPCRequest& request)
     auto redeemScript = GenerateTicketScript(pubkey, locktime);
     dest = CTxDestination(CScriptID(redeemScript));
     auto scriptPubkey = GetScriptForDestination(dest);
-    //test
-    auto str = HexStr(redeemScript);
+    auto opRetScript = CScript() << OP_RETURN << CTicket::VERSION << ToByteVector(redeemScript);
     // Amount
     auto nAmount = 188 * COIN;
     //set change dest
@@ -4291,7 +4331,7 @@ UniValue freezefundsforticket(const JSONRPCRequest& request)
     coin_control.destChange = CTxDestination(changePubKey.GetID());
 
     mapValue_t mapValue;
-    CTransactionRef tx = SendMoney(*locked_chain, pwallet, dest, nAmount, false, coin_control, std::move(mapValue));
+    CTransactionRef tx = SendMoneyWithOpRet(*locked_chain, pwallet, dest, nAmount, false, opRetScript, coin_control, std::move(mapValue));
     ImportScript(pwallet, redeemScript, "tickets", true);
     return tx->GetHash().GetHex();
 }
