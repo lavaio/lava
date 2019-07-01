@@ -286,9 +286,8 @@ libbitcoin_server_a_SOURCES = \
   validation.cpp \
   validationinterface.cpp \
   versionbits.cpp \
-  ticket.cpp\
+  ticket.cpp \
   assember.cpp \
-
   $(BITCOIN_CORE_H)
 
 if !ENABLE_WALLET
@@ -336,6 +335,7 @@ libbitcoin_wallet_tool_a_SOURCES = \
 # crypto primitives library
 crypto_libbitcoin_crypto_base_a_CPPFLAGS = $(AM_CPPFLAGS)
 crypto_libbitcoin_crypto_base_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+crypto_libbitcoin_crypto_base_a_CFLAGS = -fPIC
 crypto_libbitcoin_crypto_base_a_SOURCES = \
   crypto/aes.cpp \
   crypto/aes.h \

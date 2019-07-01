@@ -36,7 +36,7 @@ static constexpr int64_t TIMESTAMP_WINDOW = MAX_FUTURE_BLOCK_TIME;
  */
 static constexpr int64_t MAX_BLOCK_TIME_GAP = 90 * 60;
 
-static constexpr uint64_t CUMULATIVE_DIFF_DENOM = 18446744073709551615;
+static constexpr uint64_t CUMULATIVE_DIFF_DENOM = 18446744073709551615U;
 
 class CBlockFileInfo
 {
