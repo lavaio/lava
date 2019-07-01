@@ -27,7 +27,7 @@ END_FOLD
 # cd build || (echo "could not enter build directory"; exit 1)
 
 BEGIN_FOLD configure
-DOCKER_EXEC ./configure || ( cat config.log && false)
+DOCKER_EXEC ../configure --cache-file=config.cache $BITCOIN_CONFIG_ALL $BITCOIN_CONFIG || ( cat config.log && false)
 END_FOLD
 
 # BEGIN_FOLD distdir
@@ -37,7 +37,7 @@ END_FOLD
 cd "bitcoin-$HOST" || (echo "could not enter distdir bitcoin-$HOST"; exit 1)
 
 BEGIN_FOLD configure
-DOCKER_EXEC ./configure || ( cat config.log && false)
+DOCKER_EXEC ./configure --cache-file=../config.cache $BITCOIN_CONFIG_ALL $BITCOIN_CONFIG || ( cat config.log && false)
 END_FOLD
 
 set -o errtrace
