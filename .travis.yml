@@ -1,10 +1,12 @@
 dist: xenial
 os: linux
 sudo: required
-language: cpp
-compiler:
-  - gcc
-  - clang
+language: minimal
+addons:
+  apt:
+    update: true
+before_install:
+  - sudo apt install clang llvm python3
 install:
   - pushd depends
   - make
