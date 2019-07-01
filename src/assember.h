@@ -5,7 +5,6 @@
 #include "scheduler.h"
 #include "script/script.h"
 #include "uint256.h"
-#include <boost/atomic.hpp>
 
 #include <stdint.h>
 
@@ -31,12 +30,12 @@ private:
     void checkDeadline();
 
 private:
-    boost::atomic<uint256> genSig;
-    boost::atomic_int height;
-    boost::atomic_uint64_t plotID;
-    boost::atomic_uint64_t nonce;
-    boost::atomic_uint64_t deadline;
-    boost::atomic<CScript> scriptPubKeyIn;
+    uint256 genSig;
+    int height;
+    uint64_t plotID;
+    uint64_t nonce;
+    uint64_t deadline;
+    CScript scriptPubKeyIn;
     std::shared_ptr<CScheduler> scheduler;
     std::shared_ptr<boost::thread> thread;
 };
