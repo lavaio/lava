@@ -132,8 +132,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
     result.pushKV("mediantime", (int64_t)blockindex->GetMedianTimePast());
     result.pushKV("nonce", (uint64_t)block.nNonce);
     //result.pushKV("bits", strprintf("%08x", block.nBits));
-    //result.pushKV("difficulty", GetDifficulty(blockindex));
-    result.pushKV("difficulty", 0.0);
+    result.pushKV("difficulty", GetDifficulty(blockindex));
     result.pushKV("deadline", block.nDeadline/block.nBaseTarget);
     result.pushKV("plotid", block.nPlotID);
     result.pushKV("generationsignature", block.genSign.ToString());
