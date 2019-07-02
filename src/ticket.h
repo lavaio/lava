@@ -3,11 +3,11 @@
 
 #include <script/script.h>
 #include <pubkey.h>
-#include <script/script.h>
 
 CScript GenerateTicketScript(const CPubKey keyid, const int lockHeight);
 
 bool GetPublicKeyFromScript(const CScript script, CPubKey& pubkey);
+bool GetRedeemFromScript(const CScript script, CScript& redeemscript);
 
 class CTicket {
 public:
@@ -16,7 +16,8 @@ public:
     enum CTicketState {
         IMMATURATE = 0,
         USEABLE,
-        OVERDUE
+        OVERDUE,
+		UNKNOW
     };
 
     CTicket(const uint256& txid, const uint32_t n, const CScript& redeemScript, const CScript &scriptPubkey);
@@ -24,9 +25,9 @@ public:
     CTicket() = default;
     ~CTicket() = default;
 
-    CTicketState State() const;
-
-    const uint32_t LockTime()const;
+    CTicketState State(int activeHeight) const;
+   
+	bool LockTime(int &height)const;
 
     CPubKey PublicKey() const;
 

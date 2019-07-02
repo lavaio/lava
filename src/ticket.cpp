@@ -1,6 +1,7 @@
 #include <ticket.h>
 
 #include <vector>
+#include <core_io.h>
 
 using namespace std;
 
@@ -32,28 +33,86 @@ bool GetPublicKeyFromScript(const CScript script, CPubKey &pubkey)
     return false;
 }
 
+bool GetRedeemFromScript(const CScript script, CScript& redeemscript)
+{
+	CScriptBase::const_iterator pc = script.begin();
+	opcodetype opcodeRet;
+	vector<unsigned char> vchRet;
+	if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_RETURN) {
+		vchRet.clear();
+		if (script.GetOp(pc, opcodeRet, vchRet)) {
+			vchRet.clear();
+			if (script.GetOp(pc, opcodeRet, vchRet)) {
+				redeemscript = CScript(vchRet.begin(),vchRet.end());
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+
 CTicket::CTicket(const uint256& txid, const uint32_t n, const CScript& redeemScript, const CScript &scriptPubkey)
     :txid(txid), n(n), redeemScript(redeemScript), scriptPubkey(scriptPubkey)
 {
     
 }
 
-CTicket::CTicketState CTicket::State() const
+CTicket::CTicketState CTicket::State(int activeHeight) const
 {
-    return CTicket::IMMATURATE;
+	int height;
+	if (LockTime(height)){
+		if (height > activeHeight){
+			return CTicketState::IMMATURATE;
+		}else if(height<(activeHeight) && (activeHeight)<(height+100)) {
+			return CTicketState::USEABLE;
+		}else{
+			return CTicketState::OVERDUE;
+		}
+	}
+	return CTicketState::UNKNOW;
 }
 
-const uint32_t CTicket::LockTime() const
+bool CTicket::LockTime(int &height) const
 {
-    return 0;
+	CScriptBase::const_iterator pc = redeemScript.begin();
+	opcodetype opcodeRet;
+	vector<unsigned char> vchRet;
+	if (redeemScript.GetOp(pc, opcodeRet, vchRet) && CScriptNum(vchRet,true)> 0) {
+		height = CScriptNum(vchRet, false).getint();
+		return true;
+	}
+	return false;
 }
 
 CPubKey CTicket::PublicKey() const
 {
-    return CPubKey();
+	CPubKey pubkey;
+	if(GetPublicKeyFromScript(redeemScript,pubkey)){
+		return pubkey;
+	}
+	return CPubKey();
 }
 
 bool CTicket::Invalid() const 
 {
-    return true;
+	CScriptBase::const_iterator pc = redeemScript.begin();
+	opcodetype opcodeRet;
+	vector<unsigned char> vchRet;
+	if (redeemScript.GetOp(pc, opcodeRet, vchRet) && CScriptNum(vchRet,true)> 0) {
+		vchRet.clear();
+		if (redeemScript.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_CHECKLOCKTIMEVERIFY) {
+			vchRet.clear();
+			if (redeemScript.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_DROP) {
+				vchRet.clear();
+				if (redeemScript.GetOp(pc, opcodeRet, vchRet) && vchRet.size() == 33) {
+					vchRet.clear();
+					if (redeemScript.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_CHECKSIG) {
+						return false;
+					}   
+				}
+			}
+		}
+	}
+	return true;
 }

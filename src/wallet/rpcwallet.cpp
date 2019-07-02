@@ -3013,6 +3013,149 @@ static UniValue listunspent(const JSONRPCRequest& request)
     return results;
 }
 
+bool GetTicketList(CWallet * const pwallet, CChain& chainActive, bool include_unsafe, const int nMinDepth, const int nMaxDepth, std::set<CTxDestination> destinations, std::vector<CTicketRef>& ptickets){
+	// Make sure the chainActive exists.
+	if (chainActive.Tip()==nullptr)
+		return false;
+
+	int height = chainActive.Tip()->nHeight;
+	for (auto i=0;i<=height;i++){
+		// scan the blockchain to find ticket tx.
+		CBlock block;
+		if (ReadBlockFromDisk(block, chainActive[i], Params().GetConsensus())) {
+			for (int i=0;i<block.vtx.size();i++) {
+				auto tx = block.vtx[i];
+				if (tx->IsTicketTx()){
+					CTicketRef pTicket = tx->Ticket(i);
+					ptickets.push_back(pTicket);
+				}
+			}
+		}
+	}
+	return true;
+}
+
+static UniValue listtickets(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() > 4)
+        throw std::runtime_error(
+            RPCHelpMan{"listunspent",
+                "\nReturns array of unspent tickets\n"
+                "with between minconf and maxconf (inclusive) confirmations.\n"
+                "Optionally filter to only include txouts paid to specified addresses.\n",
+                {
+                    {"minconf", RPCArg::Type::NUM, /* default */ "1", "The minimum confirmations to filter"},
+                    {"maxconf", RPCArg::Type::NUM, /* default */ "9999999", "The maximum confirmations to filter"},
+                    {"addresses", RPCArg::Type::ARR, /* default */ "empty array", "A json array of bitcoin addresses to filter",
+                        {
+                            {"address", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "bitcoin address"},
+                        },
+                    },
+                    {"include_unsafe", RPCArg::Type::BOOL, /* default */ "true", "Include outputs that are not safe to spend\n"
+            "                  See description of \"safe\" attribute below."},
+                },
+                RPCResult{
+            "[                   (array of json object)\n"
+            "  {\n"
+            "    \"address\" : \"address\",    (string) the bitcoin address\n"
+            "    \"lockheight\" : \"lockheight\",(int) The height above which the tickets could be withdrawed\n"
+            "    \"useable\" : \"useable\",   (bool) whether the tickets can be withdrawed\n"
+            "    \"amount\" : x.xxx,         (numeric) the transaction output amount in " + CURRENCY_UNIT + "\n"
+            "    \"confirmations\" : n,      (numeric) The number of confirmations\n"
+            "  }\n"
+            "  ,...\n"
+            "]\n"
+                },
+                RPCExamples{
+                    HelpExampleCli("listunspent", "")
+            + HelpExampleCli("listtickets", "6 9999999 \"[\\\"1PGFqEzfmQch1gKD3ra4k18PNj3tTUUSqg\\\",\\\"1LtvqCaApEdUGFkpKMM4MstjcaL4dKg8SP\\\"]\"")
+            + HelpExampleRpc("listtickets", "6, 9999999 \"[\\\"1PGFqEzfmQch1gKD3ra4k18PNj3tTUUSqg\\\",\\\"1LtvqCaApEdUGFkpKMM4MstjcaL4dKg8SP\\\"]\"")
+            + HelpExampleCli("listtickets", "6 9999999 '[]' true '{ \"minimumAmount\": 0.005 }'")
+            + HelpExampleRpc("listtickets", "6, 9999999, [] , true, { \"minimumAmount\": 0.005 } ")
+                },
+            }.ToString());
+
+    int nMinDepth = 1;
+    if (!request.params[0].isNull()) {
+        RPCTypeCheckArgument(request.params[0], UniValue::VNUM);
+        nMinDepth = request.params[0].get_int();
+    }
+
+    int nMaxDepth = 9999999;
+    if (!request.params[1].isNull()) {
+        RPCTypeCheckArgument(request.params[1], UniValue::VNUM);
+        nMaxDepth = request.params[1].get_int();
+    }
+
+    std::set<CTxDestination> destinations;
+    if (!request.params[2].isNull()) {
+        RPCTypeCheckArgument(request.params[2], UniValue::VARR);
+        UniValue inputs = request.params[2].get_array();
+        for (unsigned int idx = 0; idx < inputs.size(); idx++) {
+            const UniValue& input = inputs[idx];
+            CTxDestination dest = DecodeDestination(input.get_str());
+            if (!IsValidDestination(dest)) {
+                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, std::string("Invalid Bitcoin address: ") + input.get_str());
+            }
+            if (!destinations.insert(dest).second) {
+                throw JSONRPCError(RPC_INVALID_PARAMETER, std::string("Invalid parameter, duplicated address: ") + input.get_str());
+            }
+        }
+    }
+
+    bool include_unsafe = true;
+    if (!request.params[3].isNull()) {
+        RPCTypeCheckArgument(request.params[3], UniValue::VBOOL);
+        include_unsafe = request.params[3].get_bool();
+    }
+
+	// use GetTicketList to construct a list of tickets
+	UniValue results(UniValue::VARR);
+	std::vector<CTicketRef> tickets;
+	GetTicketList(pwallet, chainActive, include_unsafe, nMinDepth, nMaxDepth, destinations, tickets);
+	
+	for (auto iter = tickets.begin();iter!=tickets.end();iter++){
+		UniValue entry(UniValue::VOBJ);
+		int height;
+
+		if((*iter)->Invalid()){
+			return 1;
+		}
+		auto pubkey = (*iter)->PublicKey();
+		if (!pubkey.IsValid() || !(*iter)->LockTime(height))
+			continue;
+		std::string state;
+		switch ((*iter)->State(chainActive.Tip()->nHeight)){
+		case 0: 
+			state="IMMATURATE";
+			break;
+		case 1: 
+			state="USEABLE";
+			break;
+		case 2: 
+			state= "OVERDUE";
+			break;
+		case 3: 
+			state= "UNKNOW";
+			break;
+		}
+		
+		entry.pushKV("address", EncodeDestination(pubkey.GetID()));
+		entry.pushKV("lockheight", height);
+		entry.pushKV("state",state);
+		results.push_back(entry);
+	}
+
+    return results;
+}
+
 void FundTransaction(CWallet* const pwallet, CMutableTransaction& tx, CAmount& fee_out, int& change_position, UniValue options)
 {
     // Make sure the results are valid at least up to the most recent block
@@ -4463,6 +4606,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "listsinceblock",                   &listsinceblock,                {"blockhash","target_confirmations","include_watchonly","include_removed"} },
     { "wallet",             "listtransactions",                 &listtransactions,              {"label|dummy","count","skip","include_watchonly"} },
     { "wallet",             "listunspent",                      &listunspent,                   {"minconf","maxconf","addresses","include_unsafe","query_options"} },
+	{ "wallet",             "listtickets",                      &listtickets,                   {"minconf","maxconf","addresses","include_unsafe"} },
     { "wallet",             "listwalletdir",                    &listwalletdir,                 {} },
     { "wallet",             "listwallets",                      &listwallets,                   {} },
     { "wallet",             "loadwallet",                       &loadwallet,                    {"filename"} },

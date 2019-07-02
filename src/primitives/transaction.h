@@ -360,7 +360,7 @@ public:
 
     bool IsTicketTx() const;
 
-    CTicketRef Ticket();
+    CTicketRef Ticket(uint32_t n) const;
 };
 
 /** A mutable version of CTransaction. */

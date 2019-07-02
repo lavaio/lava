@@ -105,7 +105,7 @@ void CPOCBlockAssember::Interrupt()
 {
     thread->interrupt();
     thread->join();
-    LogPrintf("CPOCBlockAssember stopped\n");
+    LogPrintf("CPOCBlockAssember exited\n");
 }
 
 struct AssemberParams CPOCBlockAssember::AssemberItems()
