@@ -32,7 +32,11 @@ public:
     CPubKey PublicKey() const;
 
     bool Invalid() const;
+
+    const uint256& GetHash() const { return hash; }
 private:
+    // only memory
+    uint256 hash; //hash(txid, n, redeemScript)
     uint256 txid;
     uint32_t n;
     CScript redeemScript;
