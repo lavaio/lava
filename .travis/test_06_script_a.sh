@@ -34,11 +34,11 @@ END_FOLD
 # DOCKER_EXEC make distdir VERSION=$HOST
 # END_FOLD
 
-cd "bitcoin-$HOST" || (echo "could not enter distdir bitcoin-$HOST"; exit 1)
+# cd "bitcoin-$HOST" || (echo "could not enter distdir bitcoin-$HOST"; exit 1)
 
-BEGIN_FOLD configure
-DOCKER_EXEC ./configure --cache-file=../config.cache $BITCOIN_CONFIG_ALL $BITCOIN_CONFIG || ( cat config.log && false)
-END_FOLD
+# BEGIN_FOLD configure
+# DOCKER_EXEC ./configure --cache-file=../config.cache $BITCOIN_CONFIG_ALL $BITCOIN_CONFIG || ( cat config.log && false)
+# END_FOLD
 
 set -o errtrace
 trap 'DOCKER_EXEC "cat ${TRAVIS_BUILD_DIR}/sanitizer-output/* 2> /dev/null"' ERR
