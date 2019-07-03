@@ -3026,8 +3026,12 @@ bool GetTicketList(CWallet * const pwallet, CChain& chainActive, bool include_un
 			for (int i=0;i<block.vtx.size();i++) {
 				auto tx = block.vtx[i];
 				if (tx->IsTicketTx()){
-					CTicketRef pTicket = tx->Ticket(i);
-					ptickets.push_back(pTicket);
+					try{					
+						CTicketRef pTicket = tx->Ticket(i);
+						ptickets.push_back(pTicket);
+					}catch(...){
+						return false;
+					}
 				}
 			}
 		}
@@ -3123,13 +3127,10 @@ static UniValue listtickets(const JSONRPCRequest& request)
 	
 	for (auto iter = tickets.begin();iter!=tickets.end();iter++){
 		UniValue entry(UniValue::VOBJ);
-		int height;
 
-		if((*iter)->Invalid()){
-			return 1;
-		}
+		int height = (*iter)->LockTime();
 		auto pubkey = (*iter)->PublicKey();
-		if (!pubkey.IsValid() || !(*iter)->LockTime(height))
+		if (!pubkey.IsValid() || height == 0)
 			continue;
 		std::string state;
 		switch ((*iter)->State(chainActive.Tip()->nHeight)){

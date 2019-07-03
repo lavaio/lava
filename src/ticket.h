@@ -27,13 +27,21 @@ public:
 
     CTicketState State(int activeHeight) const;
    
-	bool LockTime(int &height)const;
+	int LockTime()const;
 
     CPubKey PublicKey() const;
 
     bool Invalid() const;
 
     const uint256& GetHash() const { return hash; }
+
+	template <typename Stream>
+	inline void Serialize(Stream& s) const {
+		s << txid;
+		s << n;
+		s << redeemScript;
+	}
+
 private:
     // only memory
     uint256 hash; //hash(txid, n, redeemScript)
@@ -41,6 +49,7 @@ private:
     uint32_t n;
     CScript redeemScript;
     CScript scriptPubkey;
+	uint256 ComputeHash() const;
 };
 
 typedef std::shared_ptr<const CTicket> CTicketRef;
