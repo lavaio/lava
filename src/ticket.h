@@ -34,6 +34,7 @@ public:
     bool Invalid() const;
 
     const uint256& GetHash() const { return hash; }
+	uint32_t GetIndex() const {return n;}
 
 	template <typename Stream>
 	inline void Serialize(Stream& s) const {
@@ -42,14 +43,21 @@ public:
 		s << redeemScript;
 	}
 
+	template <typename Stream>
+	inline void Unserialize(Stream& s) {
+		s >> txid;
+		s >> n;
+		s >> redeemScript;
+	}
+	
 private:
     // only memory
-    uint256 hash; //hash(txid, n, redeemScript)
-    uint256 txid;
-    uint32_t n;
-    CScript redeemScript;
-    CScript scriptPubkey;
-	uint256 ComputeHash() const;
+   uint256 hash; //hash(txid, n, redeemScript)
+   uint256 txid;
+   uint32_t n;
+   CScript redeemScript;
+   CScript scriptPubkey;
+   uint256 ComputeHash() const;
 };
 
 typedef std::shared_ptr<const CTicket> CTicketRef;

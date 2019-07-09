@@ -42,7 +42,7 @@
 #include <util/system.h>
 #include <validationinterface.h>
 #include <warnings.h>
-
+#include <index/ticketindex.h>
 #include <future>
 #include <sstream>
 
@@ -2264,6 +2264,11 @@ bool CChainState::DisconnectTip(CValidationState& state, const CChainParams& cha
     CBlock& block = *pblock;
     if (!ReadBlockFromDisk(block, pindexDelete, chainparams.GetConsensus()))
         return AbortNode(state, "Failed to read block");
+
+	if (!g_ticket->DisconnectBlock(block, pindexDelete)){
+		return error("DisconnectTip(): DisconnectTicket %s failed", pindexDelete->GetBlockHash().ToString());
+	}
+
     // Apply the block atomically to the chain state.
     int64_t nStart = GetTimeMicros();
     {
@@ -2409,6 +2414,12 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
                 InvalidBlockFound(pindexNew, state);
             return error("%s: ConnectBlock %s failed, %s", __func__, pindexNew->GetBlockHash().ToString(), FormatStateMessage(state));
         }
+
+		bool ticketConnected = g_ticket->ConnectBlock(*pthisBlock, pindexNew);
+		if (!ticketConnected) {
+			return error("%s: ConnectTicket %s failed, %s", __func__, pindexNew->GetBlockHash().ToString(), FormatStateMessage(state));
+		}
+
         nTime3 = GetTimeMicros();
         nTimeConnectTotal += nTime3 - nTime2;
         LogPrint(BCLog::BENCH, "  - Connect total: %.2fms [%.2fs (%.2fms/blk)]\n", (nTime3 - nTime2) * MILLI, nTimeConnectTotal * MICRO, nTimeConnectTotal * MILLI / nBlocksTotal);

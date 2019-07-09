@@ -3014,25 +3014,48 @@ static UniValue listunspent(const JSONRPCRequest& request)
 }
 
 bool GetTicketList(CWallet * const pwallet, CChain& chainActive, bool include_unsafe, const int nMinDepth, const int nMaxDepth, std::set<CTxDestination> destinations, std::vector<CTicketRef>& ptickets){
+	// those params are all used in AvailableCoins
+	CAmount nMinimumAmount = 0;
+	CAmount nMaximumAmount = MAX_MONEY;
+	CAmount nMinimumSumAmount = MAX_MONEY;
+	uint64_t nMaximumCount = 0;
+
+	// Make sure the results are valid at least up to the most recent block
+	// the user could have gotten from another RPC command prior to now
+	pwallet->BlockUntilSyncedToCurrentChain();
+
 	// Make sure the chainActive exists.
 	if (chainActive.Tip()==nullptr)
 		return false;
 
-	int height = chainActive.Tip()->nHeight;
-	for (auto i=0;i<=height;i++){
-		// scan the blockchain to find ticket tx.
-		CBlock block;
-		if (ReadBlockFromDisk(block, chainActive[i], Params().GetConsensus())) {
-			for (int i=0;i<block.vtx.size();i++) {
-				auto tx = block.vtx[i];
-				if (tx->IsTicketTx()){
-					try{					
-						CTicketRef pTicket = tx->Ticket(i);
-						ptickets.push_back(pTicket);
-					}catch(...){
-						return false;
-					}
-				}
+	UniValue results(UniValue::VARR);
+	std::vector<COutput> vecOutputs;
+	{
+		auto locked_chain = pwallet->chain().lock();
+		LOCK(pwallet->cs_wallet);
+		pwallet->AvailableCoins(*locked_chain, vecOutputs, !include_unsafe, nullptr, nMinimumAmount, nMaximumAmount, nMinimumSumAmount, nMaximumCount, nMinDepth, nMaxDepth);
+	}
+
+	LOCK(pwallet->cs_wallet);
+
+	std::vector<uint256> hashSet;
+	for (int i=0; i<vecOutputs.size(); i++) {
+		// scan the vout to find ticket tx.
+		auto out = vecOutputs[i];
+		auto tx = out.tx->tx;
+		auto hash = tx->GetHash();
+
+		bool hash_existed = false;
+		if (std::find(hashSet.begin(), hashSet.end(), hash) != hashSet.end())
+			hash_existed = true;
+
+		if (tx->IsTicketTx() && !hash_existed){
+			try{					
+				CTicketRef pTicket = tx->Ticket();
+				ptickets.push_back(pTicket);
+				hashSet.push_back(hash);
+			}catch(...){
+				return false;
 			}
 		}
 	}
@@ -4554,6 +4577,56 @@ UniValue spendticket(const JSONRPCRequest& request)
     //pwallet->SignTransaction();
 }
 
+UniValue wallethaskey(const JSONRPCRequest& request)
+{
+	std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+	CWallet* const pwallet = wallet.get();
+
+	if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+		return NullUniValue;
+	}
+
+	if (request.fHelp || request.params.size() != 1)
+		throw std::runtime_error(
+			RPCHelpMan{
+				"wallethaskey",
+				"\ncheck whether this address is in key pool.\n",
+			{
+				{"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The bitcoin address to recvie ticket(only keyid)."},
+			},
+			RPCResult{
+				"\"isIn\"                  (bool) whether in or not.\n"},
+				RPCExamples{
+				HelpExampleCli("wallethaskey", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
+			}
+	.ToString());
+
+	pwallet->BlockUntilSyncedToCurrentChain();
+
+	auto locked_chain = pwallet->chain().lock();
+	LOCK(pwallet->cs_wallet);
+
+	CTxDestination dest = DecodeDestination(request.params[0].get_str());
+	if (!IsValidDestination(dest)) {
+		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
+	}
+	if (dest.type() != typeid(CKeyID)) {
+		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Only support PUBKEYHASH");
+	}
+
+	auto pubkeyID = boost::get<CKeyID>(dest);
+	auto keypool = pwallet->GetAllReserveKeys();
+
+	UniValue entry(UniValue::VOBJ);
+	if (pwallet->HaveKey(pubkeyID)){
+		// this key is already in the wallet
+		entry.pushKV("isIn", 1);
+	}else{
+		entry.pushKV("isIn", 0);
+	}
+	return entry;
+}
+
 UniValue abortrescan(const JSONRPCRequest& request); // in rpcdump.cpp
 UniValue dumpprivkey(const JSONRPCRequest& request); // in rpcdump.cpp
 UniValue importprivkey(const JSONRPCRequest& request);
@@ -4628,6 +4701,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "walletpassphrasechange",           &walletpassphrasechange,        {"oldpassphrase","newpassphrase"} },
     { "wallet",             "walletprocesspsbt",                &walletprocesspsbt,             {"psbt","sign","sighashtype","bip32derivs"} },
     { "wallet",             "freezefundsforticket",             &freezefundsforticket,          {"address"} },
+	{ "wallet",             "wallethaskey",						&wallethaskey,				    {"address"} },
 };
 // clang-format on
 

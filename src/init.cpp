@@ -41,6 +41,7 @@
 #include <shutdown.h>
 #include <timedata.h>
 #include <txdb.h>
+#include <index/ticketindex.h>
 #include <txmempool.h>
 #include <torcontrol.h>
 #include <ui_interface.h>
@@ -1641,10 +1642,10 @@ bool AppInitMain(InitInterfaces& interfaces)
     fFeeEstimatesInitialized = true;
 
     // ********************************************************* Step 8: start indexers
-    if (gArgs.GetBoolArg("-txindex", DEFAULT_TXINDEX)) {
-        g_txindex = MakeUnique<TxIndex>(nTxIndexCache, false, fReindex);
-        g_txindex->Start();
-    }
+
+    g_txindex = MakeUnique<TxIndex>(nTxIndexCache, false, fReindex);
+    g_txindex->Start();
+	g_ticket = MakeUnique<TicketIndex>(nTxIndexCache, false, fReindex);
 
     // ********************************************************* Step 9: load wallet
     for (const auto& client : interfaces.chain_clients) {
