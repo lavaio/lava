@@ -7,10 +7,9 @@
 
 using namespace std;
 
-CScript GenerateTicketScript(const CPubKey keyid, const int lockHeight)
+CScript GenerateTicketScript(const CKeyID keyid, const int lockHeight)
 {
-    //auto script = CScript() << CScriptNum(lockHeight) << OP_CHECKLOCKTIMEVERIFY << OP_DROP << OP_DUP << OP_HASH160 << ToByteVector(keyid) << OP_EQUALVERIFY << OP_CHECKSIG;
-    auto script = CScript() << CScriptNum(lockHeight) << OP_CHECKLOCKTIMEVERIFY << OP_DROP << ToByteVector(keyid) << OP_CHECKSIG;
+    auto script = CScript() << CScriptNum(lockHeight) << OP_CHECKLOCKTIMEVERIFY << OP_DROP << OP_DUP << OP_HASH160 << ToByteVector(keyid) << OP_EQUALVERIFY << OP_CHECKSIG;
     return std::move(script);
 }
 

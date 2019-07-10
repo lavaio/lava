@@ -4,7 +4,7 @@
 #include <script/script.h>
 #include <pubkey.h>
 
-CScript GenerateTicketScript(const CPubKey keyid, const int lockHeight);
+CScript GenerateTicketScript(const CKeyID keyid, const int lockHeight);
 
 bool GetPublicKeyFromScript(const CScript script, CPubKey& pubkey);
 bool GetRedeemFromScript(const CScript script, CScript& redeemscript);
