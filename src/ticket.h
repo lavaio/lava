@@ -31,7 +31,7 @@ public:
    
 	int LockTime()const;
 
-    CPubKey PublicKey() const;
+	CKeyID KeyID() const;
 
     bool Invalid() const;
 

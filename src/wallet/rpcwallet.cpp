@@ -3152,8 +3152,8 @@ static UniValue listtickets(const JSONRPCRequest& request)
 		UniValue entry(UniValue::VOBJ);
 
 		int height = (*iter)->LockTime();
-		auto pubkey = (*iter)->PublicKey();
-		if (!pubkey.IsValid() || height == 0)
+		auto keyid = (*iter)->KeyID();
+		if (keyid.size() == 0 || height == 0)
 			continue;
 		std::string state;
 		switch ((*iter)->State(chainActive.Tip()->nHeight)){
@@ -3171,7 +3171,7 @@ static UniValue listtickets(const JSONRPCRequest& request)
 			break;
 		}
 		
-		entry.pushKV("address", EncodeDestination(pubkey.GetID()));
+		entry.pushKV("address", EncodeDestination(keyid));
 		entry.pushKV("lockheight", height);
 		entry.pushKV("state",state);
 		results.push_back(entry);
