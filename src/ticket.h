@@ -6,7 +6,7 @@
 
 CScript GenerateTicketScript(const CKeyID keyid, const int lockHeight);
 
-bool GetPublicKeyFromScript(const CScript script, CPubKey& pubkey);
+bool GetKeyIDFromScript(const CScript script, CKeyID& keyid);
 bool GetRedeemFromScript(const CScript script, CScript& redeemscript);
 
 class CTicket {
@@ -29,7 +29,7 @@ public:
    
 	int LockTime()const;
 
-    CPubKey PublicKey() const;
+	CKeyID KeyID() const;
 
     bool Invalid() const;
 

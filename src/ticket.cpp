@@ -13,7 +13,7 @@ CScript GenerateTicketScript(const CKeyID keyid, const int lockHeight)
     return std::move(script);
 }
 
-bool GetPublicKeyFromScript(const CScript script, CPubKey &pubkey)
+bool GetKeyIDFromScript(const CScript script, CKeyID &keyid)
 {
     CScriptBase::const_iterator pc = script.begin();
     opcodetype opcodeRet;
@@ -24,9 +24,21 @@ bool GetPublicKeyFromScript(const CScript script, CPubKey &pubkey)
             vchRet.clear();
             if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_DROP) {
                 vchRet.clear();
-                if (script.GetOp(pc, opcodeRet, vchRet) && vchRet.size() == 33) {
-                    pubkey = CPubKey(vchRet);
-                    return true;
+                if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_DUP) {
+					vchRet.clear();
+					if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_HASH160) {
+						vchRet.clear();
+						if (script.GetOp(pc, opcodeRet, vchRet) && vchRet.size() == 20) {
+							keyid = CKeyID(uint160(vchRet));
+							if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_EQUALVERIFY) {
+								vchRet.clear();
+								if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_CHECKSIG) {
+									vchRet.clear();
+									return true;
+								}
+							}
+						}
+					}
                 }
             }
         }
@@ -101,13 +113,14 @@ int CTicket::LockTime() const
 	return 0;
 }
 
-CPubKey CTicket::PublicKey() const
+
+CKeyID CTicket::KeyID() const
 {
-	CPubKey pubkey;
-	if(GetPublicKeyFromScript(redeemScript,pubkey)){
-		return pubkey;
+	CKeyID keyid;
+	if(GetKeyIDFromScript(redeemScript,keyid)){
+		return keyid;
 	}
-	return CPubKey();
+	return CKeyID();
 }
 
 bool CTicket::Invalid() const 
