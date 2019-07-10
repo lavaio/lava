@@ -146,7 +146,7 @@ bool CTransaction::IsTicketTx() const
 	CScript scriptzero;
 	bool HasTicketVout = false;
 	for (auto i=0; i<vout.size();i++){
-		if (vout[i].nValue==0){
+		if (vout[i].nValue == 0){
 			// from 0 value vout's script decode the redeemScript.
 			CScript script = vout[i].scriptPubKey;
 			scriptzero = script;

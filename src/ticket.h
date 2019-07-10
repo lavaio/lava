@@ -6,6 +6,8 @@
 
 CScript GenerateTicketScript(const CKeyID keyid, const int lockHeight);
 
+bool DecodeTicketScript(const CScript redeemScript, CKeyID& keyID, int &lockHeight);
+
 bool GetPublicKeyFromScript(const CScript script, CPubKey& pubkey);
 bool GetRedeemFromScript(const CScript script, CScript& redeemscript);
 

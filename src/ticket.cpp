@@ -13,6 +13,27 @@ CScript GenerateTicketScript(const CKeyID keyid, const int lockHeight)
     return std::move(script);
 }
 
+bool DecodeTicketScript(const CScript redeemScript, CKeyID& keyID, int &lockHeight)
+{
+    CScriptBase::const_iterator pc = redeemScript.begin();
+    opcodetype opcodeRet;
+    vector<unsigned char> vchRet;
+    if (redeemScript.GetOp(pc, opcodeRet, vchRet)) {
+        lockHeight = CScriptNum(vchRet, true).getint();
+        if (redeemScript.GetOp(pc, opcodeRet, vchRet) 
+            && redeemScript.GetOp(pc, opcodeRet, vchRet) 
+            && redeemScript.GetOp(pc, opcodeRet, vchRet) 
+            && redeemScript.GetOp(pc, opcodeRet, vchRet)
+            && redeemScript.GetOp(pc, opcodeRet, vchRet)) {
+            if (vchRet.size() == 20) {
+                keyID = CKeyID(uint160(vchRet));
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 bool GetPublicKeyFromScript(const CScript script, CPubKey &pubkey)
 {
     CScriptBase::const_iterator pc = script.begin();
