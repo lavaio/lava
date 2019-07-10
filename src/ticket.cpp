@@ -50,7 +50,6 @@ bool GetPublicKeyFromScript(const CScript script, CPubKey &pubkey)
 					if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_HASH160) {
 						vchRet.clear();
 						if (script.GetOp(pc, opcodeRet, vchRet) && vchRet.size() == 20) {
-							keyid = CKeyID(uint160(vchRet));
 							if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_EQUALVERIFY) {
 								vchRet.clear();
 								if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_CHECKSIG) {
@@ -137,11 +136,10 @@ int CTicket::LockTime() const
 
 CKeyID CTicket::KeyID() const
 {
-	CKeyID keyid;
-	if(GetKeyIDFromScript(redeemScript,keyid)){
-		return keyid;
-	}
-	return CKeyID();
+	CKeyID keyID;
+    int lockHeight = 0;
+    DecodeTicketScript(redeemScript, keyID, lockHeight);
+	return keyID;
 }
 
 bool CTicket::Invalid() const 
