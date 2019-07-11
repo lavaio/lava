@@ -107,6 +107,8 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
     result.pushKV("hash", blockindex->GetBlockHash().GetHex());
     const CBlockIndex* pnext;
     int confirmations = ComputeNextBlockAndDepth(tip, blockindex, pnext);
+    uint64_t baseTarget = blockindex->pprev ? blockindex->pprev->nBaseTarget : block.nBaseTarget;
+
     result.pushKV("confirmations", confirmations);
     result.pushKV("strippedsize", (int)::GetSerializeSize(block, PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS));
     result.pushKV("size", (int)::GetSerializeSize(block, PROTOCOL_VERSION));
@@ -132,9 +134,8 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
     result.pushKV("mediantime", (int64_t)blockindex->GetMedianTimePast());
     result.pushKV("nonce", (uint64_t)block.nNonce);
     //result.pushKV("bits", strprintf("%08x", block.nBits));
-    //result.pushKV("difficulty", GetDifficulty(blockindex));
-    result.pushKV("difficulty", 0.0);
-    result.pushKV("deadline", block.nDeadline/block.nBaseTarget);
+    result.pushKV("difficulty", GetDifficulty(blockindex));
+    result.pushKV("deadline", block.nDeadline/baseTarget);
     result.pushKV("plotid", block.nPlotID);
     result.pushKV("generationsignature", block.genSign.ToString());
     result.pushKV("basetarget", block.nBaseTarget);
