@@ -36,7 +36,10 @@ public:
     bool Invalid() const;
 
     const uint256& GetHash() const { return hash; }
+	const uint256& GetTxHash() const { return txid; }
 	uint32_t GetIndex() const {return n;}
+	const CScript& GetRedeemScript() const { return redeemScript; }
+	const CScript& GetScriptPubkey() const { return scriptPubkey; }
 
 	template <typename Stream>
 	inline void Serialize(Stream& s) const {

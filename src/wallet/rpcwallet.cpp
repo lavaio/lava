@@ -39,7 +39,7 @@
 #include <wallet/walletutil.h>
 #include <ticket.h>
 #include <wallet/fees.h>
-
+#include <index/ticketindex.h>
 #include <stdint.h>
 
 #include <univalue.h>
@@ -3091,11 +3091,10 @@ static UniValue listtickets(const JSONRPCRequest& request)
                 RPCResult{
             "[                   (array of json object)\n"
             "  {\n"
+			"    \"tickethash\" : x.xxx,	(string)the tickethash\n"
             "    \"address\" : \"address\",    (string) the bitcoin address\n"
             "    \"lockheight\" : \"lockheight\",(int) The height above which the tickets could be withdrawed\n"
-            "    \"useable\" : \"useable\",   (bool) whether the tickets can be withdrawed\n"
-            "    \"amount\" : x.xxx,         (numeric) the transaction output amount in " + CURRENCY_UNIT + "\n"
-            "    \"confirmations\" : n,      (numeric) The number of confirmations\n"
+            "    \"state\" : \"useable\",   (bool) whether the tickets can be withdrawed\n"
             "  }\n"
             "  ,...\n"
             "]\n"
@@ -3153,6 +3152,7 @@ static UniValue listtickets(const JSONRPCRequest& request)
 
 		int height = (*iter)->LockTime();
 		auto keyid = (*iter)->KeyID();
+		uint256 tickethash = (*iter)->GetHash();
 		if (keyid.size() == 0 || height == 0)
 			continue;
 		std::string state;
@@ -3170,7 +3170,7 @@ static UniValue listtickets(const JSONRPCRequest& request)
 			state= "UNKNOW";
 			break;
 		}
-		
+		entry.pushKV("tickethash", tickethash.ToString());
 		entry.pushKV("address", EncodeDestination(keyid));
 		entry.pushKV("lockheight", height);
 		entry.pushKV("state",state);
@@ -4458,7 +4458,7 @@ UniValue freezefundsforticket(const JSONRPCRequest& request)
                     {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The bitcoin address to recvie ticket(only keyid)."},
                 },
                 RPCResult{
-                    "\"txid\"                  (string) The ticket id.\n"},
+                    "\"txid\"                  (string) The tx id.\n"},
                 RPCExamples{
                     HelpExampleCli("freezefundsforticket", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
             }
@@ -4478,7 +4478,7 @@ UniValue freezefundsforticket(const JSONRPCRequest& request)
     }
 
     auto keyID = boost::get<CKeyID>(dest);
-    auto locktime = (((chainActive.Tip()->nHeight / 100) + 1) * 100);
+    auto locktime = (((chainActive.Tip()->nHeight / 18) + 1) * 18);
     auto redeemScript = GenerateTicketScript(keyID, locktime);
     dest = CTxDestination(CScriptID(redeemScript));
     auto scriptPubkey = GetScriptForDestination(dest);
@@ -4545,32 +4545,58 @@ UniValue spendticket(const JSONRPCRequest& request)
                     {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The bitcoin address to recvie."},
                 },
                 RPCResult{
-                    "\"txid\"                  (string) The ticket id.\n"},
+                    "\"txid\"                  (string) The tx id.\n"},
                 RPCExamples{
                     HelpExampleCli("spendticket", "\"8199ceda82a056700475d645e2a0cd588b6853e87e1b4b8a459814078799dd87\" 0 \"02c800b17576a91402b4cc47243c92b66d19b57e85cbcf63f0fe6c2888ac\" \"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
             }
     .ToString());
-    auto txid = ParseHashV(request.params[0], "params 1");
+	auto ticketid = ParseHashV(request.params[0], "params 1");
+	CTicket ticket;
+	if (!g_ticket->GetTicket(ticketid,ticket)){
+		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No such ticket.");
+	}
+
+	auto txid = ticket.GetTxHash();
+	auto redeemScript = ticket.GetRedeemScript();
+	auto scriptPubkey = ticket.GetScriptPubkey();
+
     auto prevTx = MakeTransactionRef();
     //LOCK(cs_main);
     uint256 hashBlock;
     if (!GetTransaction(txid, prevTx, Params().GetConsensus(), hashBlock)) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No such gettransaction.");
     }
-    if (request.params[2].get_str().size() == 0) {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid redeem script");
-    }
-    CScript redeemScript;
-    std::vector<unsigned char> scriptData(ParseHexV(request.params[2], "argument"));
-    redeemScript = CScript(scriptData.begin(), scriptData.end());
+
     {
-        //TODO: check redeemScript
+        // check redeemScript
+		CScriptID scriptid;
+		auto ticketscript = scriptPubkey;
+		CScriptBase::const_iterator pc = ticketscript.begin();
+		opcodetype opcodeRet;
+		std::vector<unsigned char> vchRet;
+		if (ticketscript.GetOp(pc, opcodeRet, vchRet) 
+			&& ticketscript.GetOp(pc, opcodeRet, vchRet)) {
+			scriptid = CScriptID(uint160(vchRet));
+			if (!ticketscript.GetOp(pc, opcodeRet, vchRet) || opcodeRet != OP_EQUAL) {
+				throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid ticket ScriptPubkey");
+			}
+		}else{
+			throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid ticket ScriptPubkey");
+		}
+
+		// parese the dest from redeemscript
+		CScriptID dest = CScriptID(redeemScript);
+
+		if (dest != scriptid){
+			throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid ticket RedeemScript");
+		}
     }
-    auto vout = request.params[1].get_int();
+
+	auto vout = ticket.GetIndex();
     if (vout < 0 || vout >= prevTx->vout.size()) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid params");
     }
-    CTxDestination dest = DecodeDestination(request.params[3].get_str());
+    CTxDestination dest = DecodeDestination(request.params[1].get_str());
     if (!IsValidDestination(dest)) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
     }
@@ -4597,6 +4623,11 @@ UniValue spendticket(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_TRANSACTION_REJECTED, errStr);
     }
     return HexStr(spendTxID);
+}
+
+UniValue freetickets(const JSONRPCRequest& request){
+	UniValue entry(UniValue::VOBJ);
+	return entry;
 }
 
 UniValue wallethaskey(const JSONRPCRequest& request)
