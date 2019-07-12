@@ -108,14 +108,23 @@ std::vector<CTicket> TicketIndex::ListTickets(CBlockIndex* pindex, size_t count)
 
 bool TicketIndex::GetTicket(const uint256& ticketId, CTicket& ticket)
 {
-	return Read(std::make_pair(DB_TICKETINDEX, ticketId), ticket);
+	std::pair<std::pair<std::pair<std::pair<uint256, uint256>, uint32_t>, CScript>, CScript> value;
+	if(Read(std::make_pair(DB_TICKETINDEX, ticketId), value)){
+		uint256 ticketid = value.first.first.first.first;
+		uint256 txid = value.first.first.first.second;
+		uint32_t voutindex = value.first.first.second;
+		CScript redeemscript = value.first.second;
+		CScript scriptpubkey = value.second;
+		ticket.setValue(ticketid, txid, voutindex, redeemscript, scriptpubkey);
+		return true;
+	}
 }
 
 bool TicketIndex::WriteTicket(const CTicket ticket, const uint256 blockhash)
 {
 	CDBBatch batch(*this);
 	batch.Write(std::make_pair(std::make_pair(DB_TICKETINDEX_SPENT, blockhash),ticket.GetHash()), 1);
-	batch.Write(std::make_pair(DB_TICKETINDEX,ticket.GetHash()), ticket);
+	batch.Write(std::make_pair(DB_TICKETINDEX,ticket.GetHash()),std::make_pair(std::make_pair(std::make_pair(std::make_pair(ticket.GetHash(),ticket.GetTxHash()),ticket.GetIndex()),ticket.GetRedeemScript()),ticket.GetScriptPubkey()));
 	return WriteBatch(batch);
 }
 

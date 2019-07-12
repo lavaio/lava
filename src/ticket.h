@@ -40,6 +40,13 @@ public:
 	uint32_t GetIndex() const {return n;}
 	const CScript& GetRedeemScript() const { return redeemScript; }
 	const CScript& GetScriptPubkey() const { return scriptPubkey; }
+	void setValue(uint256 ticketid, uint256 txid, uint32_t voutindex, CScript redeemscript, CScript scriptpubkey){
+		this->hash = ticketid;
+		this->txid = txid;
+		this->n = voutindex;
+		this->redeemScript = redeemscript;
+		this->scriptPubkey = scriptpubkey;
+	}
 
 	template <typename Stream>
 	inline void Serialize(Stream& s) const {

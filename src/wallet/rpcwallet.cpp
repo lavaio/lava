@@ -4533,7 +4533,7 @@ UniValue spendticket(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (request.fHelp || request.params.size() != 4)
+    if (request.fHelp || request.params.size() != 2)
         throw std::runtime_error(
             RPCHelpMan{
                 "spendticket",
@@ -4622,7 +4622,7 @@ UniValue spendticket(const JSONRPCRequest& request)
     if (TransactionError::OK != BroadcastTransaction(tx, spendTxID, errStr, highfee)) {
         throw JSONRPCError(RPC_TRANSACTION_REJECTED, errStr);
     }
-    return HexStr(spendTxID);
+    return spendTxID.GetHex();
 }
 
 UniValue freetickets(const JSONRPCRequest& request){
