@@ -72,23 +72,26 @@ void CPOCBlockAssember::CreateNewBlock(const CScript& scriptPubKeyIn)
 
 void CPOCBlockAssember::checkDeadline()
 {
-    LOCK(cs_main);
-    if (deadline == 0)
-        return;
-    auto lastBlockTime = chainActive.Tip()->GetBlockHeader().GetBlockTime();
-    auto ts = ((deadline / chainActive.Tip()->nBaseTarget) * 1000);
-    //check the chainindex tip is 1 height lower than newBlockHeight input;
-    //if not, that means the plotid, dl, nonce are all not for this chain tip to produce new block!
-    if (chainActive.Tip()->nHeight != (height-1)) {
-        LogPrintf("AssemberInfo Mismatch: these plotit, deadline and nonce are all for producing the BlockHeight %u, but here the function wants to produce the %u height Block!", height, chainActive.Tip()->nHeight);
-        setNull();
+	if (deadline == 0)
 		return;
-    }
-    auto dl = (lastBlockTime * 1000) + ts;
-    if (GetTimeMillis() >= dl) {
-        CreateNewBlock(scriptPubKeyIn);
-        setNull();
-    }
+	uint64_t dl;
+	{
+		LOCK(cs_main);
+		auto lastBlockTime = chainActive.Tip()->GetBlockHeader().GetBlockTime();
+		auto ts = ((deadline / chainActive.Tip()->nBaseTarget) * 1000);
+		// check the chainindex tip is 1 height lower than newBlockHeight input;
+		// if not, that means the plotid, dl, nonce are all not for this chain tip to produce new block!
+		if (chainActive.Tip()->nHeight != (height-1)) {
+			LogPrintf("AssemberInfo Mismatch: these plotit, deadline and nonce are all for producing the BlockHeight %u, but here the function wants to produce the %u height Block!", height, chainActive.Tip()->nHeight);
+			setNull();
+			return;
+		}
+		dl = (lastBlockTime * 1000) + ts;
+	}
+	if (GetTimeMillis() >= dl) {
+		CreateNewBlock(scriptPubKeyIn);
+		setNull();
+	}
 }
 
 void CPOCBlockAssember::setNull()
