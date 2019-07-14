@@ -6,6 +6,7 @@
 std::unique_ptr<TicketIndex> g_ticket;
 constexpr char DB_TICKETINDEX_SPENT = 'B';
 constexpr char DB_TICKETINDEX = 'T';
+constexpr char DB_TICKETPRICE = 'P';
 
 TicketIndex::TicketIndex(size_t n_cache_size, bool f_memory, bool f_wipe)
     :CDBWrapper(GetDataDir() / "indexes" / "ticketindex", n_cache_size, f_memory, f_wipe)
@@ -18,14 +19,23 @@ TicketIndex::~TicketIndex()
 
 bool TicketIndex::ConnectBlock(const CBlock& block, CBlockIndex* pindex)
 {
-    //key:B + blockhash + tickethash
+	if (pindex == nullptr) {
+		return false;
+	}
+    //key:'B' + blockhash + tickethash
     //value: 1
 
-    //key: T + tickethash
+    //key: 'T' + tickethash
     //value: cticket
 	uint256 blockhash;
 	ReadBestTicket(blockhash);
 
+	uint64_t prevTicketPrice;
+	if (pindex->pprev == nullptr) {
+		prevTicketPrice = 25;
+	} else {
+		ReadTicketPrice(pindex->pprev->GetBlockHash(), prevTicketPrice);
+	}
 	// pindex->pprev is the tip of the ActiveChain
 	// it means that pindex is 1 block higher than ActiveChain.
 	if (pindex->GetBlockHash() != blockhash){
@@ -36,7 +46,13 @@ bool TicketIndex::ConnectBlock(const CBlock& block, CBlockIndex* pindex)
 				CTicketRef ticket;
 				try{
 					ticket = tx.Ticket();
-				}catch(...){
+
+					// check if ticket price is equal to ticket price received
+					CAmount value = tx.vout[ticket->GetIndex()].nValue;
+					if (value != prevTicketPrice) {
+						return false;
+					}
+				} catch(...){
 					continue;
 				}			
 				// write the ticket into DB
@@ -46,7 +62,10 @@ bool TicketIndex::ConnectBlock(const CBlock& block, CBlockIndex* pindex)
 			}
 		}
 	}
+	
 	WriteBestTicket(pindex->GetBlockHash());
+	WriteTicketPrice(pindex->GetBlockHash(), CalculateTicketPrice(pindex, prevTicketPrice));
+
     return true;
 }
 
@@ -72,7 +91,9 @@ bool TicketIndex::DisconnectBlock(const CBlock& block, CBlockIndex* pindexDelete
 	}
 
 	WriteBestTicket(pindexDelete->GetBlockHash());
-    return true;
+	bool isErasedP = Erase(std::make_pair(DB_TICKETPRICE, pindexDelete->GetBlockHash()), false);
+
+	return isErasedP;
 }
 
 // this API is used to calculate ticket price.
@@ -120,11 +141,51 @@ bool TicketIndex::GetTicket(const uint256& ticketId, CTicket& ticket)
 	}
 }
 
+uint64_t TicketIndex::CalculateTicketPrice(CBlockIndex* pindex, uint64_t prevPrice)
+{	
+	if (pindex == nullptr || pindex->nHeight < 2048) {
+		return 25.0f;
+	} 
+
+	if (pindex->nHeight % 2048 != 0) {
+		return prevPrice;
+	}
+
+	float ticketPrice;
+	std::vector<CTicket> ticketList = ListTickets(pindex, 2048);
+	int32_t sumTickets = ticketList.size();
+
+	if (sumTickets >= (2048+204)) {
+		ticketPrice = (prevPrice*105)/100;
+	} else if (sumTickets <= (2048-204)) {
+		ticketPrice = (prevPrice*95)/100;
+	} else {
+		ticketPrice = prevPrice;
+	}
+
+	return ticketPrice;
+}
+
 bool TicketIndex::WriteTicket(const CTicket ticket, const uint256 blockhash)
 {
 	CDBBatch batch(*this);
 	batch.Write(std::make_pair(std::make_pair(DB_TICKETINDEX_SPENT, blockhash),ticket.GetHash()), 1);
 	batch.Write(std::make_pair(DB_TICKETINDEX,ticket.GetHash()),std::make_pair(std::make_pair(std::make_pair(std::make_pair(ticket.GetHash(),ticket.GetTxHash()),ticket.GetIndex()),ticket.GetRedeemScript()),ticket.GetScriptPubkey()));
+	return WriteBatch(batch);
+}
+
+bool TicketIndex::ReadTicketPrice(const uint256 blockhash, uint64_t& ticketPrice)
+{
+	std::pair<uint64_t, int> value;
+	bool isRead = Read(std::make_pair(DB_TICKETPRICE, blockhash), value);
+	ticketPrice = value.first;
+	return isRead;
+}
+
+bool TicketIndex::WriteTicketPrice(const uint256 blockhash, const uint64_t ticketPrice)
+{
+	CDBBatch batch(*this);
+	batch.Write(std::make_pair(DB_TICKETPRICE, blockhash), ticketPrice);
 	return WriteBatch(batch);
 }
 
@@ -136,7 +197,7 @@ bool TicketIndex::ReadBestTicket(uint256& blockhash){
 }
 
 // record the best ticket into disk for sync.
-bool TicketIndex::WriteBestTicket(uint256 blockhash){
+bool TicketIndex::WriteBestTicket(const uint256 blockhash){
 	CDBBatch batch(*this);
 	batch.Write(DB_TICKETINDEX, blockhash);
 	return WriteBatch(batch);

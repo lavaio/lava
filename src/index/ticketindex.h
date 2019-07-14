@@ -24,10 +24,14 @@ public:
 
     bool GetTicket(const uint256& ticketId, CTicket& ticket);
 
+    uint64_t CalculateTicketPrice(CBlockIndex* pindex, uint64_t prevPrice);
+
 private:
     bool WriteTicket(const CTicket ticket, const uint256 blockhash);
+    bool ReadTicketPrice(const uint256 blochash, uint64_t& ticketPrice);
+    bool WriteTicketPrice(const uint256 blochash, const uint64_t ticketPrice);
 	bool ReadBestTicket(uint256& blockhash);
-	bool WriteBestTicket(uint256 blockhash);
+	bool WriteBestTicket(const uint256 blockhash);
 };
 
 // The global ticket index
