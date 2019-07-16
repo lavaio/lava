@@ -1,20 +1,23 @@
-#include "assember.h"
+#include <assember.h>
+#include <chainparams.h>
+#include <logging.h>
+#include <miner.h>
+#include <poc.h>
+#include <util/time.h>
+#include <validation.h>
+#include <key_io.h>
+#include <actiondb.h>
+
 #include <boost/bind.hpp>
-#include "chainparams.h"
-#include "logging.h"
-#include "miner.h"
-#include "poc.h"
-#include "util/time.h"
-#include "validation.h"
 
 CPOCBlockAssember::CPOCBlockAssember()
     : scheduler(std::make_shared<CScheduler>())
 {
-    setNull();
+    SetNull();
     auto f = boost::bind(&CScheduler::serviceQueue, scheduler.get());
     thread = std::make_shared<boost::thread>(f);
     const auto interval = 200;
-    scheduler->scheduleEvery(std::bind(&CPOCBlockAssember::checkDeadline, this), interval);
+    scheduler->scheduleEvery(std::bind(&CPOCBlockAssember::CheckDeadline, this), interval);
 }
 
 CPOCBlockAssember::~CPOCBlockAssember()
@@ -22,16 +25,16 @@ CPOCBlockAssember::~CPOCBlockAssember()
     thread->interrupt();
 }
 
-bool CPOCBlockAssember::UpdateDeadline(const int height, const uint64_t plotID, const uint64_t nonce, const uint64_t deadline, CScript& script)
+bool CPOCBlockAssember::UpdateDeadline(const int height, const CKeyID& keyid, const uint64_t nonce, const uint64_t deadline)
 {
-    auto indexPrev = chainActive.Tip();
+    auto prevIndex = chainActive.Tip();
     
-    if (indexPrev->nHeight != (height - 1)) {
-        LogPrintf("chainActive has been update, the new index is %uul, but the height to be produced is %uul\n", indexPrev->nHeight, height);
+    if (prevIndex->nHeight != (height - 1)) {
+        LogPrintf("chainActive has been update, the new index is %uul, but the height to be produced is %uul\n", prevIndex->nHeight, height);
 		return false;
 	}
     auto params = Params();
-    if (deadline / indexPrev->nBaseTarget > params.TargetDeadline()) {
+    if (deadline / prevIndex->nBaseTarget > params.TargetDeadline()) {
         LogPrintf("Invalid deadline %uul\n", deadline);
         return false;
     }
@@ -41,23 +44,51 @@ bool CPOCBlockAssember::UpdateDeadline(const int height, const uint64_t plotID, 
         return false;
     }
 
-    auto generationSignature = CalcGenerationSignature(indexPrev->genSign, indexPrev->nPlotID);
-    if (CalcDeadline(generationSignature, indexPrev->nHeight + 1, plotID, nonce) != deadline) {
+    auto plotID = keyid.GetPlotID();
+    auto generationSignature = CalcGenerationSignature(prevIndex->genSign, prevIndex->nPlotID);
+    if (CalcDeadline(generationSignature, height, plotID, nonce) != deadline) {
         LogPrintf("Deadline inconformity %uul\n", deadline);
         return false;
     }
-    auto ts = (deadline / indexPrev->nBaseTarget);
-    LogPrintf("Update new deadline: %u, now: %u, target: %u\n", ts, GetTimeMillis() / 1000, indexPrev->nTime + ts);
-    SetAssemberItems(height, plotID, nonce, deadline, script);
+    auto ts = (deadline / prevIndex->nBaseTarget);
+    LogPrintf("Update new deadline: %u, now: %u, target: %u\n", ts, GetTimeMillis() / 1000, prevIndex->nTime + ts);
+
+    {
+        boost::lock_guard<boost::mutex> lock(mtx);
+        this->height = height;
+        this->keyid = keyid;
+        this->genSig = genSig;
+        this->nonce = nonce;
+        this->deadline = deadline;
+        auto lastBlockTime = prevIndex->GetBlockHeader().GetBlockTime();
+        auto ts = ((deadline / chainActive.Tip()->nBaseTarget) * 1000);
+        this->dl = (lastBlockTime * 1000) + ts;
+    }
     return true;
 }
 
-void CPOCBlockAssember::CreateNewBlock(const CScript& scriptPubKeyIn)
+void CPOCBlockAssember::CreateNewBlock()
 {
-    auto item = AssemberItems();
-    LogPrintf("CPOCBlockAssember CreateNewBlock, plotid: %u nonce:%u newheight:%u deadline:%u utc:%u\n", item.plotID, item.nonce, item.height, item.deadline, GetTimeMillis()/1000);
+    int height{ 0 };
+    CKeyID form;
+    uint256 genSig;
+    uint64_t deadline{ 0 };
+    uint64_t nonce{ 0 };
+    {
+        boost::lock_guard<boost::mutex> lock(mtx);
+        height = this->height;
+        form = this->keyid;
+        genSig = this->genSig;
+        nonce = this->nonce;
+        deadline = this->deadline;
+    }
+    auto plotid = form.GetPlotID();
+    LogPrintf("CPOCBlockAssember CreateNewBlock, plotid: %u nonce:%u newheight:%u deadline:%u utc:%u\n", plotid, nonce, height, deadline, GetTimeMillis()/1000);
     auto params = Params();
-    auto blk = BlockAssembler(params).CreateNewBlock(scriptPubKeyIn, item.nonce, item.plotID, item.deadline);
+    auto to = g_relationdb->To(form);
+    auto target = to.IsNull() ? form : to;
+    auto scriptPubKeyIn = GetScriptForDestination(CTxDestination(target));
+    auto blk = BlockAssembler(params).CreateNewBlock(scriptPubKeyIn, nonce, plotid, deadline);
     if (blk) {
         uint32_t extraNonce = 0;
         IncrementExtraNonce(&blk->block, chainActive.Tip(), extraNonce);
@@ -70,35 +101,24 @@ void CPOCBlockAssember::CreateNewBlock(const CScript& scriptPubKeyIn)
     }
 }
 
-void CPOCBlockAssember::checkDeadline()
+void CPOCBlockAssember::CheckDeadline()
 {
-    LOCK(cs_main);
-    if (deadline == 0)
+    if (dl == 0)
         return;
-    auto lastBlockTime = chainActive.Tip()->GetBlockHeader().GetBlockTime();
-    auto ts = ((deadline / chainActive.Tip()->nBaseTarget) * 1000);
-    //check the chainindex tip is 1 height lower than newBlockHeight input;
-    //if not, that means the plotid, dl, nonce are all not for this chain tip to produce new block!
-    if (chainActive.Tip()->nHeight != (height-1)) {
-        LogPrintf("AssemberInfo Mismatch: these plotit, deadline and nonce are all for producing the BlockHeight %u, but here the function wants to produce the %u height Block!", height, chainActive.Tip()->nHeight);
-        setNull();
-		return;
-    }
-    auto dl = (lastBlockTime * 1000) + ts;
     if (GetTimeMillis() >= dl) {
-        CreateNewBlock(scriptPubKeyIn);
-        setNull();
+        CreateNewBlock();
+        SetNull();
     }
 }
 
-void CPOCBlockAssember::setNull()
+void CPOCBlockAssember::SetNull()
 {
     height = 0;
-	plotID = 0;
     nonce = 0;
     deadline = 0;
     genSig = uint256();
-    scriptPubKeyIn = CScript();
+    keyid.SetNull();
+    dl = 0;
 }
 
 void CPOCBlockAssember::Interrupt()
@@ -106,27 +126,4 @@ void CPOCBlockAssember::Interrupt()
     thread->interrupt();
     thread->join();
     LogPrintf("CPOCBlockAssember stopped\n");
-}
-
-struct AssemberParams CPOCBlockAssember::AssemberItems()
-{
-	boost::lock_guard<boost::mutex> lock(mtx);
-    auto p = AssemberParams{
-        height,
-        plotID,
-        nonce,
-        deadline,
-        scriptPubKeyIn};
-    return std::move(p);
-}
-
-void CPOCBlockAssember::SetAssemberItems(const int height, const uint64_t plotID, const uint64_t nonce, const uint64_t deadline, CScript& script)
-{
-    boost::lock_guard<boost::mutex> lock(mtx);
-    this->genSig = genSig;
-    this->height = height;
-    this->plotID = plotID;
-    this->deadline = deadline;
-    this->nonce = nonce;
-    this->scriptPubKeyIn = script;
 }

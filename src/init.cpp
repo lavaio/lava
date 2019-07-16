@@ -41,6 +41,7 @@
 #include <shutdown.h>
 #include <timedata.h>
 #include <txdb.h>
+#include <actiondb.h>
 #include <txmempool.h>
 #include <torcontrol.h>
 #include <ui_interface.h>
@@ -1693,7 +1694,8 @@ bool AppInitMain(InitInterfaces& interfaces)
     } else {
         fHaveGenesis = true;
     }
-
+    //
+    g_relationdb.reset(new CRelationDB(nBlockTreeDBCache));
     if (gArgs.IsArgSet("-blocknotify"))
         uiInterface.NotifyBlockTip_connect(BlockNotifyCallback);
 

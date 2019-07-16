@@ -42,6 +42,7 @@
 #include <util/system.h>
 #include <validationinterface.h>
 #include <warnings.h>
+#include <actiondb.h>
 
 #include <future>
 #include <sstream>
@@ -260,7 +261,7 @@ std::atomic_bool g_is_mempool_loaded{false};
 /** Constant stuff for coinbase transactions we create: */
 CScript COINBASE_FLAGS;
 
-const std::string strMessageMagic = "Bitcoin Signed Message:\n";
+const std::string strMessageMagic = "Lava Signed Message:\n";
 
 // Internal stuff
 namespace {
@@ -2292,6 +2293,10 @@ bool CChainState::DisconnectTip(CValidationState& state, const CChainParams& cha
         }
     }
 
+    for (auto tx : pblock->vtx) {
+        g_relationdb->RollbackAction(tx->GetHash());
+    }
+    blockAssember.SetNull();
     chainActive.SetTip(pindexDelete->pprev);
 
     UpdateTip(pindexDelete->pprev, chainparams);
@@ -2437,6 +2442,21 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
     LogPrint(BCLog::BENCH, "  - Connect postprocess: %.2fms [%.2fs (%.2fms/blk)]\n", (nTime6 - nTime5) * MILLI, nTimePostConnect * MICRO, nTimePostConnect * MILLI / nBlocksTotal);
     LogPrint(BCLog::BENCH, "- Connect block: %.2fms [%.2fs (%.2fms/blk)]\n", (nTime6 - nTime1) * MILLI, nTimeTotal * MICRO, nTimeTotal * MILLI / nBlocksTotal);
 
+    //accept action
+    for (int i=0; pblock && i<pblock->vtx.size(); i++) {
+        auto tx = pblock->vtx[i];
+        std::vector<unsigned char> vchSig;
+        auto action = DecodeAction(tx, vchSig);
+        if (action.type() != typeid(CNilAction)) {
+            if (VerifyAction(action, vchSig))
+                g_relationdb->AcceptAction(tx->GetHash(), action);
+            else {
+                //TODO: error
+            }
+        }
+    }
+    //
+    blockAssember.SetNull();
     connectTrace.BlockConnected(pindexNew, std::move(pthisBlock));
     return true;
 }
@@ -2583,7 +2603,7 @@ bool CChainState::ActivateBestChainStep(CValidationState& state, const CChainPar
             }
         }
         //chainActive is updated, clean the plotid, nonce, dl and newblockheight
-        blockAssember.setNull();
+        blockAssember.SetNull();
     }
 
     if (fBlocksDisconnected) {
@@ -3136,6 +3156,13 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     // First transaction must be coinbase, the rest must not be
     if (block.vtx.empty() || !block.vtx[0]->IsCoinBase())
         return state.DoS(100, false, REJECT_INVALID, "bad-cb-missing", false, "first tx is not coinbase");
+
+    //check coinbase script
+    CTxDestination dest;
+    ExtractDestination(block.vtx[0]->vout[0].scriptPubKey, dest);
+    if (dest.type() != typeid(CKeyID)) 
+        return state.DoS(100, false, REJECT_INVALID, "bad-cb-missing", false, "coinbase script is not pay2pub");
+
     for (unsigned int i = 1; i < block.vtx.size(); i++)
         if (block.vtx[i]->IsCoinBase())
             return state.DoS(100, false, REJECT_INVALID, "bad-cb-multiple", false, "more than one coinbase");
@@ -3378,9 +3405,11 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
     // check plotid
     auto script = block.vtx[0]->vout[0].scriptPubKey;
     CTxDestination dest;
-    auto result = ExtractDestination(script, dest);
-    uint64_t plotID = PlotEncodeDestination(dest);
-    if (block.nPlotID != plotID || plotID == 0) {
+    ExtractDestination(script, dest);
+    auto coinbaseDest = boost::get<CKeyID>(dest);
+    auto to = g_relationdb->To(block.nPlotID);
+    auto targetPlotid = to.IsNull() ? block.nPlotID : to.GetPlotID();
+    if (targetPlotid != coinbaseDest.GetPlotID()) {
         return state.DoS(100, false, REJECT_INVALID, "bad-coinbase-plotid", false, "coinbase public key error plot id");
     }
 

@@ -1,12 +1,10 @@
-#ifndef BITCOIN_ASSEMBER_H
-#define BITCOIN_ASSEMBER_H
+#ifndef LAVA_ASSEMBER_H
+#define LAVA_ASSEMBER_H
 
-#include "chainparams.h"
-#include "scheduler.h"
-#include "script/script.h"
-#include "uint256.h"
-
-#include <stdint.h>
+#include <config/bitcoin-config.h>
+#include <scheduler.h>
+#include <pubkey.h>
+#include <uint256.h>
 
 class CPOCBlockAssember
 {
@@ -15,37 +13,29 @@ public:
 
     ~CPOCBlockAssember();
 
-    bool UpdateDeadline(const int height, const uint64_t plotID, const uint64_t nonce, const uint64_t deadline, CScript& script);
+    bool UpdateDeadline(const int height, const CKeyID& keyid, const uint64_t nonce, const uint64_t deadline);
 
-    void CreateNewBlock(const CScript& scriptPubKeyIn);
+    void CreateNewBlock();
 
     void Interrupt();
 
-    struct AssemberParams AssemberItems();
-    void SetAssemberItems(const int height, const uint64_t plotID, const uint64_t nonce, const uint64_t deadline, CScript& script);
-    void setNull();
+    void SetNull();
 
 private:
-	boost::mutex mtx;
-    void checkDeadline();
+    void CheckDeadline();
 
 private:
-    uint256 genSig;
-    int height;
-    uint64_t plotID;
-    uint64_t nonce;
-    uint64_t deadline;
-    CScript scriptPubKeyIn;
+    uint256      genSig;
+    int          height;
+    CKeyID       keyid;
+    uint64_t     nonce;
+    uint64_t     deadline;
+    uint64_t     dl;
+    boost::mutex mtx;
     std::shared_ptr<CScheduler> scheduler;
     std::shared_ptr<boost::thread> thread;
 };
 
-struct AssemberParams {
-    int height;
-    uint64_t plotID;
-    uint64_t nonce;
-    uint64_t deadline;
-    CScript scriptPubKeyIn;
-};
+
 
 #endif // BITCOIN_ASSEMBER_H
