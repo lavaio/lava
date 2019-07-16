@@ -57,6 +57,8 @@ bool VerifyAction(const CAction& action, std::vector<unsigned char>& vchSig);
 
 CAction DecodeAction(const CTransactionRef tx, std::vector<unsigned char>& vchSig);
 
+typedef std::pair<CKeyID, CKeyID> CRelation;
+typedef std::vector<CRelation> CRelationVector;
 class CRelationDB : public CDBWrapper
 {
 public:
@@ -71,6 +73,8 @@ public:
     bool AcceptAction(const uint256& txid, const CAction& action);
 
     bool RollbackAction(const uint256& txid);
+
+    CRelationVector ListRelations() const;
 private:
     bool InsertRelation(const CKeyID& from, const CKeyID& to);
 };

@@ -182,3 +182,19 @@ bool CRelationDB::RollbackAction(const uint256& txid)
     }
     return WriteBatch(batch);
 }
+
+CRelationVector CRelationDB::ListRelations() const
+{
+    CRelationVector vch;
+    std::unique_ptr<CDBIterator> iter(const_cast<CRelationDB&>(*this).NewIterator());
+    iter->Seek(std::make_pair(DB_RELATION_KEY, CKeyID()));
+    while (iter->Valid()) {
+        auto key = std::make_pair(DB_RELATION_KEY, CKeyID());
+        iter->GetKey(key);
+        CKeyID to;
+        iter->GetValue(to);
+        vch.push_back(std::make_pair(key.second, to));
+        iter->Next();
+    }
+    return std::move(vch);
+}

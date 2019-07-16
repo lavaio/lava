@@ -4514,12 +4514,12 @@ static UniValue unbindplotid(const JSONRPCRequest& request)
     return txid.GetHex();
 }
 
-static UniValue listbindeds(const JSONRPCRequest& request)
+static UniValue getbindinginfo(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 1) {
         throw std::runtime_error(
             RPCHelpMan{
-                "unbindplotid",
+                "getbindinginfo",
                 "\nunbind plotid mapping.",
                 {
                     {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "address"},
@@ -4537,7 +4537,7 @@ static UniValue listbindeds(const JSONRPCRequest& request)
                     "}\n"
                  },
                 RPCExamples{
-                    HelpExampleCli("listbindeds", "17VkcJoDJEHyuCKgGyky8CGNnb1kPgbwr4")
+                    HelpExampleCli("getbindinginfo", "17VkcJoDJEHyuCKgGyky8CGNnb1kPgbwr4")
                 },
             }.ToString()
         );
@@ -4564,6 +4564,65 @@ static UniValue listbindeds(const JSONRPCRequest& request)
     result.pushKV("from", fromVal);
     result.pushKV("to", toVal);
     return result;
+}
+
+static UniValue listbindings(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 0) {
+        throw std::runtime_error(
+            RPCHelpMan{
+                "listbindings",
+                "\nlist all binding infos.",
+                {},
+                RPCResult{
+                    "[\n"
+                    "  {\n"
+                    "    \"from\": {\n"
+                    "      \"address\": \"1LfaqrJ9vrXTU3RdVTsHz7Dgn5b1ooN8KN\",\n"
+                    "      \"plotid\": 14045118739489404631,\n"
+                    "    },\n"
+                    "    \"to\": {\n"
+                    "      \"address\": \"1GwFgPsGwmyohfMCbdD6tGCYMNzbeK1N4V\",\n"
+                    "      \"plotid\": 12495994880773508270,\n"
+                    "    }\n"
+                    "  },\n"
+                    "  {\n"
+                    "    \"from\": {\n"
+                    "      \"address\": \"1JWYKVAY2r73FbMxwZdgwXaHPwT2srRrUx\",\n"
+                    "      \"plotid\": 8195665653426294976,\n"
+                    "    },\n"
+                    "    \"to\": {\n"
+                    "      \"address\": \"1MxchR6KHhE44M4KGPMRJtftY5jcXZ3nfA\",\n"
+                    "      \"plotid\": 13765273405587843045,\n"
+                    "    }\n"
+                    "  }\n"
+                    "]\n"
+                 },
+                RPCExamples{
+                    HelpExampleCli("listbindings", "")
+                },
+            }.ToString()
+        );
+    }
+    LOCK(cs_main);
+    UniValue results(UniValue::VARR);
+    for (auto relation : g_relationdb->ListRelations()) {
+        auto from = relation.first;
+        auto to = relation.second;
+        UniValue fromVal(UniValue::VOBJ);
+        fromVal.pushKV("address", EncodeDestination(CTxDestination(from)));
+        fromVal.pushKV("plotid", from.GetPlotID());
+
+        UniValue toVal(UniValue::VOBJ);
+        toVal.pushKV("address", EncodeDestination(CTxDestination(to)));
+        toVal.pushKV("plotid", to.GetPlotID());
+
+        UniValue val(UniValue::VOBJ);
+        val.pushKV("from", fromVal);
+        val.pushKV("to", toVal);
+        results.push_back(val);
+    }
+    return results;
 }
 
 UniValue wallethaskey(const JSONRPCRequest& request)
@@ -4692,7 +4751,8 @@ static const CRPCCommand commands[] =
     { "wallet",             "freezefundsforticket",             &freezefundsforticket,          {"address"} },
     { "poc",                "bindplotid",                       &bindplotid,                    {"address", "target"} },
     { "poc",                "unbindplotid",                     &unbindplotid,                  {"address"} },
-    { "poc",                "listbindeds",                      &listbindeds,                   {"address"} },
+    { "poc",                "listbindings",                     &listbindings,                  {""} },
+    { "poc",                "getbindinginfo",                   &getbindinginfo,                {"address"} },
     { "wallet",             "wallethaskey",                     &wallethaskey,                  {"address"} },
 };
 // clang-format on
