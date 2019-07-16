@@ -3013,6 +3013,24 @@ static UniValue listunspent(const JSONRPCRequest& request)
     return results;
 }
 
+bool VoutIsTicket(const CScript script, CScriptID &scriptID)
+{
+	CScriptBase::const_iterator pc = script.begin();
+	opcodetype opcodeRet;
+	std::vector<unsigned char> vchRet;
+	if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_HASH160) {
+		vchRet.clear();
+		if (script.GetOp(pc, opcodeRet, vchRet)) {
+			scriptID = CScriptID(uint160(vchRet));
+			if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_EQUAL) {
+				vchRet.clear();
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 bool GetTicketList(CWallet * const pwallet, CChain& chainActive, bool include_unsafe, const int nMinDepth, const int nMaxDepth, CTxDestination destination, std::vector<CTicketRef>& ptickets){
 	// those params are all used in AvailableCoins
 	CAmount nMinimumAmount = 0;
@@ -3030,8 +3048,8 @@ bool GetTicketList(CWallet * const pwallet, CChain& chainActive, bool include_un
 
 	UniValue results(UniValue::VARR);
 	std::vector<COutput> vecOutputs;
-	{
-		auto locked_chain = pwallet->chain().lock();
+	auto locked_chain = pwallet->chain().lock();
+	{		
 		LOCK(pwallet->cs_wallet);
 		pwallet->AvailableCoins(*locked_chain, vecOutputs, !include_unsafe, nullptr, nMinimumAmount, nMaximumAmount, nMinimumSumAmount, nMaximumCount, nMinDepth, nMaxDepth);
 	}
@@ -3044,12 +3062,15 @@ bool GetTicketList(CWallet * const pwallet, CChain& chainActive, bool include_un
 		auto out = vecOutputs[i];
 		auto tx = out.tx->tx;
 		auto hash = tx->GetHash();
+		auto txvout = tx->vout[out.i];
+		auto ticketScript = txvout.scriptPubKey;
 
 		bool hash_existed = false;
 		if (std::find(hashSet.begin(), hashSet.end(), hash) != hashSet.end())
 			hash_existed = true;
 
-		if (tx->IsTicketTx() && !hash_existed){
+		CScriptID scriptID;
+		if (tx->IsTicketTx() && !hash_existed && VoutIsTicket(ticketScript, scriptID)){
 			try{					
 				CTicketRef pTicket = tx->Ticket();
 				//check wether the ticket KeyID is destination from requeset
@@ -3140,6 +3161,10 @@ static UniValue listtickets(const JSONRPCRequest& request)
         RPCTypeCheckArgument(request.params[3], UniValue::VBOOL);
         include_unsafe = request.params[3].get_bool();
     }
+
+	// Make sure the results are valid at least up to the most recent block
+	// the user could have gotten from another RPC command prior to now
+	pwallet->BlockUntilSyncedToCurrentChain();
 
 	// use GetTicketList to construct a list of tickets
 	UniValue results(UniValue::VARR);
@@ -4617,7 +4642,7 @@ UniValue spendticket(const JSONRPCRequest& request)
     uint256 spendTxID;
     const CAmount highfee{ ::maxTxFee };
     
-    if (TransactionError::OK != BroadcastTransaction(tx, spendTxID, errStr, highfee)) {
+    if (TransactionError::OK != BroadcastTransaction (tx, spendTxID, errStr, highfee)) {
         throw JSONRPCError(RPC_TRANSACTION_REJECTED, errStr);
     }
     return spendTxID.GetHex();
@@ -4770,14 +4795,12 @@ UniValue freetickets(const JSONRPCRequest& request){
 
 	// get the overdue tickets
 	UniValue results(UniValue::VOBJ);
-	std::vector<CTicketRef> ticketsOverdue;
 	std::map<uint256,std::pair<int,CScript>> txScriptInputs;
 	std::vector<CTxOut> outs;
 	UniValue ticketids(UniValue::VARR);
 	for(auto iter = tickets.begin(); iter!=tickets.end(); iter++){
 		auto state = (*iter)->State(chainActive.Height());
-		if (state == CTicket::CTicketState::OVERDUE){
-			ticketsOverdue.push_back(*iter);
+		if (state == CTicket::CTicketState::OVERDUE || state == CTicket::CTicketState::USEABLE){
 			uint256 ticketid = (*iter)->GetHash();
 			uint256 txid = (*iter)->GetTxHash();
 			uint32_t n = (*iter)->GetIndex();
