@@ -165,9 +165,8 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "getnodeaddresses", 0, "count"},
     { "stop", 0, "wait" },
 	{ "getmineraddress",0,"new" },
-	{ "listtickets",0,"minconf" },
-	{ "listtickets",1,"maxconf" },
-	{ "listtickets",2,"addresses" },
+	{ "listtickets",1,"minconf" },
+	{ "listtickets",2,"maxconf" },
 	{ "listtickets",3,"include_unsafe" },
 };
 // clang-format on
