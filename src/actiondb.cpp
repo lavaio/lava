@@ -95,6 +95,7 @@ CAction DecodeAction(const CTransactionRef tx, std::vector<unsigned char>& vchSi
             }
             script.GetOp(pc, opcodeRet, vchRet);
             auto action = UnserializeAction(vchRet);
+            if (vchRet.size() < 65) continue;
             vchSig.clear();
             vchSig.insert(vchSig.end(), vchRet.end() - 65, vchRet.end());
             return std::move(action);
