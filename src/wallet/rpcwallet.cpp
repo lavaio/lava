@@ -242,7 +242,6 @@ static UniValue getmineraddress(const JSONRPCRequest& request)
 
     std::string label = "miner";
     bool isCreate = false;
-    auto output_type = OutputType::LEGACY;
 
     if (!pwallet->IsLocked()) {
         pwallet->TopUpKeyPool();
@@ -273,10 +272,14 @@ static UniValue getmineraddress(const JSONRPCRequest& request)
         const CKeyID& keyid = firstItem->second;
         if (pwallet->GetKey(keyid, key)) {
             auto pubkey = key.GetPubKey();
-            pwallet->LearnRelatedScripts(pubkey, output_type);
-            CTxDestination dest = GetDestinationForKey(pubkey, output_type);
+            pwallet->LearnRelatedScripts(pubkey, OutputType::P2SH_SEGWIT);
+            CTxDestination dest = GetDestinationForKey(pubkey, OutputType::LEGACY);
 
-            pwallet->SetAddressBook(dest, label, "receive");
+			for (const auto& dest : GetAllDestinationsForKey(pubkey)) {
+				if (!request.params[1].isNull() || pwallet->mapAddressBook.count(dest) == 0) {
+					pwallet->SetAddressBook(dest, label, "receive");
+				}
+			}
 
             UniValue obj(UniValue::VOBJ);
             obj.pushKV("address", EncodeDestination(dest));
@@ -294,10 +297,14 @@ static UniValue getmineraddress(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, "Error: Keypool ran out, please call keypoolrefill first");
         }
 
-        pwallet->LearnRelatedScripts(newKey, output_type);
-        CTxDestination dest = GetDestinationForKey(newKey, output_type);
+        pwallet->LearnRelatedScripts(newKey, OutputType::P2SH_SEGWIT);
+        CTxDestination dest = GetDestinationForKey(newKey, OutputType::LEGACY);
 
-        pwallet->SetAddressBook(dest, label, "receive");
+		for (const auto& dest : GetAllDestinationsForKey(newKey)) {
+			if (!request.params[1].isNull() || pwallet->mapAddressBook.count(dest) == 0) {
+				pwallet->SetAddressBook(dest, label, "receive");
+			}
+		}
 
         UniValue obj(UniValue::VOBJ);
         obj.pushKV("address", EncodeDestination(dest));
