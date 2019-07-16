@@ -4482,9 +4482,11 @@ UniValue freezefundsforticket(const JSONRPCRequest& request)
     dest = CTxDestination(CScriptID(redeemScript));
     auto scriptPubkey = GetScriptForDestination(dest);
     auto opRetScript = CScript() << OP_RETURN << CTicket::VERSION << ToByteVector(redeemScript);
+    
     // Amount
-    // TODO: change to active ticket price
-    auto nAmount = 188 * COIN;
+    uint64_t nAmount;
+    g_ticket->GetTicketPrice(chainActive.Tip(), nAmount);
+    
     //set change dest
     std::shared_ptr<CReserveKey> rKey = std::make_shared<CReserveKey>(pwallet);
     CPubKey changePubKey;
