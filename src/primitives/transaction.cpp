@@ -115,7 +115,7 @@ std::string CTransaction::ToString() const
     return str;
 }
 
-// check the tx's last vout
+// check the tx's ticket vout
 bool IsTicketVout(const CScript script, CScriptID &scriptID)
 {
 	CScriptBase::const_iterator pc = script.begin();

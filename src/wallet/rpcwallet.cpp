@@ -242,7 +242,6 @@ static UniValue getmineraddress(const JSONRPCRequest& request)
 
     std::string label = "miner";
     bool isCreate = false;
-    auto output_type = OutputType::LEGACY;
 
     if (!pwallet->IsLocked()) {
         pwallet->TopUpKeyPool();
@@ -273,10 +272,14 @@ static UniValue getmineraddress(const JSONRPCRequest& request)
         const CKeyID& keyid = firstItem->second;
         if (pwallet->GetKey(keyid, key)) {
             auto pubkey = key.GetPubKey();
-            pwallet->LearnRelatedScripts(pubkey, output_type);
-            CTxDestination dest = GetDestinationForKey(pubkey, output_type);
+            pwallet->LearnRelatedScripts(pubkey, OutputType::P2SH_SEGWIT);
+            CTxDestination dest = GetDestinationForKey(pubkey, OutputType::LEGACY);
 
-            pwallet->SetAddressBook(dest, label, "receive");
+			for (const auto& dest : GetAllDestinationsForKey(pubkey)) {
+				if (!request.params[1].isNull() || pwallet->mapAddressBook.count(dest) == 0) {
+					pwallet->SetAddressBook(dest, label, "receive");
+				}
+			}
 
             UniValue obj(UniValue::VOBJ);
             obj.pushKV("address", EncodeDestination(dest));
@@ -294,10 +297,14 @@ static UniValue getmineraddress(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_WALLET_KEYPOOL_RAN_OUT, "Error: Keypool ran out, please call keypoolrefill first");
         }
 
-        pwallet->LearnRelatedScripts(newKey, output_type);
-        CTxDestination dest = GetDestinationForKey(newKey, output_type);
+        pwallet->LearnRelatedScripts(newKey, OutputType::P2SH_SEGWIT);
+        CTxDestination dest = GetDestinationForKey(newKey, OutputType::LEGACY);
 
-        pwallet->SetAddressBook(dest, label, "receive");
+		for (const auto& dest : GetAllDestinationsForKey(newKey)) {
+			if (!request.params[1].isNull() || pwallet->mapAddressBook.count(dest) == 0) {
+				pwallet->SetAddressBook(dest, label, "receive");
+			}
+		}
 
         UniValue obj(UniValue::VOBJ);
         obj.pushKV("address", EncodeDestination(dest));
@@ -3013,6 +3020,24 @@ static UniValue listunspent(const JSONRPCRequest& request)
     return results;
 }
 
+bool VoutIsTicket(const CScript script, CScriptID &scriptID)
+{
+	CScriptBase::const_iterator pc = script.begin();
+	opcodetype opcodeRet;
+	std::vector<unsigned char> vchRet;
+	if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_HASH160) {
+		vchRet.clear();
+		if (script.GetOp(pc, opcodeRet, vchRet)) {
+			scriptID = CScriptID(uint160(vchRet));
+			if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_EQUAL) {
+				vchRet.clear();
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 bool GetTicketList(CWallet * const pwallet, CChain& chainActive, bool include_unsafe, const int nMinDepth, const int nMaxDepth, CTxDestination destination, std::vector<CTicketRef>& ptickets){
 	// those params are all used in AvailableCoins
 	CAmount nMinimumAmount = 0;
@@ -3030,8 +3055,8 @@ bool GetTicketList(CWallet * const pwallet, CChain& chainActive, bool include_un
 
 	UniValue results(UniValue::VARR);
 	std::vector<COutput> vecOutputs;
-	{
-		auto locked_chain = pwallet->chain().lock();
+	auto locked_chain = pwallet->chain().lock();
+	{		
 		LOCK(pwallet->cs_wallet);
 		pwallet->AvailableCoins(*locked_chain, vecOutputs, !include_unsafe, nullptr, nMinimumAmount, nMaximumAmount, nMinimumSumAmount, nMaximumCount, nMinDepth, nMaxDepth);
 	}
@@ -3044,12 +3069,15 @@ bool GetTicketList(CWallet * const pwallet, CChain& chainActive, bool include_un
 		auto out = vecOutputs[i];
 		auto tx = out.tx->tx;
 		auto hash = tx->GetHash();
+		auto txvout = tx->vout[out.i];
+		auto ticketScript = txvout.scriptPubKey;
 
 		bool hash_existed = false;
 		if (std::find(hashSet.begin(), hashSet.end(), hash) != hashSet.end())
 			hash_existed = true;
 
-		if (tx->IsTicketTx() && !hash_existed){
+		CScriptID scriptID;
+		if (tx->IsTicketTx() && !hash_existed && VoutIsTicket(ticketScript, scriptID)){
 			try{					
 				CTicketRef pTicket = tx->Ticket();
 				//check wether the ticket KeyID is destination from requeset
@@ -3084,7 +3112,7 @@ static UniValue listtickets(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() > 4)
         throw std::runtime_error(
-            RPCHelpMan{"listunspent",
+            RPCHelpMan{"listtickets",
                 "\nReturns array of unspent tickets\n"
                 "with between minconf and maxconf (inclusive) confirmations.\n"
                 "Optionally filter to only include txouts paid to specified addresses.\n",
@@ -3107,11 +3135,8 @@ static UniValue listtickets(const JSONRPCRequest& request)
             "]\n"
                 },
                 RPCExamples{
-                    HelpExampleCli("listunspent", "")
-            + HelpExampleCli("listtickets", "6 9999999 \"[\\\"1PGFqEzfmQch1gKD3ra4k18PNj3tTUUSqg\\\",\\\"1LtvqCaApEdUGFkpKMM4MstjcaL4dKg8SP\\\"]\"")
-            + HelpExampleRpc("listtickets", "6, 9999999 \"[\\\"1PGFqEzfmQch1gKD3ra4k18PNj3tTUUSqg\\\",\\\"1LtvqCaApEdUGFkpKMM4MstjcaL4dKg8SP\\\"]\"")
-            + HelpExampleCli("listtickets", "6 9999999 '[]' true '{ \"minimumAmount\": 0.005 }'")
-            + HelpExampleRpc("listtickets", "6, 9999999, [] , true, { \"minimumAmount\": 0.005 } ")
+                    HelpExampleCli("listtickets", "\"1PGFqEzfmQch1gKD3ra4k18PNj3tTUUSqg\"")
+            + HelpExampleCli("listtickets", "\"1PGFqEzfmQch1gKD3ra4k18PNj3tTUUSqg\" 6 9999999 true")
                 },
             }.ToString());
 
@@ -3140,6 +3165,10 @@ static UniValue listtickets(const JSONRPCRequest& request)
         RPCTypeCheckArgument(request.params[3], UniValue::VBOOL);
         include_unsafe = request.params[3].get_bool();
     }
+
+	// Make sure the results are valid at least up to the most recent block
+	// the user could have gotten from another RPC command prior to now
+	pwallet->BlockUntilSyncedToCurrentChain();
 
 	// use GetTicketList to construct a list of tickets
 	UniValue results(UniValue::VARR);
@@ -4620,7 +4649,7 @@ UniValue spendticket(const JSONRPCRequest& request)
     uint256 spendTxID;
     const CAmount highfee{ ::maxTxFee };
     
-    if (TransactionError::OK != BroadcastTransaction(tx, spendTxID, errStr, highfee)) {
+    if (TransactionError::OK != BroadcastTransaction (tx, spendTxID, errStr, highfee)) {
         throw JSONRPCError(RPC_TRANSACTION_REJECTED, errStr);
     }
     return spendTxID.GetHex();
@@ -4733,15 +4762,24 @@ UniValue freetickets(const JSONRPCRequest& request){
 		throw std::runtime_error(
 			RPCHelpMan{
 				"freetickets",
-				"\nSpend overdue frozen tickets output to address.\n",
+				"\nSpend overdue and usable frozen tickets output to address.\n",
 			{
 				{"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The bitcoin address who wants to free tickets."},
 				{"receiver", RPCArg::Type::STR, RPCArg::Optional::NO, "The bitcoin address received."},
 			},
 			RPCResult{
-				"\"txid\"                  (string) The tx id.\n"},
+				
+				"{											\n"
+				" \"tickethash\" :							\n"
+				"  [\n"
+				"   (string)the tickethash                  \n"
+				"  ,...\n"
+				"  ]\n"
+				"\"txid\"                  (string) The tx id.\n"
+				"}\n"
+			},
 				RPCExamples{
-				HelpExampleCli("spendticket", "\"8199ceda82a056700475d645e2a0cd588b6853e87e1b4b8a459814078799dd87\" \"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
+				HelpExampleCli("freetickets", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" \"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
 			}
 	.ToString());
 
@@ -4773,14 +4811,12 @@ UniValue freetickets(const JSONRPCRequest& request){
 
 	// get the overdue tickets
 	UniValue results(UniValue::VOBJ);
-	std::vector<CTicketRef> ticketsOverdue;
 	std::map<uint256,std::pair<int,CScript>> txScriptInputs;
 	std::vector<CTxOut> outs;
 	UniValue ticketids(UniValue::VARR);
 	for(auto iter = tickets.begin(); iter!=tickets.end(); iter++){
 		auto state = (*iter)->State(chainActive.Height());
 		if (state == CTicket::CTicketState::OVERDUE){
-			ticketsOverdue.push_back(*iter);
 			uint256 ticketid = (*iter)->GetHash();
 			uint256 txid = (*iter)->GetTxHash();
 			uint32_t n = (*iter)->GetIndex();
