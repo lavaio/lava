@@ -3112,7 +3112,7 @@ static UniValue listtickets(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() > 4)
         throw std::runtime_error(
-            RPCHelpMan{"listunspent",
+            RPCHelpMan{"listtickets",
                 "\nReturns array of unspent tickets\n"
                 "with between minconf and maxconf (inclusive) confirmations.\n"
                 "Optionally filter to only include txouts paid to specified addresses.\n",
@@ -3135,11 +3135,8 @@ static UniValue listtickets(const JSONRPCRequest& request)
             "]\n"
                 },
                 RPCExamples{
-                    HelpExampleCli("listunspent", "")
-            + HelpExampleCli("listtickets", "6 9999999 \"[\\\"1PGFqEzfmQch1gKD3ra4k18PNj3tTUUSqg\\\",\\\"1LtvqCaApEdUGFkpKMM4MstjcaL4dKg8SP\\\"]\"")
-            + HelpExampleRpc("listtickets", "6, 9999999 \"[\\\"1PGFqEzfmQch1gKD3ra4k18PNj3tTUUSqg\\\",\\\"1LtvqCaApEdUGFkpKMM4MstjcaL4dKg8SP\\\"]\"")
-            + HelpExampleCli("listtickets", "6 9999999 '[]' true '{ \"minimumAmount\": 0.005 }'")
-            + HelpExampleRpc("listtickets", "6, 9999999, [] , true, { \"minimumAmount\": 0.005 } ")
+                    HelpExampleCli("listtickets", "\"1PGFqEzfmQch1gKD3ra4k18PNj3tTUUSqg\"")
+            + HelpExampleCli("listtickets", "\"1PGFqEzfmQch1gKD3ra4k18PNj3tTUUSqg\" 6 9999999 true")
                 },
             }.ToString());
 
@@ -4762,15 +4759,24 @@ UniValue freetickets(const JSONRPCRequest& request){
 		throw std::runtime_error(
 			RPCHelpMan{
 				"freetickets",
-				"\nSpend overdue frozen tickets output to address.\n",
+				"\nSpend overdue and usable frozen tickets output to address.\n",
 			{
 				{"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The bitcoin address who wants to free tickets."},
 				{"receiver", RPCArg::Type::STR, RPCArg::Optional::NO, "The bitcoin address received."},
 			},
 			RPCResult{
-				"\"txid\"                  (string) The tx id.\n"},
+				
+				"{											\n"
+				" \"tickethash\" :							\n"
+				"  [\n"
+				"   (string)the tickethash                  \n"
+				"  ,...\n"
+				"  ]\n"
+				"\"txid\"                  (string) The tx id.\n"
+				"}\n"
+			},
 				RPCExamples{
-				HelpExampleCli("spendticket", "\"8199ceda82a056700475d645e2a0cd588b6853e87e1b4b8a459814078799dd87\" \"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
+				HelpExampleCli("freetickets", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" \"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
 			}
 	.ToString());
 
