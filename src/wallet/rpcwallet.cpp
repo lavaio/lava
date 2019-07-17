@@ -4813,7 +4813,7 @@ UniValue freetickets(const JSONRPCRequest& request){
 	UniValue ticketids(UniValue::VARR);
 	for(auto iter = tickets.begin(); iter!=tickets.end(); iter++){
 		auto state = (*iter)->State(chainActive.Height());
-		if (state == CTicket::CTicketState::OVERDUE || state == CTicket::CTicketState::USEABLE){
+		if (state == CTicket::CTicketState::OVERDUE){
 			uint256 ticketid = (*iter)->GetHash();
 			uint256 txid = (*iter)->GetTxHash();
 			uint32_t n = (*iter)->GetIndex();
