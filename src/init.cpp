@@ -42,6 +42,7 @@
 #include <timedata.h>
 #include <txdb.h>
 #include <index/ticketindex.h>
+#include <index/ticketslot.h>
 #include <txmempool.h>
 #include <torcontrol.h>
 #include <ui_interface.h>
@@ -391,6 +392,7 @@ void SetupServerArgs()
     gArgs.AddArg("-maxorphantx=<n>", strprintf("Keep at most <n> unconnectable transactions in memory (default: %u)", DEFAULT_MAX_ORPHAN_TRANSACTIONS), false, OptionsCategory::OPTIONS);
     gArgs.AddArg("-mempoolexpiry=<n>", strprintf("Do not keep transactions in the mempool longer than <n> hours (default: %u)", DEFAULT_MEMPOOL_EXPIRY), false, OptionsCategory::OPTIONS);
     gArgs.AddArg("-minimumcumulativediff=<hex>", strprintf("Minimum work assumed to exist on a valid chain in hex (default: %s, testnet: %s)", defaultChainParams->GetConsensus().nMinimumCumulativeDiff.GetHex(), testnetChainParams->GetConsensus().nMinimumCumulativeDiff.GetHex()), true, OptionsCategory::OPTIONS);
+    gArgs.AddArg("-ticketSlot=<n>", strprintf("Ticket slot assumed to exist on a valid chain (default: %u, testnet: %u)", defaultChainParams->GetConsensus().nTicketSlot, testnetChainParams->GetConsensus().nTicketSlot), true, OptionsCategory::OPTIONS);
     gArgs.AddArg("-par=<n>", strprintf("Set the number of script verification threads (%u to %d, 0 = auto, <0 = leave that many cores free, default: %d)",
         -GetNumCores(), MAX_SCRIPTCHECK_THREADS, DEFAULT_SCRIPTCHECK_THREADS), false, OptionsCategory::OPTIONS);
     gArgs.AddArg("-persistmempool", strprintf("Whether to save the mempool on shutdown and load on restart (default: %u)", DEFAULT_PERSIST_MEMPOOL), false, OptionsCategory::OPTIONS);
@@ -1039,6 +1041,17 @@ bool AppInitParameterInteraction()
         LogPrintf("Warning: nMinimumCumulativeDiff set below default value of %s\n", chainparams.GetConsensus().nMinimumCumulativeDiff.GetHex());
     }
 
+    if (gArgs.IsArgSet("-ticketSlot")) {
+        const uint64_t ticketSlot = gArgs.GetArg("-ticketSlot", 2048);
+        if (ticketSlot == 0) {
+            return InitError(strprintf("Invalid uint64 (%u) ticket slot value, the minimum value is 1", ticketSlot));
+        }
+        nTicketSlot = ticketSlot;
+    } else {
+         nTicketSlot = chainparams.GetConsensus().nTicketSlot;
+    }
+    LogPrintf("Setting nTickeSlot=%s\n", nTicketSlot);
+
     // mempool limits
     int64_t nMempoolSizeMax = gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000;
     int64_t nMempoolSizeMin = gArgs.GetArg("-limitdescendantsize", DEFAULT_DESCENDANT_SIZE_LIMIT) * 1000 * 40;
@@ -1646,6 +1659,7 @@ bool AppInitMain(InitInterfaces& interfaces)
     g_txindex = MakeUnique<TxIndex>(nTxIndexCache, false, fReindex);
     g_txindex->Start();
 	g_ticket = MakeUnique<TicketIndex>(nTxIndexCache, false, fReindex);
+    g_ticket_slot = MakeUnique<TicketSlot>(nTxIndexCache, false, fReindex);
 
     // ********************************************************* Step 9: load wallet
     for (const auto& client : interfaces.chain_clients) {

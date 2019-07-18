@@ -48,6 +48,7 @@
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/thread.hpp>
+#include <index/ticketslot.h>
 
 #if defined(NDEBUG)
 #error "Bitcoin cannot be compiled without assertions."
@@ -228,6 +229,7 @@ RecursiveMutex cs_main;
 
 BlockMap& mapBlockIndex = g_chainstate.mapBlockIndex;
 CChain& chainActive = g_chainstate.chainActive;
+uint64_t ticketPriceActive = 0;
 CPOCBlockAssember& blockAssember = g_chainstate.blockAssember;
 CBlockIndex* pindexBestHeader = nullptr;
 Mutex g_best_block_mutex;
@@ -249,6 +251,7 @@ bool fEnableReplacement = DEFAULT_ENABLE_REPLACEMENT;
 
 uint256 hashAssumeValid;
 arith_uint256 nMinimumCumulativeDiff;
+uint64_t nTicketSlot;
 
 CFeeRate minRelayTxFee = CFeeRate(DEFAULT_MIN_RELAY_TX_FEE);
 CAmount maxTxFee = DEFAULT_TRANSACTION_MAXFEE;
@@ -2298,6 +2301,7 @@ bool CChainState::DisconnectTip(CValidationState& state, const CChainParams& cha
     }
 
     chainActive.SetTip(pindexDelete->pprev);
+    ticketPriceActive = g_ticket_slot->GetTicketPrice(pindexDelete->pprev);
 
     UpdateTip(pindexDelete->pprev, chainparams);
     // Let wallets know transactions went from 1-confirmed to
@@ -2415,10 +2419,15 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
             return error("%s: ConnectBlock %s failed, %s", __func__, pindexNew->GetBlockHash().ToString(), FormatStateMessage(state));
         }
 
-		bool ticketConnected = g_ticket->ConnectBlock(*pthisBlock, pindexNew);
-		if (!ticketConnected) {
-			return error("%s: ConnectTicket %s failed, %s", __func__, pindexNew->GetBlockHash().ToString(), FormatStateMessage(state));
-		}
+        bool ticketConnected = g_ticket->ConnectBlock(*pthisBlock, pindexNew);
+        if (!ticketConnected) {
+            return error("%s: ConnectTicket %s failed, %s", __func__, pindexNew->GetBlockHash().ToString(), FormatStateMessage(state));
+        }
+
+        bool ticketSlotConnected = g_ticket_slot->ConnectBlock(*pthisBlock, pindexNew);
+        if (!ticketSlotConnected) {
+                return error("%s: Connect ticket slot %s failed, %s", __func__, pindexNew->GetBlockHash().ToString(), FormatStateMessage(state));
+        }
 
         nTime3 = GetTimeMicros();
         nTimeConnectTotal += nTime3 - nTime2;
@@ -2440,6 +2449,7 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
     disconnectpool.removeForBlock(blockConnecting.vtx);
     // Update chainActive & related variables.
     chainActive.SetTip(pindexNew);
+    ticketPriceActive = g_ticket_slot->GetTicketPrice(pindexNew);
     UpdateTip(pindexNew, chainparams);
 
     int64_t nTime6 = GetTimeMicros();
@@ -4025,6 +4035,7 @@ bool LoadChainTip(const CChainParams& chainparams)
         return false;
     }
     chainActive.SetTip(pindex);
+    ticketPriceActive = g_ticket_slot->GetTicketPrice(pindex);
 
     g_chainstate.PruneBlockIndexCandidates();
 
@@ -4400,6 +4411,7 @@ void UnloadBlockIndex()
 {
     LOCK(cs_main);
     chainActive.SetTip(nullptr);
+    ticketPriceActive = g_ticket_slot->GetTicketPrice(nullptr);
     pindexBestInvalid = nullptr;
     pindexBestHeader = nullptr;
     mempool.clear();
