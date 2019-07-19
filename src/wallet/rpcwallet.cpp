@@ -4370,6 +4370,56 @@ UniValue spendticket(const JSONRPCRequest& request)
     //pwallet->SignTransaction();
 }
 
+UniValue wallethaskey(const JSONRPCRequest& request)
+{
+	std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+	CWallet* const pwallet = wallet.get();
+
+	if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+		return NullUniValue;
+	}
+
+	if (request.fHelp || request.params.size() != 1)
+		throw std::runtime_error(
+			RPCHelpMan{
+				"wallethaskey",
+				"\ncheck whether this address is in key pool.\n",
+			{
+				{"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The bitcoin address to recvie ticket(only keyid)."},
+			},
+			RPCResult{
+				"\"isIn\"                  (bool) whether in or not.\n"},
+				RPCExamples{
+				HelpExampleCli("wallethaskey", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
+			}
+	.ToString());
+
+	pwallet->BlockUntilSyncedToCurrentChain();
+
+	auto locked_chain = pwallet->chain().lock();
+	LOCK(pwallet->cs_wallet);
+
+	CTxDestination dest = DecodeDestination(request.params[0].get_str());
+	if (!IsValidDestination(dest)) {
+		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
+	}
+	if (dest.type() != typeid(CKeyID)) {
+		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Only support PUBKEYHASH");
+	}
+
+	auto pubkeyID = boost::get<CKeyID>(dest);
+	auto keypool = pwallet->GetAllReserveKeys();
+
+	UniValue entry(UniValue::VOBJ);
+	if (pwallet->HaveKey(pubkeyID)){
+		// this key is already in the wallet
+		entry.pushKV("isIn", 1);
+	}else{
+		entry.pushKV("isIn", 0);
+	}
+	return entry;
+}
+
 UniValue abortrescan(const JSONRPCRequest& request); // in rpcdump.cpp
 UniValue dumpprivkey(const JSONRPCRequest& request); // in rpcdump.cpp
 UniValue importprivkey(const JSONRPCRequest& request);
@@ -4443,6 +4493,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "walletpassphrasechange",           &walletpassphrasechange,        {"oldpassphrase","newpassphrase"} },
     { "wallet",             "walletprocesspsbt",                &walletprocesspsbt,             {"psbt","sign","sighashtype","bip32derivs"} },
     { "wallet",             "freezefundsforticket",             &freezefundsforticket,          {"address"} },
+	{ "wallet",             "wallethaskey",						&wallethaskey,					{"address"} },
 };
 // clang-format on
 
