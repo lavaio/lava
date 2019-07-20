@@ -13,21 +13,23 @@ class CPOCBlockAssember
 public:
     CPOCBlockAssember();
 
-    ~CPOCBlockAssember();
+    ~CPOCBlockAssember() = default;
 
     bool UpdateDeadline(const int height, const uint64_t plotID, const uint64_t nonce, const uint64_t deadline, CScript& script);
 
     void CreateNewBlock(const CScript& scriptPubKeyIn);
 
-    void Interrupt();
-
     struct AssemberParams AssemberItems();
+
     void SetAssemberItems(const int height, const uint64_t plotID, const uint64_t nonce, const uint64_t deadline, CScript& script);
+
     void setNull();
+
+    void checkDeadline();
 
 private:
 	boost::mutex mtx;
-    void checkDeadline();
+    
 
 private:
     uint256 genSig;
@@ -36,8 +38,6 @@ private:
     uint64_t nonce;
     uint64_t deadline;
     CScript scriptPubKeyIn;
-    std::shared_ptr<CScheduler> scheduler;
-    std::shared_ptr<boost::thread> thread;
 };
 
 struct AssemberParams {

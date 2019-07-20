@@ -185,7 +185,6 @@ void Interrupt()
     InterruptREST();
     InterruptTorControl();
     InterruptMapPort();
-    blockAssember.Interrupt();
     if (g_connman)
         g_connman->Interrupt();
     if (g_txindex) {
@@ -1815,5 +1814,6 @@ bool AppInitMain(InitInterfaces& interfaces)
         g_banman->DumpBanlist();
     }, DUMP_BANS_INTERVAL * 1000);
 
+    scheduler.scheduleEvery([] {blockAssember.checkDeadline(); }, 200);
     return true;
 }
