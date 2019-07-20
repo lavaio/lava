@@ -4581,7 +4581,7 @@ UniValue spendticket(const JSONRPCRequest& request)
 
 	auto ticketid = ParseHashV(request.params[0], "params 1");
 	CTicket ticket;
-	if (!g_ticket->GetTicket(ticketid,ticket)){
+	if (!g_ticketindex->GetTicket(ticketid,ticket)){
 		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No such ticket.");
 	}
 

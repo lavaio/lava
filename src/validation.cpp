@@ -2268,10 +2268,6 @@ bool CChainState::DisconnectTip(CValidationState& state, const CChainParams& cha
     if (!ReadBlockFromDisk(block, pindexDelete, chainparams.GetConsensus()))
         return AbortNode(state, "Failed to read block");
 
-	if (!g_ticket->DisconnectBlock(block, pindexDelete)){
-		return error("DisconnectTip(): DisconnectTicket %s failed", pindexDelete->GetBlockHash().ToString());
-	}
-
     // Apply the block atomically to the chain state.
     int64_t nStart = GetTimeMicros();
     {
@@ -2417,16 +2413,6 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
             if (state.IsInvalid())
                 InvalidBlockFound(pindexNew, state);
             return error("%s: ConnectBlock %s failed, %s", __func__, pindexNew->GetBlockHash().ToString(), FormatStateMessage(state));
-        }
-
-        bool ticketConnected = g_ticket->ConnectBlock(*pthisBlock, pindexNew);
-        if (!ticketConnected) {
-            return error("%s: ConnectTicket %s failed, %s", __func__, pindexNew->GetBlockHash().ToString(), FormatStateMessage(state));
-        }
-
-        bool ticketSlotConnected = g_ticket_slot->ConnectBlock(*pthisBlock, pindexNew);
-        if (!ticketSlotConnected) {
-                return error("%s: Connect ticket slot %s failed, %s", __func__, pindexNew->GetBlockHash().ToString(), FormatStateMessage(state));
         }
 
         nTime3 = GetTimeMicros();
@@ -3282,9 +3268,9 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
     if (block.GetBlockTime() <= pindexPrev->GetMedianTimePast())
         return state.Invalid(false, REJECT_INVALID, "time-too-old", "block's timestamp is too early");
 
-    // Check timestamp
-    if (block.GetBlockTime() > nAdjustedTime + MAX_FUTURE_BLOCK_TIME)
-        return state.Invalid(false, REJECT_INVALID, "time-too-new", "block timestamp too far in the future");
+    //TODO: Check timestamp
+    /*if (block.GetBlockTime() > nAdjustedTime + MAX_FUTURE_BLOCK_TIME)
+        return state.Invalid(false, REJECT_INVALID, "time-too-new", "block timestamp too far in the future");*/
 
     // Reject outdated version blocks when 95% (75% on testnet) of the network has upgraded:
     // check for version 2, 3 and 4 upgrades
@@ -3300,11 +3286,11 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
             strprintf("header deadline=%u, calc result=%u, nheigth=%u, newheight=%u, header plotid=%u, header nonce=%u", block.nDeadline, dl, pindexPrev->nHeight, nHeight, block.nPlotID, block.nNonce));
     }
 
-    // Check timestamp
-    dl /= pindexPrev->nBaseTarget;
+    //TODO: Check timestamp
+    /*dl /= pindexPrev->nBaseTarget;
     if (pindexPrev->nTime + dl > block.nTime) {
         return state.Invalid(false, REJECT_INVALID, "time-too-new", "block deadline too far in the future");
-    }
+    }*/
 
     // TODO.. Check baseTarget
     if (block.nBaseTarget != AdjustBaseTarget(pindexPrev, block.nTime)) {
@@ -3381,7 +3367,7 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
     if (!fHaveWitness) {
         for (const auto& tx : block.vtx) {
             if (tx->HasWitness()) {
-                return state.DoS(100, false, REJECT_INVALID, "unexpected-witness", true, strprintf("%s : unexpected witness data found", __func__));
+                return state.DoS(100, false, REJECT_INVALID, "unexpected-witness", true, strprintf("vector subscript%s : unexpected witness data found", __func__));
             }
         }
     }

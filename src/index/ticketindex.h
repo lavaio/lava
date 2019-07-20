@@ -1,35 +1,47 @@
 #ifndef INDEX_TICKETINDEX_H
 #define INDEX_TICKETINDEX_H
 
-#include <dbwrapper.h>
 #include <ticket.h>
 #include <pubkey.h>
 #include <chainparams.h>
+#include <chain.h>
+#include <index/base.h>
+#include <txdb.h>
 
 class CBlock;
 class CBlockIndex;
 
-class TicketIndex final: public CDBWrapper
+class TicketIndex final : public BaseIndex
 {
-public:
-    explicit TicketIndex(size_t n_cache_size, bool f_memory = false, bool f_wipe = false);
-
-    virtual ~TicketIndex();
-
-    bool ConnectBlock(const CBlock& block, CBlockIndex* pindex);
-
-    bool DisconnectBlock(const CBlock& block, CBlockIndex* pindexDelete);
-
-    std::vector<CTicket> ListTickets(CBlockIndex* pindex, size_t count);
-
-    bool GetTicket(const uint256& ticketId, CTicket& ticket);
+protected:
+	class DB;
 
 private:
-    bool WriteTicket(const CTicket ticket, const uint256 blockhash);
-    bool ReadBestTicket(uint256& blockhash);
-    bool WriteBestTicket(const uint256 blockhash);
+	const std::unique_ptr<DB> m_db;
+
+protected:
+	/// Override base class init to migrate from old database.
+	bool Init() override;
+
+	bool WriteBlock(const CBlock& block, const CBlockIndex* pindex) override;
+
+	BaseIndex::DB& GetDB() const override;
+
+	const char* GetName() const override { return "ticketindex"; }
+
+public:
+	explicit TicketIndex(size_t n_cache_size, bool f_memory = false, bool f_wipe = false);
+
+	virtual ~TicketIndex() override;
+
+	bool GetTicket(const uint256& ticketId, CTicket& ticket);
+
+	bool WriteTicket(const CTicket ticket, const uint256 blockhash);
+
+	std::vector<CTicket> ListTickets(CBlockIndex* pindex, size_t count);
 };
 
-// The global ticket index
-extern std::unique_ptr<TicketIndex> g_ticket;
-#endif // !INDEX_TICKETINDEX_H
+/// The global ticket index
+extern std::unique_ptr<TicketIndex> g_ticketindex;
+
+#endif // BITCOIN_INDEX_TXINDEX_H

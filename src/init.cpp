@@ -186,7 +186,6 @@ void Interrupt()
     InterruptREST();
     InterruptTorControl();
     InterruptMapPort();
-    blockAssember.Interrupt();
     if (g_connman)
         g_connman->Interrupt();
     if (g_txindex) {
@@ -1658,8 +1657,8 @@ bool AppInitMain(InitInterfaces& interfaces)
 
     g_txindex = MakeUnique<TxIndex>(nTxIndexCache, false, fReindex);
     g_txindex->Start();
-	g_ticket = MakeUnique<TicketIndex>(nTxIndexCache, false, fReindex);
-    g_ticket_slot = MakeUnique<TicketSlot>(nTxIndexCache, false, fReindex);
+	g_ticketindex = MakeUnique<TicketIndex>(nTxIndexCache, false, fReindex);
+	g_ticketindex->Start();
 
     // ********************************************************* Step 9: load wallet
     for (const auto& client : interfaces.chain_clients) {
@@ -1828,5 +1827,6 @@ bool AppInitMain(InitInterfaces& interfaces)
         g_banman->DumpBanlist();
     }, DUMP_BANS_INTERVAL * 1000);
 
+    scheduler.scheduleEvery([] {blockAssember.checkDeadline(); }, 200);
     return true;
 }

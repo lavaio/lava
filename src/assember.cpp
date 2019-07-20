@@ -8,18 +8,8 @@
 #include "validation.h"
 
 CPOCBlockAssember::CPOCBlockAssember()
-    : scheduler(std::make_shared<CScheduler>())
 {
     setNull();
-    auto f = boost::bind(&CScheduler::serviceQueue, scheduler.get());
-    thread = std::make_shared<boost::thread>(f);
-    const auto interval = 200;
-    scheduler->scheduleEvery(std::bind(&CPOCBlockAssember::checkDeadline, this), interval);
-}
-
-CPOCBlockAssember::~CPOCBlockAssember()
-{
-    thread->interrupt();
 }
 
 bool CPOCBlockAssember::UpdateDeadline(const int height, const uint64_t plotID, const uint64_t nonce, const uint64_t deadline, CScript& script)
@@ -102,13 +92,6 @@ void CPOCBlockAssember::setNull()
     deadline = 0;
     genSig = uint256();
     scriptPubKeyIn = CScript();
-}
-
-void CPOCBlockAssember::Interrupt()
-{
-    thread->interrupt();
-    thread->join();
-    LogPrintf("CPOCBlockAssember exited\n");
 }
 
 struct AssemberParams CPOCBlockAssember::AssemberItems()
