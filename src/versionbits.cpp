@@ -7,8 +7,6 @@
 
 ThresholdState AbstractThresholdConditionChecker::GetStateFor(const CBlockIndex* pindexPrev, const Consensus::Params& params, ThresholdConditionCache& cache) const
 {
-	return ThresholdState::ACTIVE;
-
 	int nPeriod = Period(params);
     int nThreshold = Threshold(params);
     int64_t nTimeStart = BeginTime(params);
