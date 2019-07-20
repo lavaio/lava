@@ -3261,9 +3261,9 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
     if (block.GetBlockTime() <= pindexPrev->GetMedianTimePast())
         return state.Invalid(false, REJECT_INVALID, "time-too-old", "block's timestamp is too early");
 
-    // Check timestamp
-    if (block.GetBlockTime() > nAdjustedTime + MAX_FUTURE_BLOCK_TIME)
-        return state.Invalid(false, REJECT_INVALID, "time-too-new", "block timestamp too far in the future");
+    //TODO: Check timestamp
+    /*if (block.GetBlockTime() > nAdjustedTime + MAX_FUTURE_BLOCK_TIME)
+        return state.Invalid(false, REJECT_INVALID, "time-too-new", "block timestamp too far in the future");*/
 
     // Reject outdated version blocks when 95% (75% on testnet) of the network has upgraded:
     // check for version 2, 3 and 4 upgrades
@@ -3279,11 +3279,11 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
             strprintf("header deadline=%u, calc result=%u, nheigth=%u, newheight=%u, header plotid=%u, header nonce=%u", block.nDeadline, dl, pindexPrev->nHeight, nHeight, block.nPlotID, block.nNonce));
     }
 
-    // Check timestamp
-    dl /= pindexPrev->nBaseTarget;
+    //TODO: Check timestamp
+    /*dl /= pindexPrev->nBaseTarget;
     if (pindexPrev->nTime + dl > block.nTime) {
         return state.Invalid(false, REJECT_INVALID, "time-too-new", "block deadline too far in the future");
-    }
+    }*/
 
     // TODO.. Check baseTarget
     if (block.nBaseTarget != AdjustBaseTarget(pindexPrev, block.nTime)) {
