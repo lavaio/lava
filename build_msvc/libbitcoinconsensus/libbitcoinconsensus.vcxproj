@@ -21,7 +21,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\arith_uint256.cpp" />
-    <ClCompile Include="..\..\src\assember.cpp" />
+    <ClCompile Include="..\..\src\assember.cpp">
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</TreatWarningAsError>
+    </ClCompile>
     <ClCompile Include="..\..\src\consensus\merkle.cpp" />
     <ClCompile Include="..\..\src\crypto\aes.cpp" />
     <ClCompile Include="..\..\src\crypto\chacha20.cpp" />
