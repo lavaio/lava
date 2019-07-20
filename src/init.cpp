@@ -1645,7 +1645,8 @@ bool AppInitMain(InitInterfaces& interfaces)
 
     g_txindex = MakeUnique<TxIndex>(nTxIndexCache, false, fReindex);
     g_txindex->Start();
-	g_ticket = MakeUnique<TicketIndex>(nTxIndexCache, false, fReindex);
+	g_ticketindex = MakeUnique<TicketIndex>(nTxIndexCache, false, fReindex);
+	g_ticketindex->Start();
 
     // ********************************************************* Step 9: load wallet
     for (const auto& client : interfaces.chain_clients) {
