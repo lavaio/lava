@@ -42,6 +42,7 @@
 #include <timedata.h>
 #include <txdb.h>
 #include <index/ticketindex.h>
+#include <index/ticketslot.h>
 #include <txmempool.h>
 #include <torcontrol.h>
 #include <ui_interface.h>
@@ -1038,6 +1039,9 @@ bool AppInitParameterInteraction()
         LogPrintf("Warning: nMinimumCumulativeDiff set below default value of %s\n", chainparams.GetConsensus().nMinimumCumulativeDiff.GetHex());
     }
 
+    nTicketSlot = chainparams.GetConsensus().nTicketSlot;
+    LogPrintf("Setting nTickeSlot=%s\n", nTicketSlot);
+
     // mempool limits
     int64_t nMempoolSizeMax = gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000;
     int64_t nMempoolSizeMin = gArgs.GetArg("-limitdescendantsize", DEFAULT_DESCENDANT_SIZE_LIMIT) * 1000 * 40;
@@ -1644,8 +1648,10 @@ bool AppInitMain(InitInterfaces& interfaces)
 
     g_txindex = MakeUnique<TxIndex>(nTxIndexCache, false, fReindex);
     g_txindex->Start();
-	g_ticketindex = MakeUnique<TicketIndex>(nTxIndexCache, false, fReindex);
-	g_ticketindex->Start();
+    g_ticketindex = MakeUnique<TicketIndex>(nTxIndexCache, false, fReindex);
+    g_ticketindex->Start();
+    g_ticket_slot = MakeUnique<TicketSlot>(nTxIndexCache, false, fReindex);
+    g_ticket_slot->Start();
 
     // ********************************************************* Step 9: load wallet
     for (const auto& client : interfaces.chain_clients) {

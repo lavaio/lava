@@ -179,6 +179,9 @@ extern uint256 hashAssumeValid;
 /** Minimum work we will assume exists on some valid chain. */
 extern arith_uint256 nMinimumCumulativeDiff;
 
+/** Ticket slot we will assume exists on some valid chain **/
+extern uint64_t nTicketSlot;
+
 /** Best header we've seen so far (used for getheaders queries' starting points). */
 extern CBlockIndex *pindexBestHeader;
 
@@ -456,6 +459,9 @@ void ResetBlockFailureFlags(CBlockIndex* pindex) EXCLUSIVE_LOCKS_REQUIRED(cs_mai
 
 /** The currently-connected chain of blocks (protected by cs_main). */
 extern CChain& chainActive;
+
+/** The currently ticket price (protected by cs_main). */
+extern uint64_t ticketPriceActive;
 
 /** The assember of poc blocks (protected by cs_main). */
 extern CPOCBlockAssember& blockAssember;

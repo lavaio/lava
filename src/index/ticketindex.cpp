@@ -16,7 +16,7 @@ public:
 
 	bool WriteTicket(const CTicket ticket, const uint256 blockhash);
 
-	std::vector<CTicket> ListTickets(CBlockIndex* pindex, size_t count);
+	std::vector<CTicket> ListTickets(const CBlockIndex* pindex, size_t count);
 };
 
 TicketIndex::DB::DB(size_t n_cache_size, bool f_memory, bool f_wipe) :
@@ -48,12 +48,12 @@ bool TicketIndex::DB::WriteTicket(const CTicket ticket, const uint256 blockhash)
 BaseIndex::DB& TicketIndex::GetDB() const { return *m_db; }
 
 // this API is used to calculate ticket price.
-std::vector<CTicket> TicketIndex::DB::ListTickets(CBlockIndex* pindex, size_t count)
+std::vector<CTicket> TicketIndex::DB::ListTickets(const CBlockIndex* pindex, size_t count)
 {
 	std::vector<CTicket> ticketList;
-	CBlockIndex* blockIndex = pindex;
 
 	for (size_t index=0; index<count; index++){
+                const auto blockIndex = pindex->GetAncestor(pindex->nHeight - index);
 		if (blockIndex==nullptr)
 			break;
 		uint256 blockhash = *blockIndex->phashBlock;
@@ -72,7 +72,6 @@ std::vector<CTicket> TicketIndex::DB::ListTickets(CBlockIndex* pindex, size_t co
 				continue;
 			}
 		}
-		blockIndex = blockIndex->pprev;
 	}
 	
 	return std::move(ticketList);
@@ -125,6 +124,6 @@ bool TicketIndex::WriteTicket(const CTicket ticket, const uint256 blockhash){
 	return m_db->WriteTicket(ticket, blockhash);
 }
 
-std::vector<CTicket> TicketIndex::ListTickets(CBlockIndex* pindex, size_t count){
+std::vector<CTicket> TicketIndex::ListTickets(const CBlockIndex* pindex, size_t count){
 	return m_db->ListTickets(pindex, count);
 }

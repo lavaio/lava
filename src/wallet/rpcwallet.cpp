@@ -40,6 +40,7 @@
 #include <ticket.h>
 #include <wallet/fees.h>
 #include <index/ticketindex.h>
+#include <index/ticketslot.h>
 #include <stdint.h>
 
 #include <univalue.h>
@@ -4511,8 +4512,15 @@ UniValue freezefundsforticket(const JSONRPCRequest& request)
     dest = CTxDestination(CScriptID(redeemScript));
     auto scriptPubkey = GetScriptForDestination(dest);
     auto opRetScript = CScript() << OP_RETURN << CTicket::VERSION << ToByteVector(redeemScript);
+    
     // Amount
-    auto nAmount = 188 * COIN;
+    while (!g_ticket_slot->GetIndexSynced()) ;
+
+    uint64_t ticketPriceActive = g_ticket_slot->GetTicketPrice(chainActive.Tip());
+    if(ticketPriceActive < COIN)
+        throw JSONRPCError(RPC_WALLET_ERROR, "Error ticket price");
+    uint64_t nAmount = ticketPriceActive;
+    
     //set change dest
     std::shared_ptr<CReserveKey> rKey = std::make_shared<CReserveKey>(pwallet);
     CPubKey changePubKey;

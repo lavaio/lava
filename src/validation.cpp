@@ -48,6 +48,7 @@
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/thread.hpp>
+#include <index/ticketslot.h>
 
 #if defined(NDEBUG)
 #error "Bitcoin cannot be compiled without assertions."
@@ -249,6 +250,7 @@ bool fEnableReplacement = DEFAULT_ENABLE_REPLACEMENT;
 
 uint256 hashAssumeValid;
 arith_uint256 nMinimumCumulativeDiff;
+uint64_t nTicketSlot;
 
 CFeeRate minRelayTxFee = CFeeRate(DEFAULT_MIN_RELAY_TX_FEE);
 CAmount maxTxFee = DEFAULT_TRANSACTION_MAXFEE;
@@ -3274,6 +3276,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
         (block.nVersion < 4 && nHeight >= consensusParams.BIP65Height))
         return state.Invalid(false, REJECT_OBSOLETE, strprintf("bad-version(0x%08x)", block.nVersion),
             strprintf("rejected nVersion=0x%08x block", block.nVersion));
+
     // Check deadline
     auto dl = CalcDeadline(&block, pindexPrev);
     if (dl != block.nDeadline) {
@@ -3315,9 +3318,17 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
     int64_t nLockTimeCutoff = (nLockTimeFlags & LOCKTIME_MEDIAN_TIME_PAST) ? pindexPrev->GetMedianTimePast() : block.GetBlockTime();
 
     // Check that all transactions are finalized
+    // Check that all ticket transactions are legal
     for (const auto& tx : block.vtx) {
         if (!IsFinalTx(*tx, nHeight, nLockTimeCutoff)) {
             return state.DoS(10, false, REJECT_INVALID, "bad-txns-nonfinal", false, "non-final transaction");
+        }
+        if (tx->IsTicketTx()) {
+            auto ticketPrice = g_ticket_slot->GetTicketPrice(pindexPrev);
+            // check if ticket price is equal to ticket price received
+            const auto value = tx->vout[tx->Ticket()->GetIndex()].nValue;
+            if (value != ticketPrice) 
+                return state.DoS(10, false, REJECT_INVALID, "bad-txns-illegalticket", false, "illegal-ticket transaction");
         }
     }
 
