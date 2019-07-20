@@ -38,7 +38,7 @@ public:
 
 	bool WriteTicket(const CTicket ticket, const uint256 blockhash);
 
-	std::vector<CTicket> ListTickets(CBlockIndex* pindex, size_t count);
+	std::vector<CTicket> ListTickets(const CBlockIndex* pindex, size_t count);
 };
 
 /// The global ticket index

@@ -4,124 +4,98 @@
 #include <validation.h>
 
 std::unique_ptr<TicketSlot> g_ticket_slot;
-constexpr char DB_TICKETPRICE = 'P';
-constexpr char DB_TICKETSLOT = 'T';
+constexpr char DB_TICKETPRICE = 'T';
 
-TicketSlot::TicketSlot(size_t n_cache_size, bool f_memory, bool f_wipe)
-    : CDBWrapper(GetDataDir() / "indexes" / "tickeslot", n_cache_size, f_memory, f_wipe)
+/* DB functions */
+class TicketSlot::DB : public BaseIndex::DB
 {
+public:
+    explicit DB(size_t n_cache_size, bool f_memory = false, bool f_wipe = false);
+
+    uint64_t GetTicketPrice(const CBlockIndex* pindex);
+    
+    bool ReadTicketPrice(const uint256 blockhash, uint64_t& price);
+    
+    bool WriteTicketPrice(const uint256 blockhash, const uint64_t price);
+};
+
+TicketSlot::DB::DB(size_t n_cache_size, bool f_memory, bool f_wipe) :
+	BaseIndex::DB(GetDataDir() / "indexes" / "ticketslot", n_cache_size, f_memory, f_wipe)
+{}
+
+BaseIndex::DB& TicketSlot::GetDB() const { return *m_db; }
+
+bool TicketSlot::DB::ReadTicketPrice(const uint256 blockhash, uint64_t& price)
+{
+    std::pair<uint64_t, int> value;
+    auto isRead = Read(std::make_pair(DB_TICKETPRICE, blockhash), value);
+    price = value.first;
+    return isRead;
 }
+
+bool TicketSlot::DB::WriteTicketPrice(const uint256 blockhash, const uint64_t price)
+{
+    CDBBatch batch(*this);
+    batch.Write(std::make_pair(DB_TICKETPRICE, blockhash), price);
+    return WriteBatch(batch);
+}
+
+uint64_t TicketSlot::DB::GetTicketPrice(const CBlockIndex* pindex)
+{
+    if (pindex == nullptr || pindex->nHeight < nTicketSlot) return 25 * COIN;
+
+    // nHeight >= nTicketSlot
+    const uint32_t slots = pindex->nHeight % nTicketSlot;
+    const CBlockIndex* slotBlockIdx = pindex->GetAncestor(pindex->nHeight-slots);
+
+    uint64_t price;
+    this->ReadTicketPrice(slotBlockIdx->GetBlockHash(), price);
+
+    return price;
+}
+
+/* TicketSlot functions */
+TicketSlot::TicketSlot(size_t n_cache_size, bool f_memory, bool f_wipe)
+	: m_db(MakeUnique<TicketSlot::DB>(n_cache_size, f_memory, f_wipe))
+{}
 
 TicketSlot::~TicketSlot()
 {
 }
 
-bool TicketSlot::ConnectBlock(const CBlock& block, CBlockIndex* pindex)
+bool TicketSlot::Init()
 {
-    if (pindex == nullptr) {
-        return false;
-    }
+    return BaseIndex::Init();
+}
+
+bool TicketSlot::WriteBlock(const CBlock& block, const CBlockIndex* pindex)
+{
+    if (pindex == nullptr || pindex->nHeight < nTicketSlot || pindex->nHeight % nTicketSlot != 0) return true;
+
+    // get last slot price
+    auto price = GetTicketPrice(pindex->pprev);
     
-    uint256 blockhash;
-    ReadBestTicket(blockhash);
+    auto ticketList = g_ticketindex->ListTickets(pindex, nTicketSlot);
+    uint32_t sumTickets = ticketList.size();
+    uint32_t ticketMargin = nTicketSlot * 0.1;
 
-    uint64_t prevTicketPrice = 0;
-    // pindex->pprev is the tip of the ActiveChain
-    // it means that pindex is 1 block higher than ActiveChain.
-    if (pindex->GetBlockHash() != blockhash) {
-        for (const auto& i : block.vtx) {
-            const auto& tx = *i;
-            if (tx.IsTicketTx()) {
-                // if has ticket tx, then read prevTicketPrice
-                if (prevTicketPrice == 0) prevTicketPrice = GetTicketPrice(pindex->pprev);
-                CTicketRef ticket;
-                try {
-                    ticket = tx.Ticket();
+    if (sumTickets > nTicketSlot + ticketMargin) price *= 1.05f;
+    else if (sumTickets < nTicketSlot - ticketMargin) price *= 0.95f;
 
-                    // check if ticket price is equal to ticket price received
-                    const auto value = tx.vout[ticket->GetIndex()].nValue;
-                    if (value != prevTicketPrice) {
-                        return false;
-                    }
-                } catch (...) {
-                }
-            }
-        }
-    }
-
-    WriteBestTicket(pindex->GetBlockHash());
-
-    return true;
+    return m_db->WriteTicketPrice(pindex->GetBlockHash(), price);
 }
 
-uint64_t TicketSlot::GetTicketPrice(CBlockIndex* pindex)
+bool TicketSlot::ReadTicketPrice(const uint256 blockhash, uint64_t& price)
 {
-    if (pindex == nullptr || pindex->nHeight < nTicketSlot) return 25 * COIN;
-
-    const auto rate = GetTicketPriceRate(pindex);
-
-    const uint32_t slots = pindex->nHeight % nTicketSlot;
-    const uint32_t lastSlotHeight = slots != 0 ? slots : nTicketSlot;
-
-    const auto prevTicketPrice = GetTicketPrice(pindex->GetAncestor(pindex->nHeight-lastSlotHeight));
-    const uint64_t currTicketPrice = rate * prevTicketPrice;
-
-    return currTicketPrice == 0 ? COIN : currTicketPrice;
+    return m_db->ReadTicketPrice(blockhash, price);
 }
 
-/**
- * private methods 
- */
-float TicketSlot::GetTicketPriceRate(CBlockIndex* pindex)
+bool TicketSlot::WriteTicketPrice(const uint256 blockhash, const uint64_t price)
 {
-    if (pindex->nHeight % nTicketSlot != 0) return 1;
-
-    float rate;
-    ReadTicketPrice(pindex->GetBlockHash(), rate);
-
-    if (rate == 0) {
-
-        auto ticketList = g_ticket->ListTickets(pindex, nTicketSlot);
-        uint32_t sumTickets = ticketList.size();
-        uint32_t ticketMargin = nTicketSlot * 0.1;
-
-        if (sumTickets > nTicketSlot + ticketMargin) rate = 1.05f;
-        else if (sumTickets < nTicketSlot - ticketMargin) rate = 0.95f;
-        else rate = 1;
-
-        WriteTicketPrice(pindex->GetBlockHash(), rate);
-    }
-
-    return rate;
+    return m_db->WriteTicketPrice(blockhash, price);
 }
 
-bool TicketSlot::ReadTicketPrice(const uint256 blockhash, float& rate)
+uint64_t TicketSlot::GetTicketPrice(const CBlockIndex* pindex)
 {
-    std::pair<float, int> value;
-    auto isRead = Read(std::make_pair(DB_TICKETPRICE, blockhash), value);
-    rate = value.first;
-    return isRead;
-}
-
-bool TicketSlot::WriteTicketPrice(const uint256 blockhash, const float rate)
-{
-    CDBBatch batch(*this);
-    batch.Write(std::make_pair(DB_TICKETPRICE, blockhash), rate);
-    return WriteBatch(batch);
-}
-
-bool TicketSlot::ReadBestTicket(uint256& blockhash)
-{
-    std::pair<uint256, int> value;
-    bool isRead = Read(DB_TICKETSLOT, value);
-    blockhash = value.first;
-    return isRead;
-}
-
-// record the best ticket into disk for sync.
-bool TicketSlot::WriteBestTicket(const uint256 blockhash)
-{
-    CDBBatch batch(*this);
-    batch.Write(DB_TICKETSLOT, blockhash);
-    return WriteBatch(batch);
+    return m_db->GetTicketPrice(pindex);
 }

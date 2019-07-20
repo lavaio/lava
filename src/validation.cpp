@@ -229,7 +229,6 @@ RecursiveMutex cs_main;
 
 BlockMap& mapBlockIndex = g_chainstate.mapBlockIndex;
 CChain& chainActive = g_chainstate.chainActive;
-uint64_t ticketPriceActive = 0;
 CPOCBlockAssember& blockAssember = g_chainstate.blockAssember;
 CBlockIndex* pindexBestHeader = nullptr;
 Mutex g_best_block_mutex;
@@ -2297,7 +2296,6 @@ bool CChainState::DisconnectTip(CValidationState& state, const CChainParams& cha
     }
 
     chainActive.SetTip(pindexDelete->pprev);
-    ticketPriceActive = g_ticket_slot->GetTicketPrice(pindexDelete->pprev);
 
     UpdateTip(pindexDelete->pprev, chainparams);
     // Let wallets know transactions went from 1-confirmed to
@@ -2435,7 +2433,6 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
     disconnectpool.removeForBlock(blockConnecting.vtx);
     // Update chainActive & related variables.
     chainActive.SetTip(pindexNew);
-    ticketPriceActive = g_ticket_slot->GetTicketPrice(pindexNew);
     UpdateTip(pindexNew, chainparams);
 
     int64_t nTime6 = GetTimeMicros();
@@ -3279,6 +3276,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
         (block.nVersion < 4 && nHeight >= consensusParams.BIP65Height))
         return state.Invalid(false, REJECT_OBSOLETE, strprintf("bad-version(0x%08x)", block.nVersion),
             strprintf("rejected nVersion=0x%08x block", block.nVersion));
+
     // Check deadline
     auto dl = CalcDeadline(&block, pindexPrev);
     if (dl != block.nDeadline) {
@@ -3320,9 +3318,17 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
     int64_t nLockTimeCutoff = (nLockTimeFlags & LOCKTIME_MEDIAN_TIME_PAST) ? pindexPrev->GetMedianTimePast() : block.GetBlockTime();
 
     // Check that all transactions are finalized
+    // Check that all ticket transactions are legal
     for (const auto& tx : block.vtx) {
         if (!IsFinalTx(*tx, nHeight, nLockTimeCutoff)) {
             return state.DoS(10, false, REJECT_INVALID, "bad-txns-nonfinal", false, "non-final transaction");
+        }
+        if (tx->IsTicketTx()) {
+            auto ticketPrice = g_ticket_slot->GetTicketPrice(pindexPrev);
+            // check if ticket price is equal to ticket price received
+            const auto value = tx->vout[tx->Ticket()->GetIndex()].nValue;
+            if (value != ticketPrice) 
+                return state.DoS(10, false, REJECT_INVALID, "bad-txns-illegalticket", false, "illegal-ticket transaction");
         }
     }
 
@@ -4021,7 +4027,6 @@ bool LoadChainTip(const CChainParams& chainparams)
         return false;
     }
     chainActive.SetTip(pindex);
-    ticketPriceActive = g_ticket_slot->GetTicketPrice(pindex);
 
     g_chainstate.PruneBlockIndexCandidates();
 
@@ -4397,7 +4402,6 @@ void UnloadBlockIndex()
 {
     LOCK(cs_main);
     chainActive.SetTip(nullptr);
-    ticketPriceActive = g_ticket_slot->GetTicketPrice(nullptr);
     pindexBestInvalid = nullptr;
     pindexBestHeader = nullptr;
     mempool.clear();

@@ -93,6 +93,9 @@ public:
 
     /// Stops the instance from staying in sync with blockchain updates.
     void Stop();
+
+    /// Get chain sync status
+    bool GetIndexSynced() { return m_synced; }
 };
 
 #endif // BITCOIN_INDEX_BASE_H
