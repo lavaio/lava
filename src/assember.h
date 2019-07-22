@@ -11,13 +11,11 @@ class CPOCBlockAssember
 public:
     CPOCBlockAssember();
 
-    ~CPOCBlockAssember();
+    ~CPOCBlockAssember() = default;
 
     bool UpdateDeadline(const int height, const CKeyID& keyid, const uint64_t nonce, const uint64_t deadline);
 
     void CreateNewBlock();
-
-    void Interrupt();
 
     void SetNull();
 
@@ -32,9 +30,6 @@ private:
     uint64_t     dl;
     boost::mutex mtx;
     std::shared_ptr<CScheduler> scheduler;
-    std::shared_ptr<boost::thread> thread;
 };
-
-
 
 #endif // BITCOIN_ASSEMBER_H

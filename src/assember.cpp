@@ -14,15 +14,6 @@ CPOCBlockAssember::CPOCBlockAssember()
     : scheduler(std::make_shared<CScheduler>())
 {
     SetNull();
-    auto f = boost::bind(&CScheduler::serviceQueue, scheduler.get());
-    thread = std::make_shared<boost::thread>(f);
-    const auto interval = 200;
-    scheduler->scheduleEvery(std::bind(&CPOCBlockAssember::CheckDeadline, this), interval);
-}
-
-CPOCBlockAssember::~CPOCBlockAssember()
-{
-    thread->interrupt();
 }
 
 bool CPOCBlockAssember::UpdateDeadline(const int height, const CKeyID& keyid, const uint64_t nonce, const uint64_t deadline)
@@ -119,11 +110,4 @@ void CPOCBlockAssember::SetNull()
     genSig = uint256();
     keyid.SetNull();
     dl = 0;
-}
-
-void CPOCBlockAssember::Interrupt()
-{
-    thread->interrupt();
-    thread->join();
-    LogPrintf("CPOCBlockAssember stopped\n");
 }
