@@ -21,7 +21,6 @@ public:
 
     void SetNull();
 
-private:
     void CheckDeadline();
 
 private:
