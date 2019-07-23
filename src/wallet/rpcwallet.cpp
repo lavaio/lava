@@ -4535,14 +4535,39 @@ UniValue freezefundsforticket(const JSONRPCRequest& request)
     return tx->GetHash().GetHex();
 }
 
-CTransactionRef CreateTicketSpendTx(const CScript& redeemScript, const uint256& txid, const int n, const CTxOut& out, CTxDestination& dest, CKey& key)
+CTransactionRef CreateTicketSpendTx(CWallet* const pwallet, const CScript& redeemScript, const uint256& txid, const int n, const CTxOut& out, CTxDestination& dest, CKey& key)
 {
     CMutableTransaction mtx;
-    auto fee = COIN * 0.002;
+
     //mtx.nVersion = 1;
-    mtx.vin.push_back(CTxIn(txid, n, CScript(), 0));
-    mtx.vout.push_back(CTxOut(out.nValue - fee, GetScriptForDestination(dest)));
+    mtx.vin.push_back(CTxIn(txid, n, redeemScript, 0));
+    mtx.vout.push_back(CTxOut(out.nValue, GetScriptForDestination(dest)));
     mtx.nLockTime = chainActive.Height();
+
+	{
+	  CMutableTransaction txcopyforfee(mtx);
+	  auto nBytes = GetVirtualTransactionSize(CTransaction(txcopyforfee));
+	  if (nBytes < 0) {
+		throw JSONRPCError(RPC_INVALID_PARAMETER, "Signing transaction failed");
+	  }
+	  nBytes += CPubKey::SIGNATURE_SIZE + CPubKey::PUBLIC_KEY_SIZE;
+
+	  FeeCalculation feeCalc;
+	  CCoinControl coin_control;
+	  CAmount nFeeNeeded = GetMinimumFee(*pwallet, nBytes, coin_control, ::mempool, ::feeEstimator, &feeCalc);
+	  if (feeCalc.reason == FeeReason::FALLBACK && !pwallet->m_allow_fallback_fee) {
+		// eventually allow a fallback fee
+		throw JSONRPCError(RPC_INVALID_PARAMETER,"Fee estimation failed. Fallbackfee is disabled. Wait a few blocks or enable -fallbackfee.");
+	  }
+
+	  // If we made it here and we aren't even able to meet the relay fee on the next pass, give up
+	  // because we must be at the maximum allowed fee.
+	  if (nFeeNeeded < ::minRelayTxFee.GetFee(nBytes))
+	  {
+		throw JSONRPCError(RPC_INVALID_PARAMETER, "Transaction too large for fee policy");
+	  }
+	  mtx.vout[0].nValue=out.nValue - nFeeNeeded;
+	}
 
     CMutableTransaction txcopy(mtx);
     txcopy.vin[0] = CTxIn(txcopy.vin[0].prevout, redeemScript, 0);
@@ -4556,7 +4581,7 @@ CTransactionRef CreateTicketSpendTx(const CScript& redeemScript, const uint256& 
     }
     vchSig.push_back((unsigned char)SIGHASH_ALL);
     mtx.vin[0].scriptSig = CScript() << vchSig << ToByteVector(key.GetPubKey()) << ToByteVector(redeemScript);
-    CTransaction tx(mtx);
+	CTransaction tx(mtx);
     return MakeTransactionRef(tx);
 }
 
@@ -4646,7 +4671,7 @@ UniValue spendticket(const JSONRPCRequest& request)
     }
     CKey key;
     pwallet->GetKey(keyID, key);
-    auto tx = CreateTicketSpendTx(redeemScript, prevTx->GetHash(), vout, prevTx->vout[vout], dest, key);
+    auto tx = CreateTicketSpendTx(pwallet, redeemScript, prevTx->GetHash(), vout, prevTx->vout[vout], dest, key);
     if (!tx) {
         throw JSONRPCError(RPC_TRANSACTION_REJECTED, "Create ticket spend transaction error.");
     }
@@ -4660,15 +4685,16 @@ UniValue spendticket(const JSONRPCRequest& request)
     return spendTxID.GetHex();
 }
 
-CTransactionRef CreateTicketAllSpendTx(std::map<uint256,std::pair<int,CScript>> txScriptInputs, std::vector<CTxOut> outs, CTxDestination& dest, CKey& key)
+CTransactionRef CreateTicketAllSpendTx(CWallet* const pwallet, std::map<uint256,std::pair<int,CScript>> txScriptInputs, std::vector<CTxOut> outs, CTxDestination& dest, CKey& key)
 {
 	CMutableTransaction mtx;
-	auto fee = COIN * 0.002;
 	mtx.nLockTime = chainActive.Height();
 	// add vin into mtx
 	int index=0;
+	unsigned int pubKeySizeSum = 0;
 	for(auto iter=txScriptInputs.begin(); iter!=txScriptInputs.end(); iter++){
 		mtx.vin.push_back(CTxIn(iter->first, iter->second.first, iter->second.second, index)); 
+		pubKeySizeSum += CPubKey::SIGNATURE_SIZE + CPubKey::PUBLIC_KEY_SIZE;
 		index++;
 	}
 	// add vout value in new vout 
@@ -4676,7 +4702,32 @@ CTransactionRef CreateTicketAllSpendTx(std::map<uint256,std::pair<int,CScript>> 
 	for (auto iter=outs.begin(); iter!=outs.end(); iter++){
 		value += iter->nValue;
 	}
-	mtx.vout.push_back(CTxOut(value - fee, GetScriptForDestination(dest)));
+	mtx.vout.push_back(CTxOut(value, GetScriptForDestination(dest)));
+
+	{
+	  CMutableTransaction txcopyforfee(mtx);
+	  auto nBytes = GetVirtualTransactionSize(CTransaction(txcopyforfee));
+	  if (nBytes < 0) {
+		throw JSONRPCError(RPC_INVALID_PARAMETER, "Signing transaction failed");
+	  }
+	  nBytes += pubKeySizeSum;
+
+	  FeeCalculation feeCalc;
+	  CCoinControl coin_control;
+	  CAmount nFeeNeeded = GetMinimumFee(*pwallet, nBytes, coin_control, ::mempool, ::feeEstimator, &feeCalc);
+	  if (feeCalc.reason == FeeReason::FALLBACK && !pwallet->m_allow_fallback_fee) {
+		// eventually allow a fallback fee
+		throw JSONRPCError(RPC_INVALID_PARAMETER,"Fee estimation failed. Fallbackfee is disabled. Wait a few blocks or enable -fallbackfee.");
+	  }
+
+	  // If we made it here and we aren't even able to meet the relay fee on the next pass, give up
+	  // because we must be at the maximum allowed fee.
+	  if (nFeeNeeded < ::minRelayTxFee.GetFee(nBytes))
+	  {
+		throw JSONRPCError(RPC_INVALID_PARAMETER, "Transaction too large for fee policy");
+	  }
+	  mtx.vout[0].nValue -= nFeeNeeded;
+	}
 
 	int nIn = 0;
 	for(auto iter=txScriptInputs.begin(); iter!=txScriptInputs.end(); iter++){
@@ -4844,7 +4895,7 @@ UniValue freetickets(const JSONRPCRequest& request){
 	CKeyID keyID = boost::get<CKeyID>(destination);	
 	CKey key;
 	pwallet->GetKey(keyID, key);
-	auto tx = CreateTicketAllSpendTx(txScriptInputs, outs, receiver, key);
+	auto tx = CreateTicketAllSpendTx(pwallet, txScriptInputs, outs, receiver, key);
 
 	std::string errStr;
 	uint256 spendTxID;
