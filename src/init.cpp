@@ -41,6 +41,7 @@
 #include <shutdown.h>
 #include <timedata.h>
 #include <txdb.h>
+#include <actiondb.h>
 #include <txmempool.h>
 #include <torcontrol.h>
 #include <ui_interface.h>
@@ -1692,7 +1693,8 @@ bool AppInitMain(InitInterfaces& interfaces)
     } else {
         fHaveGenesis = true;
     }
-
+    //
+    g_relationdb.reset(new CRelationDB(nBlockTreeDBCache));
     if (gArgs.IsArgSet("-blocknotify"))
         uiInterface.NotifyBlockTip_connect(BlockNotifyCallback);
 
@@ -1812,6 +1814,6 @@ bool AppInitMain(InitInterfaces& interfaces)
         g_banman->DumpBanlist();
     }, DUMP_BANS_INTERVAL * 1000);
 
-    scheduler.scheduleEvery([] {blockAssember.checkDeadline(); }, 200);
+    scheduler.scheduleEvery([] {blockAssember.CheckDeadline(); }, 200);
     return true;
 }

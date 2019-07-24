@@ -12,6 +12,7 @@
 #include "../../src/key_io.h"
 #include "../../src/outputtype.h"
 #include "../../src/ticket.h"
+#include "../../src/actiondb.h"
 
 using namespace std;
 
@@ -29,7 +30,7 @@ static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesi
 
     CBlock genesis;
     genesis.nTime = nTime;
-    genesis.nBits = nBits;
+    //genesis.nBits = nBits;
     genesis.nNonce = nNonce;
     genesis.nVersion = nVersion;
     genesis.vtx.push_back(MakeTransactionRef(std::move(txNew)));
@@ -74,18 +75,6 @@ BOOST_AUTO_TEST_CASE(genesis_block)
     hash = genesis_reg.GetHash().ToString();
 }
 
-BOOST_AUTO_TEST_CASE(address2plotid)
-{
-    SelectParams(CBaseChainParams::MAIN);
-    string addr("MhzFQAXQMsmtTmdkciLE3EJsgAQkzR4Sg");
-    string secret("KwWKWSfxHSZEWi3Nt7wzbem4D2ksgypT5N24LnnsNhz881d84us7");
-    ECC_Start();
-    auto key = DecodeSecret(secret);
-    auto plotID = key.GetPubKey().GetID().GetPlotID();
-    
-    ECC_Stop();
-}
-
 BOOST_AUTO_TEST_CASE(calc_deadline)
 {
     string hex("cbe922a9bcb308e271badc7b30f541131b841c163434899728a3fba68e6d4699");
@@ -95,37 +84,89 @@ BOOST_AUTO_TEST_CASE(calc_deadline)
     BOOST_CHECK_EQUAL(deadline, 6170762982435);
 }
 
-BOOST_AUTO_TEST_CASE(genesis)
-{
-    auto script = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f");
-    CTxDestination dest;
-    ExtractDestination(script, dest);
-    auto str = EncodeDestination(dest);
-}
-
-BOOST_AUTO_TEST_CASE(get_address)
+BOOST_AUTO_TEST_CASE(test_bind)
 {
     SelectParams(CBaseChainParams::MAIN);
-    string secret = "KzQgt85D2A9qynEz3rbM1uzUVJANm6PrF4mBxrymzPfkjSK5UJPk";
-    //string addr("MhzFQAXQMsmtTmdkciLE3EJsgAQkzR4Sg");
+    string secret = "KxMXBrCNaNndDprZy3NDkHLnCqhygHjhwUcJeunmuZFbRBwMycn6";
+    string toAddr("17VkcJoDJEHyuCKgGyky8CGNnb1kPgbwr4");
     ECC_Start();
     auto key = DecodeSecret(secret);
-    auto pubkey = key.GetPubKey();
-    CTxDestination dest = GetDestinationForKey(pubkey, OutputType::LEGACY);
-    auto addr = EncodeDestination(dest);
+    auto from = key.GetPubKey().GetID();
+    auto destTo = DecodeDestination(toAddr);
+    BOOST_ASSERT(destTo.type() == typeid(CKeyID));
+    auto to = boost::get<CKeyID>(destTo);
+    auto action = MakeBindAction(from, to);
+    std::vector<unsigned char> vchSig;
+    BOOST_ASSERT(SignAction(action, key, vchSig));
+    auto str = HexStr(vchSig);
     ECC_Stop();
 }
 
-BOOST_AUTO_TEST_CASE(test_script)
+BOOST_AUTO_TEST_CASE(test_bind2)
 {
-    SelectParams(CBaseChainParams::TESTNET);
-    string secret = "cPxCPyn1CJNovHaVF2UqFh7QZACswJQPtk6GgSjwFFESrWepqvvQ";
+    SelectParams(CBaseChainParams::MAIN);
+    string secret = "KxMXBrCNaNndDprZy3NDkHLnCqhygHjhwUcJeunmuZFbRBwMycn6";
+    string toAddr("17VkcJoDJEHyuCKgGyky8CGNnb1kPgbwr4");
     ECC_Start();
+    ECCVerifyHandle globalVerifyHandle;
     auto key = DecodeSecret(secret);
-    auto pubkey = key.GetPubKey();
-    auto script = CScript() << CScriptNum(220) << OP_CHECKLOCKTIMEVERIFY << OP_DROP << ToByteVector(pubkey) << OP_CHECKSIG;
-    CPubKey pub2;
-    auto getRet = GetPublicKeyFromScript(script, pub2);
-    BOOST_CHECK_EQUAL(pub2==pubkey, true);
+    auto from = key.GetPubKey().GetID();
+    auto vch = ParseHex("01000000aaf6202d36bdfa33b01c772a6ce7c4dab02fbf7d4740cdeb7d81e3320fc64f888c7b6725da5e56cb1faa045bee3fc486bc60756cc84b0b15c7b48cb6730acabe5d4d7b99e286adfe68166326a5db968d1e49e60cdc75a84022b0a29129861b62539a9a16cc7197c6df");
+
+    auto action = UnserializeAction(vch);
+    BOOST_ASSERT(action.type() == typeid(CBindAction));
+    auto actionVch = SerializeAction(action);
+    CHashWriter hasher(SER_GETHASH, PROTOCOL_VERSION);
+    hasher << actionVch;
+    std::vector<unsigned char> vchSig(vch.end() - 65, vch.end());
+    CPubKey pubkey;
+    BOOST_ASSERT(pubkey.RecoverCompact(hasher.GetHash(), vchSig));
+    BOOST_ASSERT(from == pubkey.GetID());
+    ECC_Stop();
+}
+
+BOOST_AUTO_TEST_CASE(test_relation_db) 
+{
+    ECC_Start();
+    std::shared_ptr<CRelationDB> db(new CRelationDB(10240));
+    CKey key1;
+    key1.MakeNewKey(true);
+    auto keyid1 = key1.GetPubKey().GetID();
+    CKey key2;
+    key2.MakeNewKey(true);
+    auto keyid2 = key1.GetPubKey().GetID();
+    CKey key3;
+    key3.MakeNewKey(true);
+    auto keyid3 = key1.GetPubKey().GetID();
+    
+    //case 1
+    auto txid1 = uint256S("074820448352f1d663cfc4e0810b39ce37153533b4c52711aa68904bddda0021");
+    BOOST_ASSERT(db->AcceptAction(txid1, MakeBindAction(keyid1, keyid2)));
+    BOOST_ASSERT(db->To(keyid1) == keyid2);
+    //case 2
+    auto txid2 = uint256S("d4a05480fa91eaf105b45b7bd7f197b52bf220e47d2c4203f6594f91f3775bc2");
+    BOOST_ASSERT(db->AcceptAction(txid2, MakeBindAction(keyid1, keyid2)));
+    BOOST_ASSERT(db->To(keyid1) == keyid2);
+    BOOST_ASSERT(db->RollbackAction(txid2));
+    BOOST_ASSERT(db->To(keyid1) == keyid2);
+    BOOST_ASSERT(db->RollbackAction(txid1));
+    BOOST_ASSERT(db->To(keyid1) == CKeyID());
+    //case 3
+    auto txid3 = uint256S("da35ffcc5d6eeb4f296c66de8ff8fe1c9c112b726da75cc3296deb6ab3c70e63");
+    BOOST_ASSERT(db->AcceptAction(txid3, MakeBindAction(keyid1, keyid2)));
+    auto txid4 = uint256S("e44699d1b6247ebad3bf57de281a6788503bc258e93d3a8c36f2a72f6822683d");
+    BOOST_ASSERT(db->AcceptAction(txid4, CUnbindAction(keyid1)));
+    BOOST_ASSERT(db->To(keyid1) == CKeyID());
+    //case 4
+    auto txid5 = uint256S("e44699d1b6247ebad3bf57de281a6788503bc25111111a8c36f2a72f6822683d");
+    BOOST_ASSERT(db->AcceptAction(txid5, CUnbindAction(keyid1)));
+    //case 5
+    auto txid6 = uint256S("da35ffcc5d6eeb4f296c66de8ffa6788503bc25111111a8c36f2a72f6822683d");
+    BOOST_ASSERT(db->AcceptAction(txid6, MakeBindAction(keyid1, keyid2)));
+    auto txid7 = uint256S("074820448352eb4f296c66de8ffa6788503bc25111111a8c36f2a72f6822683d");
+    BOOST_ASSERT(db->AcceptAction(txid7, MakeBindAction(keyid1, keyid3)));
+    BOOST_ASSERT(db->To(keyid1) == keyid3);
+    BOOST_ASSERT(db->RollbackAction(txid7));
+    BOOST_ASSERT(db->To(keyid1) == keyid2);
     ECC_Stop();
 }

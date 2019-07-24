@@ -11,41 +11,16 @@
 #include "sync.h"
 #include "util.h"
 #include "util/strencodings.h"
-#include "validation.h"
 #include "wallet/coincontrol.h"
 #include "wallet/wallet.h"
 
 #include <algorithm>
 #include <queue>
 #include <wallet/rpcwallet.h>
-
-/*
-static UniValue registerMinerAccount(const JSONRPCRequest& request)
-{
-    if (request.fHelp || request.params.size() != 1) {
-        throw std::runtime_error(
-            RPCHelpMan{
-                "registermineraccount",
-                "\nReturns a plot id for poc mining.",
-                {{"address", RPCArg::Type::STR, RPCArg::Optional::NO, "Your miner address"}},
-                RPCResult{
-                    "{\n"
-                    "  \"plotid\": nnn, (numeric) The plot id\n"
-                    "  \"address\": \"xxx\"\n"
-                    "  \"tx\": \"xxx\"\n"
-                    "}\n"},
-                RPCExamples{
-                    HelpExampleCli("registermineraccount", "\"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XX\"") + HelpExampleRpc("registermineraccount", "\"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XX\"")},
-            }
-                .ToString());
-    }
-    LOCK(cs_main);
-
-    UniValue obj(UniValue::VOBJ);
-
-    return obj;
-}
-*/
+#include <ticket.h>
+#include <consensus/tx_verify.h>
+#include <net.h>
+#include <validation.h>
 
 UniValue getAddressPlotId(const JSONRPCRequest& request)
 {
@@ -89,35 +64,6 @@ UniValue getAddressPlotId(const JSONRPCRequest& request)
 
     UniValue obj(UniValue::VOBJ);
     obj.pushKV("plotid", keyid.GetPlotID());
-    return obj;
-}
-
-static UniValue listMinerAccounts(const JSONRPCRequest& request)
-{
-    if (request.fHelp || request.params.size() != 0) {
-        throw std::runtime_error(
-            RPCHelpMan{
-                "listMinerAccounts",
-                "\nSubmit the nonce form disk.",
-                {{"address", RPCArg::Type::STR, RPCArg::Optional::NO, "Your miner address"},
-                    {"nonce", RPCArg::Type::NUM, RPCArg::Optional::NO, "The nonce you found on disk"},
-                    {"deadline", RPCArg::Type::NUM, RPCArg::Optional::NO, "When the next block will be generate"}},
-                RPCResult{
-                    "{\n"
-                    "  \"accounts\": ["
-                    "  \"plotid\": nnn,             (numeric) The plot id\n"
-                    "  \"address\": \"xxx\n"
-                    "   ]"
-                    "}\n"},
-                RPCExamples{
-                    HelpExampleCli("listmineraccounts", "") + HelpExampleRpc("listmineraccounts", "")},
-            }
-                .ToString());
-    }
-    LOCK(cs_main);
-
-    UniValue obj(UniValue::VOBJ);
-
     return obj;
 }
 
@@ -194,16 +140,11 @@ UniValue submitNonce(const JSONRPCRequest& request)
     LOCK(cs_main);
     std::string strAddress = request.params[0].get_str();
     CTxDestination dest = DecodeDestination(strAddress);
-    if (!IsValidDestination(dest)) {
+    if (!IsValidDestination(dest) && dest.type() != typeid(CKeyID)) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Bitcoin address");
     }
-    auto keyid = GetKeyForDestination(*pwallet, dest);
-    if (keyid.IsNull()) {
-        throw JSONRPCError(RPC_TYPE_ERROR, "Address does not refer to a key");
-    }
-    std::shared_ptr<CReserveScript> coinbaseScript = std::make_shared<CReserveScript>();
-    coinbaseScript->reserveScript = GetScriptForDestination(dest);
-    auto plotID = keyid.GetPlotID();
+    auto keyid = boost::get<CKeyID>(dest);
+    auto plotID = boost::get<CKeyID>(dest).GetPlotID();
     uint64_t nonce = 0;
     auto nonceStr = request.params[1].get_str();
     if (!ParseUInt64(nonceStr, &nonce)) {
@@ -212,7 +153,7 @@ UniValue submitNonce(const JSONRPCRequest& request)
     uint64_t deadline = request.params[2].get_int64();
     int height = request.params[3].get_int();
     UniValue obj(UniValue::VOBJ);
-    if (blockAssember.UpdateDeadline(height, plotID, nonce, deadline, coinbaseScript->reserveScript)) {
+    if (blockAssember.UpdateDeadline(height, keyid, nonce, deadline)) {
         obj.pushKV("plotid", plotID);
         obj.pushKV("deadline", deadline);
         auto params = Params();
@@ -227,7 +168,6 @@ UniValue submitNonce(const JSONRPCRequest& request)
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
-    //{ "poc",               "registermineraccount",    &registerMinerAccount,   {"address"} },
     { "poc",               "getmininginfo",           &getMiningInfo,          {} },
     { "poc",               "submitnonce",             &submitNonce,            {"address", "nonce", "deadline"} },
 	{ "poc",               "getaddressplotid",        &getAddressPlotId,       {"address"} },
