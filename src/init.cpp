@@ -1641,10 +1641,9 @@ bool AppInitMain(InitInterfaces& interfaces)
     fFeeEstimatesInitialized = true;
 
     // ********************************************************* Step 8: start indexers
-    if (gArgs.GetBoolArg("-txindex", DEFAULT_TXINDEX)) {
-        g_txindex = MakeUnique<TxIndex>(nTxIndexCache, false, fReindex);
-        g_txindex->Start();
-    }
+    g_txindex = MakeUnique<TxIndex>(nTxIndexCache, false, fReindex);
+	g_txindex->Start();
+
 
     // ********************************************************* Step 9: load wallet
     for (const auto& client : interfaces.chain_clients) {
