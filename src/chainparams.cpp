@@ -225,7 +225,7 @@ public:
         fDefaultConsistencyChecks = false;
         fRequireStandard = false;
         fMineBlocksOnDemand = false;
-
+        consensus.nActionFee = 16 * COIN;
 
         checkpointData = {
         };
