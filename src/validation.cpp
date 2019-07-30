@@ -3299,12 +3299,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
         (block.nVersion < 4 && nHeight >= consensusParams.BIP65Height))
         return state.Invalid(false, REJECT_OBSOLETE, strprintf("bad-version(0x%08x)", block.nVersion),
             strprintf("rejected nVersion=0x%08x block", block.nVersion));
-    // Check deadline
-    auto dl = CalcDeadline(&block, pindexPrev);
-    if (dl != block.nDeadline) {
-        return state.Invalid(false, REJECT_INVALID, "error-deadline",
-            strprintf("header deadline=%u, calc result=%u, nheigth=%u, newheight=%u, header plotid=%u, header nonce=%u", block.nDeadline, dl, pindexPrev->nHeight, nHeight, block.nPlotID, block.nNonce));
-    }
+    
 
     //TODO: Check timestamp
     /*dl /= pindexPrev->nBaseTarget;

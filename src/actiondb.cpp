@@ -72,7 +72,9 @@ CAction UnserializeAction(const std::vector<unsigned char>& vch) {
 CAction DecodeAction(const CTransactionRef tx, std::vector<unsigned char>& vchSig)
 {
     do {
-        if (tx->IsCoinBase() || tx->IsNull() || tx->vout.size() != 2) continue;
+        if (tx->IsCoinBase() || tx->IsNull() || tx->vout.size() != 2 
+            || (tx->vout[0].nValue != 0 && tx->vout[1].nValue != 0)) 
+            continue;
         auto outValue = tx->GetValueOut();
         CAmount nAmount{ 0 };
         for (auto vin : tx->vin) {
