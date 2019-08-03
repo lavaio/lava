@@ -170,3 +170,35 @@ BOOST_AUTO_TEST_CASE(test_relation_db)
     BOOST_ASSERT(db->To(keyid1) == keyid2);
     ECC_Stop();
 }
+
+
+BOOST_AUTO_TEST_CASE(test_decode_action) {
+    ECCVerifyHandle evh;
+    ECC_Start();
+    std::string hex_tx("020000000128574dd066abdb89fa8d6930fa1923e1100c7bfd94cf70659c8e8e541650e8ac000000006a47304402207049daa3d10db54640a871caa94eaaff377f20f9ad50e8d5b46ecec1c9e53f4502200b1c8843c529978d4d3368cba9ee70d2df7e043e5ca5f0e36c3fe2c6551d79ea012102da788aa6e547746556a27bee415ff3187df45033e3ef7e79fe8d506047bd6fb8feffffff02007054870e0000001976a91402b6eb3eb965532c942f1c112c585716db12b06388ac0000000000000000706a4c6d0100000002b6eb3eb965532c942f1c112c585716db12b063090e217eff3b75215b5d106ad861d40e0d46af77203a26502f47c21c7210d74855bf691b62ca79cf7fd587ff1ab64b1ff5924fcbbb47d06898b37e3197a1bc82d3d69b1e6a8ac3a90ac382883e439e9d8bd0a9c0bb88060000");
+    std::vector<unsigned char> txData(ParseHex(hex_tx));
+    CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION);
+    CMutableTransaction tx;
+    ssData >> tx;
+    auto rtx = MakeTransactionRef(tx);
+    std::vector<unsigned char> vchSig;
+    bool result = false;
+    for (auto vout : rtx->vout) {
+        if (vout.nValue != 0) continue;
+        auto script = vout.scriptPubKey;
+        CScriptBase::const_iterator pc = script.begin();
+        opcodetype opcodeRet;
+        std::vector<unsigned char> vchRet;
+        if (!script.GetOp(pc, opcodeRet, vchRet) || opcodeRet != OP_RETURN) {
+            continue;
+        }
+        script.GetOp(pc, opcodeRet, vchRet);
+        auto action = UnserializeAction(vchRet);
+        if (vchRet.size() < 65) continue;
+        vchSig.clear();
+        vchSig.insert(vchSig.end(), vchRet.end() - 65, vchRet.end());
+        result = VerifyAction(action, vchSig);
+    }
+    BOOST_ASSERT(result == true);
+    ECC_Stop();
+}

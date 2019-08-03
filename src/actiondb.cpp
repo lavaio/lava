@@ -1,6 +1,7 @@
 #include <actiondb.h>
 #include <validation.h>
 #include <chainparams.h>
+#include <logging.h>
 
 CAction MakeBindAction(const CKeyID& from, const CKeyID& to)
 {
@@ -75,17 +76,20 @@ CAction DecodeAction(const CTransactionRef tx, std::vector<unsigned char>& vchSi
         if (tx->IsCoinBase() || tx->IsNull() || tx->vout.size() != 2 
             || (tx->vout[0].nValue != 0 && tx->vout[1].nValue != 0)) 
             continue;
-        auto outValue = tx->GetValueOut();
+        /*auto outValue = tx->GetValueOut();
         CAmount nAmount{ 0 };
         for (auto vin : tx->vin) {
             CTransactionRef prevTx;
             uint256 hashBlock;
-            GetTransaction(vin.prevout.hash, prevTx, Params().GetConsensus(), hashBlock);
+            if (g_txindex->FindTx(vin.prevout.hash, hashBlock, prevTx)) {
+                LogPrintf("g_txindex find tx failure, hash:%u\n", vin.prevout.hash.GetHex());
+            }
             nAmount += prevTx->vout[vin.prevout.n].nValue;
         }
         if (nAmount - outValue != Params().GetConsensus().nActionFee) {
+            LogPrintf("Action error fees, fee=%u\n", nAmount - outValue);
             continue;
-        }
+        }*/
         for (auto vout : tx->vout) {
             if (vout.nValue != 0) continue;
             auto script = vout.scriptPubKey;
@@ -125,7 +129,7 @@ CKeyID CRelationDB::To(const CKeyID& from) const
 {
     CKeyID to;
     if (!Read(std::make_pair(DB_RELATION_KEY, from), to)) {
-        //TODO: error catch
+        LogPrintf("CRelationDB::To failure, get bind to, from:%u\n", from.GetPlotID());
     }
     return std::move(to);
 }
@@ -151,6 +155,7 @@ typedef std::pair<CKeyID, CKeyID> CRelationActive;
 
 bool CRelationDB::AcceptAction(const uint256& txid, const CAction& action)
 {
+    LogPrintf("AcceptAction, tx:%s\n", txid.GetHex());
     CDBBatch batch(*this);
     if (action.type() == typeid(CBindAction)) {
         auto ba = boost::get<CBindAction>(action);
@@ -159,14 +164,16 @@ bool CRelationDB::AcceptAction(const uint256& txid, const CAction& action)
         CRelationActive active{ std::make_pair(from, nowTo) };
         batch.Write(std::make_pair(DB_ACTIVE_ACTION_KEY, txid), active);
         batch.Write(std::make_pair(DB_RELATION_KEY, from), ba.second);
+        LogPrintf("bind action, from:%u, to:%u\n", from.GetPlotID(), ba.second.GetPlotID());
     } else if (action.type() == typeid(CUnbindAction)) {
         auto from = boost::get<CUnbindAction>(action);
         auto nowTo = To(from);
         CRelationActive active{ std::make_pair(from, nowTo) };
+        LogPrintf("unbind action, from:%u\n", from.GetPlotID());
         batch.Write(std::make_pair(DB_ACTIVE_ACTION_KEY, txid), active);
         batch.Erase(std::make_pair(DB_RELATION_KEY, from));
     }
-    return WriteBatch(batch);
+    return WriteBatch(batch, true);
 }
 
 bool CRelationDB::RollbackAction(const uint256& txid)
@@ -183,7 +190,7 @@ bool CRelationDB::RollbackAction(const uint256& txid)
     } else if (Exists(relKey)) {
         batch.Erase(relKey);
     }
-    return WriteBatch(batch);
+    return WriteBatch(batch, true);
 }
 
 CRelationVector CRelationDB::ListRelations() const
