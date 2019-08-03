@@ -191,6 +191,9 @@ void Interrupt()
     if (g_txindex) {
         g_txindex->Interrupt();
     }
+    if (g_ticketindex) {
+        g_ticketindex->Interrupt();
+    }
 }
 
 void Shutdown(InitInterfaces& interfaces)
@@ -222,6 +225,7 @@ void Shutdown(InitInterfaces& interfaces)
     if (peerLogic) UnregisterValidationInterface(peerLogic.get());
     if (g_connman) g_connman->Stop();
     if (g_txindex) g_txindex->Stop();
+    if (g_ticketindex) g_ticketindex->Stop();
 
     StopTorControl();
 
@@ -236,6 +240,7 @@ void Shutdown(InitInterfaces& interfaces)
     g_connman.reset();
     g_banman.reset();
     g_txindex.reset();
+    g_ticketindex.reset();
 
     if (g_is_mempool_loaded && gArgs.GetArg("-persistmempool", DEFAULT_PERSIST_MEMPOOL)) {
         DumpMempool();
