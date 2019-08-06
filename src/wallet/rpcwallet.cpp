@@ -4616,6 +4616,13 @@ UniValue spendticket(const JSONRPCRequest& request)
 		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No such ticket.");
 	}
 
+    {
+        LOCK(cs_main);
+        if (ticket.State(chainActive.Tip()->nHeight) != CTicket::CTicketState::OVERDUE){
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "ticket is not overdue.");
+        }
+    }
+
 	auto txid = ticket.GetTxHash();
 	auto redeemScript = ticket.GetRedeemScript();
 	auto scriptPubkey = ticket.GetScriptPubkey();
