@@ -1591,6 +1591,10 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
     // move best block pointer to prevout block
     view.SetBestBlock(pindex->pprev->GetBlockHash());
 
+    for (auto tx : block.vtx) {
+        g_relationdb->RollbackAction(tx->GetHash());
+    }
+
     return fClean ? DISCONNECT_OK : DISCONNECT_UNCLEAN;
 }
 
@@ -2045,6 +2049,23 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     nTimeCallbacks += nTime6 - nTime5;
     LogPrint(BCLog::BENCH, "    - Callbacks: %.2fms [%.2fs (%.2fms/blk)]\n", MILLI * (nTime6 - nTime5), nTimeCallbacks * MICRO, nTimeCallbacks * MILLI / nBlocksTotal);
 
+    //accept action
+    for (auto tx: block.vtx) {
+        std::vector<unsigned char> vchSig;
+        auto action = DecodeAction(tx, vchSig);
+        if (action.type() != typeid(CNilAction)) {
+            LogPrintf("DecodeAction not nil action: %s\n", tx->GetHash().GetHex());
+            if (VerifyAction(action, vchSig)) {
+                if (!g_relationdb->AcceptAction(tx->GetHash(), action)) {
+                    LogPrintf("AcceptAction failure: %s\n", tx->GetHash().GetHex());
+                }
+            }
+            else {
+                LogPrintf("VerifyAction failure: %s\n", tx->GetHash().GetHex());
+            }
+        }
+    }
+    //
     return true;
 }
 
@@ -2293,9 +2314,6 @@ bool CChainState::DisconnectTip(CValidationState& state, const CChainParams& cha
         }
     }
 
-    for (auto tx : pblock->vtx) {
-        g_relationdb->RollbackAction(tx->GetHash());
-    }
     blockAssember.SetNull();
     chainActive.SetTip(pindexDelete->pprev);
 
@@ -2442,20 +2460,6 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
     LogPrint(BCLog::BENCH, "  - Connect postprocess: %.2fms [%.2fs (%.2fms/blk)]\n", (nTime6 - nTime5) * MILLI, nTimePostConnect * MICRO, nTimePostConnect * MILLI / nBlocksTotal);
     LogPrint(BCLog::BENCH, "- Connect block: %.2fms [%.2fs (%.2fms/blk)]\n", (nTime6 - nTime1) * MILLI, nTimeTotal * MICRO, nTimeTotal * MILLI / nBlocksTotal);
 
-    //accept action
-    for (int i=0; pblock && i<pblock->vtx.size(); i++) {
-        auto tx = pblock->vtx[i];
-        std::vector<unsigned char> vchSig;
-        auto action = DecodeAction(tx, vchSig);
-        if (action.type() != typeid(CNilAction)) {
-            if (VerifyAction(action, vchSig))
-                g_relationdb->AcceptAction(tx->GetHash(), action);
-            else {
-                //TODO: error
-            }
-        }
-    }
-    //
     blockAssember.SetNull();
     connectTrace.BlockConnected(pindexNew, std::move(pthisBlock));
     return true;
@@ -3299,12 +3303,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
         (block.nVersion < 4 && nHeight >= consensusParams.BIP65Height))
         return state.Invalid(false, REJECT_OBSOLETE, strprintf("bad-version(0x%08x)", block.nVersion),
             strprintf("rejected nVersion=0x%08x block", block.nVersion));
-    // Check deadline
-    auto dl = CalcDeadline(&block, pindexPrev);
-    if (dl != block.nDeadline) {
-        return state.Invalid(false, REJECT_INVALID, "error-deadline",
-            strprintf("header deadline=%u, calc result=%u, nheigth=%u, newheight=%u, header plotid=%u, header nonce=%u", block.nDeadline, dl, pindexPrev->nHeight, nHeight, block.nPlotID, block.nNonce));
-    }
+    
 
     //TODO: Check timestamp
     /*dl /= pindexPrev->nBaseTarget;

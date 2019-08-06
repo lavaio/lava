@@ -979,15 +979,15 @@ static UniValue estimaterawfee(const JSONRPCRequest& request)
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
-    { "mining",             "getnetworkhashps",       &getnetworkhashps,       {"nblocks","height"} },
+    //{ "mining",             "getnetworkhashps",       &getnetworkhashps,       {"nblocks","height"} },
     //{ "mining",             "getmininginfo",          &getmininginfo,          {} },
-    { "mining",             "prioritisetransaction",  &prioritisetransaction,  {"txid","dummy","fee_delta"} },
-    { "mining",             "getblocktemplate",       &getblocktemplate,       {"template_request"} },
-    { "mining",             "submitblock",            &submitblock,            {"hexdata","dummy"} },
-    { "mining",             "submitheader",           &submitheader,           {"hexdata"} },
+    //{ "mining",             "prioritisetransaction",  &prioritisetransaction,  {"txid","dummy","fee_delta"} },
+    //{ "mining",             "getblocktemplate",       &getblocktemplate,       {"template_request"} },
+    //{ "mining",             "submitblock",            &submitblock,            {"hexdata","dummy"} },
+    //{ "mining",             "submitheader",           &submitheader,           {"hexdata"} },
 
 
-    { "generating",         "generatetoaddress",      &generatetoaddress,      {"nblocks","address","maxtries"} },
+    //{ "generating",         "generatetoaddress",      &generatetoaddress,      {"nblocks","address","maxtries"} },
 
     { "util",               "estimatesmartfee",       &estimatesmartfee,       {"conf_target", "estimate_mode"} },
 
