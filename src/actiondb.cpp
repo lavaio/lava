@@ -76,20 +76,17 @@ CAction DecodeAction(const CTransactionRef tx, std::vector<unsigned char>& vchSi
         if (tx->IsCoinBase() || tx->IsNull() || tx->vout.size() != 2 
             || (tx->vout[0].nValue != 0 && tx->vout[1].nValue != 0)) 
             continue;
-        /*auto outValue = tx->GetValueOut();
+
         CAmount nAmount{ 0 };
         for (auto vin : tx->vin) {
-            CTransactionRef prevTx;
-            uint256 hashBlock;
-            if (g_txindex->FindTx(vin.prevout.hash, hashBlock, prevTx)) {
-                LogPrintf("g_txindex find tx failure, hash:%u\n", vin.prevout.hash.GetHex());
-            }
-            nAmount += prevTx->vout[vin.prevout.n].nValue;
+            auto coin = pcoinsTip->AccessCoin(vin.prevout);
+            nAmount += coin.out.nValue;
         }
+        auto outValue = tx->GetValueOut();
         if (nAmount - outValue != Params().GetConsensus().nActionFee) {
             LogPrintf("Action error fees, fee=%u\n", nAmount - outValue);
             continue;
-        }*/
+        }
         for (auto vout : tx->vout) {
             if (vout.nValue != 0) continue;
             auto script = vout.scriptPubKey;
