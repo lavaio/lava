@@ -124,28 +124,17 @@ bool CRelationDB::InsertRelation(const CKeyID& from, const CKeyID& to)
 
 CKeyID CRelationDB::To(const CKeyID& from) const
 {
-    CKeyID to;
-    if (!Read(std::make_pair(DB_RELATION_KEY, from), to)) {
-        LogPrintf("CRelationDB::To failure, get bind to, from:%u\n", from.GetPlotID());
-    }
+    auto to = To(from.GetPlotID());
     return std::move(to);
 }
 
 CKeyID CRelationDB::To(const uint64_t plotid) const
 {
-    std::unique_ptr<CDBIterator> iter(const_cast<CRelationDB&>(*this).NewIterator());
-    iter->Seek(std::make_pair(DB_RELATION_KEY, CKeyID()));
-    while (iter->Valid()) {
-        auto key = std::make_pair(DB_RELATION_KEY, CKeyID());
-        iter->GetKey(key);
-        if (key.second.GetPlotID() == plotid) {
-            CKeyID to;
-            iter->GetValue(to);
-            return std::move(to);
-        }
-        iter->Next();
+    auto value = std::make_pair(CKeyID(), CKeyID());
+    if (!Read(std::make_pair(DB_RELATION_KEY, plotid), value)) {
+        LogPrint(BCLog::DB, "CRelationDB::To failure, get bind to, from:%u\n", plotid);
     }
-    return std::move(CKeyID());
+    return std::move(value.second);
 }
 
 typedef std::pair<CKeyID, CKeyID> CRelationActive;
@@ -160,7 +149,7 @@ bool CRelationDB::AcceptAction(const uint256& txid, const CAction& action)
         auto nowTo = To(from);
         CRelationActive active{ std::make_pair(from, nowTo) };
         batch.Write(std::make_pair(DB_ACTIVE_ACTION_KEY, txid), active);
-        batch.Write(std::make_pair(DB_RELATION_KEY, from), ba.second);
+        batch.Write(std::make_pair(DB_RELATION_KEY, from.GetPlotID()), std::make_pair(ba.first, ba.second));
         LogPrintf("bind action, from:%u, to:%u\n", from.GetPlotID(), ba.second.GetPlotID());
     } else if (action.type() == typeid(CUnbindAction)) {
         auto from = boost::get<CUnbindAction>(action);
@@ -181,7 +170,7 @@ bool CRelationDB::RollbackAction(const uint256& txid)
         return false;
     CDBBatch batch(*this);
     batch.Erase(activeKey);
-    auto relKey = std::make_pair(DB_RELATION_KEY, active.first);
+    auto relKey = std::make_pair(DB_RELATION_KEY, active.first.GetPlotID());
     if (active.second != CKeyID()) {
         batch.Write(relKey, active.second);
     } else if (Exists(relKey)) {
@@ -194,13 +183,11 @@ CRelationVector CRelationDB::ListRelations() const
 {
     CRelationVector vch;
     std::unique_ptr<CDBIterator> iter(const_cast<CRelationDB&>(*this).NewIterator());
-    iter->Seek(std::make_pair(DB_RELATION_KEY, CKeyID()));
+    iter->Seek(std::make_pair(DB_RELATION_KEY, 0));
     while (iter->Valid()) {
-        auto key = std::make_pair(DB_RELATION_KEY, CKeyID());
-        iter->GetKey(key);
-        CKeyID to;
-        iter->GetValue(to);
-        vch.push_back(std::make_pair(key.second, to));
+        auto value = std::make_pair(CKeyID(), CKeyID());
+        iter->GetValue(value);
+        vch.push_back(value);
         iter->Next();
     }
     return std::move(vch);

@@ -4458,7 +4458,6 @@ static UniValue bindplotid(const JSONRPCRequest& request)
     if (from.IsNull()) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Address does not refer to a key");
     }
-    //TODO: check bind exist
     auto to = boost::get<CKeyID>(DecodeDestination(request.params[1].get_str()));
     auto action = MakeBindAction(from, to);
     CKey key;
