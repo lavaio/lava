@@ -7,6 +7,7 @@
 #include <validation.h>
 #include <key_io.h>
 #include <actiondb.h>
+#include <timedata.h>
 
 #include <boost/bind.hpp>
 
@@ -52,8 +53,8 @@ bool CPOCBlockAssember::UpdateDeadline(const int height, const CKeyID& keyid, co
         this->nonce = nonce;
         this->deadline = deadline;
         auto lastBlockTime = prevIndex->GetBlockHeader().GetBlockTime();
-        auto ts = ((deadline / chainActive.Tip()->nBaseTarget) * 1000);
-        this->dl = (lastBlockTime * 1000) + ts;
+        auto ts = (deadline / chainActive.Tip()->nBaseTarget);
+        this->dl = lastBlockTime + ts;
     }
     return true;
 }
@@ -96,7 +97,7 @@ void CPOCBlockAssember::CheckDeadline()
 {
     if (dl == 0)
         return;
-    if (GetTimeMillis() >= dl) {
+    if (GetAdjustedTime() >= dl) {
         CreateNewBlock();
         SetNull();
     }
