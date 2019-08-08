@@ -10,6 +10,7 @@
 #include <limits>
 #include <map>
 #include <string>
+#include <amount.h>
 
 namespace Consensus {
 
@@ -75,6 +76,7 @@ struct Params {
     int64_t DifficultyAdjustmentInterval() const { return nPowTargetTimespan / nPowTargetSpacing; }
     uint256 nMinimumCumulativeDiff;
     uint256 defaultAssumeValid;
+    CAmount nActionFee;
     uint64_t nTicketSlot;
 };
 } // namespace Consensus

@@ -41,6 +41,7 @@
 #include <shutdown.h>
 #include <timedata.h>
 #include <txdb.h>
+#include <actiondb.h>
 #include <index/ticketindex.h>
 #include <index/ticketslot.h>
 #include <txmempool.h>
@@ -1471,6 +1472,8 @@ bool AppInitMain(InitInterfaces& interfaces)
     LogPrintf("* Using %.1f MiB for chain state database\n", nCoinDBCache * (1.0 / 1024 / 1024));
     LogPrintf("* Using %.1f MiB for in-memory UTXO set (plus up to %.1f MiB of unused mempool space)\n", nCoinCacheUsage * (1.0 / 1024 / 1024), nMempoolSizeMax * (1.0 / 1024 / 1024));
 
+    g_relationdb.reset(new CRelationDB(0));
+
     bool fLoaded = false;
     while (!fLoaded && !ShutdownRequested()) {
         bool fReset = fReindex;
@@ -1705,7 +1708,7 @@ bool AppInitMain(InitInterfaces& interfaces)
     } else {
         fHaveGenesis = true;
     }
-
+    
     if (gArgs.IsArgSet("-blocknotify"))
         uiInterface.NotifyBlockTip_connect(BlockNotifyCallback);
 
@@ -1825,6 +1828,6 @@ bool AppInitMain(InitInterfaces& interfaces)
         g_banman->DumpBanlist();
     }, DUMP_BANS_INTERVAL * 1000);
 
-    scheduler.scheduleEvery([] {blockAssember.checkDeadline(); }, 200);
+    scheduler.scheduleEvery([] {blockAssember.CheckDeadline(); }, 200);
     return true;
 }

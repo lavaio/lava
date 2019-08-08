@@ -42,6 +42,8 @@
 #include <util/system.h>
 #include <validationinterface.h>
 #include <warnings.h>
+#include <actiondb.h>
+
 #include <index/ticketindex.h>
 #include <future>
 #include <sstream>
@@ -262,7 +264,7 @@ std::atomic_bool g_is_mempool_loaded{false};
 /** Constant stuff for coinbase transactions we create: */
 CScript COINBASE_FLAGS;
 
-const std::string strMessageMagic = "Bitcoin Signed Message:\n";
+const std::string strMessageMagic = "Lava Signed Message:\n";
 
 // Internal stuff
 namespace {
@@ -1136,7 +1138,7 @@ CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
     if (halvings >= 64)
         return 0;
 
-    CAmount nSubsidy = 50 * COIN;
+    CAmount nSubsidy = 640 * COIN;
     // Subsidy is cut in half every 210,000 blocks which will occur approximately every 4 years.
     nSubsidy >>= halvings;
     return nSubsidy;
@@ -1592,6 +1594,10 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
     // move best block pointer to prevout block
     view.SetBestBlock(pindex->pprev->GetBlockHash());
 
+    for (auto tx : block.vtx) {
+        g_relationdb->RollbackAction(tx->GetHash());
+    }
+
     return fClean ? DISCONNECT_OK : DISCONNECT_UNCLEAN;
 }
 
@@ -2046,6 +2052,23 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     nTimeCallbacks += nTime6 - nTime5;
     LogPrint(BCLog::BENCH, "    - Callbacks: %.2fms [%.2fs (%.2fms/blk)]\n", MILLI * (nTime6 - nTime5), nTimeCallbacks * MICRO, nTimeCallbacks * MILLI / nBlocksTotal);
 
+    //accept action
+    for (auto tx: block.vtx) {
+        std::vector<unsigned char> vchSig;
+        auto action = DecodeAction(tx, vchSig);
+        if (action.type() != typeid(CNilAction)) {
+            LogPrintf("DecodeAction not nil action: %s\n", tx->GetHash().GetHex());
+            if (VerifyAction(action, vchSig)) {
+                if (!g_relationdb->AcceptAction(tx->GetHash(), action)) {
+                    LogPrintf("AcceptAction failure: %s\n", tx->GetHash().GetHex());
+                }
+            }
+            else {
+                LogPrintf("VerifyAction failure: %s\n", tx->GetHash().GetHex());
+            }
+        }
+    }
+    //
     return true;
 }
 
@@ -2295,6 +2318,7 @@ bool CChainState::DisconnectTip(CValidationState& state, const CChainParams& cha
         }
     }
 
+    blockAssember.SetNull();
     chainActive.SetTip(pindexDelete->pprev);
 
     UpdateTip(pindexDelete->pprev, chainparams);
@@ -2441,6 +2465,7 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
     LogPrint(BCLog::BENCH, "  - Connect postprocess: %.2fms [%.2fs (%.2fms/blk)]\n", (nTime6 - nTime5) * MILLI, nTimePostConnect * MICRO, nTimePostConnect * MILLI / nBlocksTotal);
     LogPrint(BCLog::BENCH, "- Connect block: %.2fms [%.2fs (%.2fms/blk)]\n", (nTime6 - nTime1) * MILLI, nTimeTotal * MICRO, nTimeTotal * MILLI / nBlocksTotal);
 
+    blockAssember.SetNull();
     connectTrace.BlockConnected(pindexNew, std::move(pthisBlock));
     return true;
 }
@@ -2587,7 +2612,7 @@ bool CChainState::ActivateBestChainStep(CValidationState& state, const CChainPar
             }
         }
         //chainActive is updated, clean the plotid, nonce, dl and newblockheight
-        blockAssember.setNull();
+        blockAssember.SetNull();
     }
 
     if (fBlocksDisconnected) {
@@ -3140,6 +3165,13 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     // First transaction must be coinbase, the rest must not be
     if (block.vtx.empty() || !block.vtx[0]->IsCoinBase())
         return state.DoS(100, false, REJECT_INVALID, "bad-cb-missing", false, "first tx is not coinbase");
+
+    //check coinbase script
+    CTxDestination dest;
+    ExtractDestination(block.vtx[0]->vout[0].scriptPubKey, dest);
+    if (dest.type() != typeid(CKeyID)) 
+        return state.DoS(100, false, REJECT_INVALID, "bad-cb-missing", false, "coinbase script is not pay2pub");
+
     for (unsigned int i = 1; i < block.vtx.size(); i++)
         if (block.vtx[i]->IsCoinBase())
             return state.DoS(100, false, REJECT_INVALID, "bad-cb-multiple", false, "more than one coinbase");
@@ -3276,13 +3308,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
         (block.nVersion < 4 && nHeight >= consensusParams.BIP65Height))
         return state.Invalid(false, REJECT_OBSOLETE, strprintf("bad-version(0x%08x)", block.nVersion),
             strprintf("rejected nVersion=0x%08x block", block.nVersion));
-
-    // Check deadline
-    auto dl = CalcDeadline(&block, pindexPrev);
-    if (dl != block.nDeadline) {
-        return state.Invalid(false, REJECT_INVALID, "error-deadline",
-            strprintf("header deadline=%u, calc result=%u, nheigth=%u, newheight=%u, header plotid=%u, header nonce=%u", block.nDeadline, dl, pindexPrev->nHeight, nHeight, block.nPlotID, block.nNonce));
-    }
+    
 
     //TODO: Check timestamp
     /*dl /= pindexPrev->nBaseTarget;
@@ -3391,9 +3417,11 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
     // check plotid
     auto script = block.vtx[0]->vout[0].scriptPubKey;
     CTxDestination dest;
-    auto result = ExtractDestination(script, dest);
-    uint64_t plotID = PlotEncodeDestination(dest);
-    if (block.nPlotID != plotID || plotID == 0) {
+    ExtractDestination(script, dest);
+    auto coinbaseDest = boost::get<CKeyID>(dest);
+    auto to = g_relationdb->To(block.nPlotID);
+    auto targetPlotid = to.IsNull() ? block.nPlotID : to.GetPlotID();
+    if (targetPlotid != coinbaseDest.GetPlotID()) {
         return state.DoS(100, false, REJECT_INVALID, "bad-coinbase-plotid", false, "coinbase public key error plot id");
     }
 
