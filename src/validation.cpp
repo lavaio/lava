@@ -1138,8 +1138,8 @@ CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
     if (halvings >= 64)
         return 0;
 
-    CAmount nSubsidy = 640 * COIN;
-    // Subsidy is cut in half every 210,000 blocks which will occur approximately every 4 years.
+    CAmount nSubsidy = 320 * COIN;
+    // Subsidy is cut in half every 260,000 blocks which will occur approximately every 4 years.
     nSubsidy >>= halvings;
     return nSubsidy;
 }
@@ -3308,9 +3308,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
         return state.Invalid(false, REJECT_OBSOLETE, strprintf("bad-version(0x%08x)", block.nVersion),
             strprintf("rejected nVersion=0x%08x block", block.nVersion));
     
-
-    //TODO: Check timestamp
-    auto dl = pindexPrev->nDeadline / pindexPrev->nBaseTarget;
+    auto dl = block.nDeadline / pindexPrev->nBaseTarget;
     if (pindexPrev->nTime + dl > block.nTime) {
         return state.Invalid(false, REJECT_INVALID, "time-too-new", "block deadline too far in the future");
     }
