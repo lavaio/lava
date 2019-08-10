@@ -138,10 +138,10 @@ int CTicket::LockTime() const
 
 CKeyID CTicket::KeyID() const
 {
-	CKeyID keyID;
+    CKeyID keyID;
     int lockHeight = 0;
     DecodeTicketScript(redeemScript, keyID, lockHeight);
-	return keyID;
+    return keyID;
 }
 
 bool CTicket::Invalid() const 
@@ -177,20 +177,19 @@ CAmount CTicketView::BaseTicketPrice = 160 * COIN;
 
 void CTicketView::ConncetBlock(const int height, const CBlock &blk, CheckTicketFunc checkTicket)
 {
-    auto len = Params().SlotLength();
+    const auto len = Params().SlotLength();
     if (height % len == 0 && height != 0) { //update ticket price
-        slotIndex++;
-        size_t SlotWeight = Params().SlotLength();
-        if (ticketsInSlot[slotIndex - 1].size() > SlotWeight) {
+        if (ticketsInSlot[slotIndex].size() > len) {
             ticketPrice *= 1.05;
-        } else if (ticketsInSlot[slotIndex - 1].size() < SlotWeight) {
+        } else if (ticketsInSlot[slotIndex].size() < len) {
             ticketPrice *= 0.95;
         }
-        ticketPrice = std::max(ticketPrice, 1 * COIN); 
+        slotIndex = int(height/len);
+        ticketPrice = std::max(ticketPrice, 1 * COIN);
     }
     for (auto tx : blk.vtx) {
         auto ticket = tx->Ticket();
-        if (!checkTicket(height, ticket)) {
+        if (ticket == nullptr || !checkTicket(height, ticket)) {
             //TODO: logging
             continue;
         }
@@ -201,7 +200,26 @@ void CTicketView::ConncetBlock(const int height, const CBlock &blk, CheckTicketF
 
 void CTicketView::DisconnectBlock(const int height, const CBlock &blk)
 {
-    
+    const auto len = Params().SlotLength();
+
+    if (height % len == 0 && height != 0) {
+        if (ticketsInSlot[slotIndex].size() > len) {
+            ticketPrice /= 1.05;
+        } else if (ticketsInSlot[slotIndex].size() < len) {
+            ticketPrice /= 0.95;
+        }
+        ticketsInSlot.erase(slotIndex);
+        slotIndex = int(height/len);
+        ticketPrice = std::max(ticketPrice, 1 * COIN);
+    } else if (height == 0) {
+        ticketPrice = BaseTicketPrice;
+    }
+
+    for (const auto tx : blk.vtx) {
+        const auto ticket = tx->Ticket();
+        if (ticket == nullptr) continue;
+        ticketsInAddr.erase(tx->Ticket()->KeyID());
+    } 
 }
 
 CAmount CTicketView::CurrentTicketPrice() const

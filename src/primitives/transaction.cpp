@@ -118,60 +118,60 @@ std::string CTransaction::ToString() const
 // check the tx's ticket vout
 bool IsTicketVout(const CScript script, CScriptID &scriptID)
 {
-	CScriptBase::const_iterator pc = script.begin();
-	opcodetype opcodeRet;
-	std::vector<unsigned char> vchRet;
-	if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_HASH160) {
+    CScriptBase::const_iterator pc = script.begin();
+    opcodetype opcodeRet;
+    std::vector<unsigned char> vchRet;
+    if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_HASH160) {
+	vchRet.clear();
+	if (script.GetOp(pc, opcodeRet, vchRet)) {
+	    scriptID = CScriptID(uint160(vchRet));
+	    if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_EQUAL) {
 		vchRet.clear();
-		if (script.GetOp(pc, opcodeRet, vchRet)) {
-			scriptID = CScriptID(uint160(vchRet));
-			if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_EQUAL) {
-				vchRet.clear();
-				return true;
-			}
-		}
+		return true;
+	    }
 	}
-	return false;
+    }
+    return false;
 }
 
 bool CTransaction::IsTicketTx() const
 {
     // check the vout size is 2 or 3.
-	if(vout.size()!=2 && vout.size()!=3){
-		return false;
-	}
-	
-	CScript redeemscript;
-	CScriptID scriptID;
-	CScript scriptzero;
-	bool HasTicketVout = false;
-	for (auto i=0; i<vout.size();i++){
-		if (vout[i].nValue == 0){
-			// from 0 value vout's script decode the redeemScript.
-			CScript script = vout[i].scriptPubKey;
-			scriptzero = script;
-			if (!GetRedeemFromScript(script,redeemscript)){
-				return false;
-			}
-		}
-
-		auto ticketScript = vout[i].scriptPubKey;
-		if (IsTicketVout(ticketScript, scriptID)){
-			HasTicketVout=true;
-		}
+    if(vout.size()!=2 && vout.size()!=3){
+	    return false;
+    }
+    
+    CScript redeemscript;
+    CScriptID scriptID;
+    CScript scriptzero;
+    bool HasTicketVout = false;
+    for (auto i=0; i<vout.size();i++){
+	if (vout[i].nValue == 0){
+	    // from 0 value vout's script decode the redeemScript.
+	    CScript script = vout[i].scriptPubKey;
+	    scriptzero = script;
+	    if (!GetRedeemFromScript(script,redeemscript)){
+                return false;
+	    }
 	}
 
-	if (!HasTicketVout) 
-		return false;
-
-	// parese the dest from redeemscript
-	CScriptID dest = CScriptID(redeemscript);
-
-	if (dest == scriptID){
-		return true;
+	auto ticketScript = vout[i].scriptPubKey;
+	if (IsTicketVout(ticketScript, scriptID)){
+	    HasTicketVout=true;
 	}
+    }
 
-	return false;
+    if (!HasTicketVout) 
+        return false;
+
+    // parese the dest from redeemscript
+    CScriptID dest = CScriptID(redeemscript);
+
+    if (dest == scriptID){
+        return true;
+    }
+
+    return false;
 }
 
 CTicketRef CTransaction::Ticket() const
@@ -197,5 +197,5 @@ CTicketRef CTransaction::Ticket() const
             ticket.reset(new CTicket(GetHash(), i, out.nValue, redeemScript, ticketScript));
         }
     }
-	return ticket;
+    return ticket;
 }

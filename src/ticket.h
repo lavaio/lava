@@ -44,28 +44,28 @@ public:
     const CScript& GetRedeemScript() const { return redeemScript; }
     const CScript& GetScriptPubkey() const { return scriptPubkey; }
     const CAmount& Amount() const { return nValue; }
-	void setValue(uint256 ticketid, uint256 txid, uint32_t n, CAmount nValue, CScript redeemscript, CScript scriptpubkey){
-		this->hash = ticketid;
-		this->txid = txid;
-		this->n = n;
-        this->nValue = nValue;
-		this->redeemScript = redeemscript;
-		this->scriptPubkey = scriptpubkey;
-	}
+    void setValue(uint256 ticketid, uint256 txid, uint32_t n, CAmount nValue, CScript redeemscript, CScript scriptpubkey){
+	    this->hash = ticketid;
+	    this->txid = txid;
+	    this->n = n;
+    this->nValue = nValue;
+	    this->redeemScript = redeemscript;
+	    this->scriptPubkey = scriptpubkey;
+    }
 
-	template <typename Stream>
-	inline void Serialize(Stream& s) const {
-		s << txid;
-		s << n;
-		s << redeemScript;
-	}
+    template <typename Stream>
+    inline void Serialize(Stream& s) const {
+	    s << txid;
+	    s << n;
+	    s << redeemScript;
+    }
 
-	template <typename Stream>
-	inline void Unserialize(Stream& s) {
-		s >> txid;
-		s >> n;
-		s >> redeemScript;
-	}
+    template <typename Stream>
+    inline void Unserialize(Stream& s) {
+	    s >> txid;
+	    s >> n;
+	    s >> redeemScript;
+    }
 	
 private:
     // only memory
