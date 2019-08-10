@@ -1,9 +1,11 @@
 #include <ticket.h>
-
-#include <vector>
 #include <core_io.h>
+#include <chainparams.h>
 #include <script/standard.h>
 #include <util/system.h>
+#include <primitives/transaction.h>
+
+#include <vector>
 
 using namespace std;
 
@@ -85,8 +87,8 @@ bool GetRedeemFromScript(const CScript script, CScript& redeemscript)
 }
 
 
-CTicket::CTicket(const uint256& txid, const uint32_t n, const CScript& redeemScript, const CScript &scriptPubkey)
-    :txid(txid), n(n), redeemScript(redeemScript), scriptPubkey(scriptPubkey)
+CTicket::CTicket(const uint256& txid, const uint32_t n, const CAmount nValue, const CScript& redeemScript, const CScript &scriptPubkey)
+    :txid(txid), n(n), redeemScript(redeemScript), scriptPubkey(scriptPubkey), nValue(nValue)
 {
 	CScriptBase::const_iterator pc = scriptPubkey.begin();
 	opcodetype opcodeRet;
@@ -169,3 +171,58 @@ uint256 CTicket::ComputeHash() const
 {
 	return SerializeHash(*this, SER_GETHASH, SERIALIZE_TRANSACTION_NO_WITNESS);
 }
+
+
+CAmount CTicketView::BaseTicketPrice = 160 * COIN;
+
+void CTicketView::ConncetBlock(const int height, const CBlock &blk, CheckTicketFunc checkTicket)
+{
+    auto len = Params().SlotLength();
+    if (height % len == 0 && height != 0) { //update ticket price
+        slotIndex++;
+        size_t SlotWeight = Params().SlotLength();
+        if (ticketsInSlot[slotIndex - 1].size() > SlotWeight) {
+            ticketPrice *= 1.05;
+        } else if (ticketsInSlot[slotIndex - 1].size() < SlotWeight) {
+            ticketPrice *= 0.95;
+        }
+        ticketPrice = std::max(ticketPrice, 1 * COIN); 
+    }
+    for (auto tx : blk.vtx) {
+        auto ticket = tx->Ticket();
+        if (!checkTicket(height, ticket)) {
+            //TODO: logging
+            continue;
+        }
+        ticketsInSlot[slotIndex].emplace_back(ticket);
+        ticketsInAddr[ticket->KeyID()].emplace_back(ticket);
+    } 
+}
+
+void CTicketView::DisconnectBlock(const int height, const CBlock &blk)
+{
+    
+}
+
+CAmount CTicketView::CurrentTicketPrice() const
+{
+    return ticketPrice;
+}
+
+std::vector<CTicketRef> CTicketView::CurrentSlotTicket()
+{
+    return ticketsInSlot[slotIndex];
+}
+
+const int CTicketView::SlotLenght()
+{
+    static int slotLenght = Params().SlotLength();
+    return slotLenght;
+}
+
+const int CTicketView::LockTime()
+{
+    return (slotIndex + 1) * SlotLenght();
+}
+
+CTicketView::CTicketView() : ticketPrice(BaseTicketPrice), slotIndex(0) {}

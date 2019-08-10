@@ -252,7 +252,6 @@ bool fEnableReplacement = DEFAULT_ENABLE_REPLACEMENT;
 
 uint256 hashAssumeValid;
 arith_uint256 nMinimumCumulativeDiff;
-uint64_t nTicketSlot;
 
 CFeeRate minRelayTxFee = CFeeRate(DEFAULT_MIN_RELAY_TX_FEE);
 CAmount maxTxFee = DEFAULT_TRANSACTION_MAXFEE;
@@ -312,6 +311,7 @@ CBlockIndex* FindForkInGlobalIndex(const CChain& chain, const CBlockLocator& loc
 
 std::unique_ptr<CCoinsViewDB> pcoinsdbview;
 std::unique_ptr<CCoinsViewCache> pcoinsTip;
+std::unique_ptr<CTicketView> pticketview;
 std::unique_ptr<CBlockTreeDB> pblocktree;
 
 enum class FlushStateMode {
@@ -1598,6 +1598,7 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
         g_relationdb->RollbackAction(tx->GetHash());
     }
 
+    pticketview->DisconnectBlock(pindex->nHeight, block);
     return fClean ? DISCONNECT_OK : DISCONNECT_UNCLEAN;
 }
 
@@ -2068,7 +2069,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             }
         }
     }
-    //
+    pticketview->ConncetBlock(pindex->nHeight, block, TestTicket);
     return true;
 }
 
@@ -3346,13 +3347,13 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
         if (!IsFinalTx(*tx, nHeight, nLockTimeCutoff)) {
             return state.DoS(10, false, REJECT_INVALID, "bad-txns-nonfinal", false, "non-final transaction");
         }
-        if (tx->IsTicketTx()) {
-            auto ticketPrice = g_ticket_slot->GetTicketPrice(pindexPrev);
-            // check if ticket price is equal to ticket price received
-            const auto value = tx->vout[tx->Ticket()->GetIndex()].nValue;
-            if (value != ticketPrice) 
-                return state.DoS(10, false, REJECT_INVALID, "bad-txns-illegalticket", false, "illegal-ticket transaction");
-        }
+        //if (tx->IsTicketTx()) {
+        //    auto ticketPrice = g_ticket_slot->GetTicketPrice(pindexPrev);
+        //    // check if ticket price is equal to ticket price received
+        //    const auto value = tx->vout[tx->Ticket()->GetIndex()].nValue;
+        //    if (value != ticketPrice) 
+        //        return state.DoS(10, false, REJECT_INVALID, "bad-txns-illegalticket", false, "illegal-ticket transaction");
+        //}
     }
 
     // Enforce rule that the coinbase starts with serialized block height
@@ -4964,3 +4965,24 @@ public:
         mapBlockIndex.clear();
     }
 } instance_of_cmaincleanup;
+
+bool TestTicket(const int height, const CTicketRef ticket)
+{
+    /*
+    1.redeem's scrpit id equal freeze's keyid
+    2.script's lock time must in next slot begin
+    3.freeze output equal ticket price
+    */
+    auto script = CScript() << OP_HASH160 << ToByteVector(ticket->GetRedeemScript()) << OP_EQUAL;
+    if (ticket->GetScriptPubkey() != script)
+        return false;
+    auto index = pticketview->SlotIndex();
+    auto len = pticketview->SlotLenght();
+    if (ticket->LockTime() != (index + 1) * len) {
+        return false;
+    }
+    if (ticket->Amount() != pticketview->CurrentTicketPrice()) {
+        return false;
+    }
+    return true;
+}

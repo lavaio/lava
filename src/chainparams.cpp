@@ -99,10 +99,6 @@ public:
         // By default assume that the signatures in ancestors of this block are valid.
         consensus.defaultAssumeValid = uint256S("0x0000000000000000000f1c54590ee18d15ec70e68c8cd4cfbadb1b4f11697eee"); //563378
 
-        // The ticket slot size
-        consensus.nTicketSlot = 2048;
-
-
         consensus.nActionFee = 16 * COIN;
         /**
          * The message start string is designed to be unlikely to occur in normal data.
@@ -153,6 +149,8 @@ public:
 
         /* disable fallback fee on mainnet */
         m_fallback_fee_enabled = false;
+
+        nSlotLength = 2048 / 8 / 8;
     }
 };
 
@@ -196,7 +194,6 @@ public:
         // By default assume that the signatures in ancestors of this block are valid.
         consensus.defaultAssumeValid = uint256S("0x0000000000000037a8cd3e06cd5edbfe9dd1dbcc5dacab279376ef7cfc2b4c75"); //1354312
 
-        consensus.nTicketSlot = 100;
         pchMessageStart[0] = 0x07;
         pchMessageStart[1] = 0x09;
         pchMessageStart[2] = 0x11;
@@ -245,6 +242,8 @@ public:
 
         /* enable fallback fee on testnet */
         m_fallback_fee_enabled = true;
+
+        nSlotLength = 2048 / 8;
     }
 };
 
@@ -285,9 +284,6 @@ public:
         consensus.defaultAssumeValid = uint256S("0x00");
 
         consensus.nActionFee = 16 * COIN;
-
-        // The ticket slot size
-        consensus.nTicketSlot = 5;
 
         pchMessageStart[0] = 0xfa;
         pchMessageStart[1] = 0xbf;
@@ -334,6 +330,8 @@ public:
 
         /* enable fallback fee on regtest */
         m_fallback_fee_enabled = true;
+
+        nSlotLength = 2048 / 8;
     }
 
     /**

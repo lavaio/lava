@@ -3103,7 +3103,7 @@ bool GetTicketList(CWallet * const pwallet, CChain& chainActive, bool include_un
 	return true;
 }
 
-static UniValue listtickets(const JSONRPCRequest& request)
+static UniValue getfirestone(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     CWallet* const pwallet = wallet.get();
@@ -3114,7 +3114,7 @@ static UniValue listtickets(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() > 4)
         throw std::runtime_error(
-            RPCHelpMan{"listtickets",
+            RPCHelpMan{"getfirestone",
                 "\nReturns array of unspent tickets\n"
                 "with between minconf and maxconf (inclusive) confirmations.\n"
                 "Optionally filter to only include txouts paid to specified addresses.\n",
@@ -3137,8 +3137,8 @@ static UniValue listtickets(const JSONRPCRequest& request)
             "]\n"
                 },
                 RPCExamples{
-                    HelpExampleCli("listtickets", "\"1PGFqEzfmQch1gKD3ra4k18PNj3tTUUSqg\"")
-            + HelpExampleCli("listtickets", "\"1PGFqEzfmQch1gKD3ra4k18PNj3tTUUSqg\" 6 9999999 true")
+                    HelpExampleCli("getfirestone", "\"1PGFqEzfmQch1gKD3ra4k18PNj3tTUUSqg\"")
+            + HelpExampleCli("getfirestone", "\"1PGFqEzfmQch1gKD3ra4k18PNj3tTUUSqg\" 6 9999999 true")
                 },
             }.ToString());
 
@@ -3187,16 +3187,16 @@ static UniValue listtickets(const JSONRPCRequest& request)
 			continue;
 		std::string state;
 		switch ((*iter)->State(chainActive.Tip()->nHeight)){
-		case 0: 
+        case CTicket::CTicketState::IMMATURATE:
 			state="IMMATURATE";
 			break;
-		case 1: 
+		case CTicket::CTicketState::USEABLE:
 			state="USEABLE";
 			break;
-		case 2: 
+        case CTicket::CTicketState::OVERDUE:
 			state= "OVERDUE";
 			break;
-		case 3: 
+		case CTicket::CTicketState::UNKNOW:
 			state= "UNKNOW";
 			break;
 		}
@@ -4508,20 +4508,13 @@ UniValue freezefundsforticket(const JSONRPCRequest& request)
     }
 
     auto keyID = boost::get<CKeyID>(dest);
-    auto locktime = (((chainActive.Tip()->nHeight / 18) + 1) * 18);
+    auto locktime = (pticketview->SlotIndex() + 1) * pticketview->SlotLenght();
     auto redeemScript = GenerateTicketScript(keyID, locktime);
     dest = CTxDestination(CScriptID(redeemScript));
     auto scriptPubkey = GetScriptForDestination(dest);
     auto opRetScript = CScript() << OP_RETURN << CTicket::VERSION << ToByteVector(redeemScript);
     
-    // Amount
-    while (!g_ticket_slot->GetIndexSynced()) ;
-
-    uint64_t ticketPriceActive = g_ticket_slot->GetTicketPrice(chainActive.Tip());
-    if(ticketPriceActive < COIN)
-        throw JSONRPCError(RPC_WALLET_ERROR, "Error ticket price");
-    uint64_t nAmount = ticketPriceActive;
-    
+    uint64_t nAmount = pticketview->CurrentTicketPrice();
     //set change dest
     std::shared_ptr<CReserveKey> rKey = std::make_shared<CReserveKey>(pwallet);
     CPubKey changePubKey;
@@ -4613,9 +4606,9 @@ UniValue spendticket(const JSONRPCRequest& request)
 
 	auto ticketid = ParseHashV(request.params[0], "params 1");
 	CTicket ticket;
-	if (!g_ticketindex->GetTicket(ticketid,ticket)){
+	/*if (!g_ticketindex->GetTicket(ticketid,ticket)){
 		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No such ticket.");
-	}
+	}*/
 
     {
         LOCK(cs_main);
@@ -5274,7 +5267,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "listsinceblock",                   &listsinceblock,                {"blockhash","target_confirmations","include_watchonly","include_removed"} },
     { "wallet",             "listtransactions",                 &listtransactions,              {"label|dummy","count","skip","include_watchonly"} },
     { "wallet",             "listunspent",                      &listunspent,                   {"minconf","maxconf","addresses","include_unsafe","query_options"} },
-	{ "wallet",             "listtickets",                      &listtickets,                   {"addresses","minconf","maxconf","include_unsafe"} },
+	{ "wallet",             "listtickets",                      &getfirestone,                  {"addresses","minconf","maxconf","include_unsafe"} },
     { "wallet",             "listwalletdir",                    &listwalletdir,                 {} },
     { "wallet",             "listwallets",                      &listwallets,                   {} },
     { "wallet",             "loadwallet",                       &loadwallet,                    {"filename"} },

@@ -192,9 +192,6 @@ void Interrupt()
     if (g_txindex) {
         g_txindex->Interrupt();
     }
-    if (g_ticketindex) {
-        g_ticketindex->Interrupt();
-    }
 }
 
 void Shutdown(InitInterfaces& interfaces)
@@ -226,7 +223,6 @@ void Shutdown(InitInterfaces& interfaces)
     if (peerLogic) UnregisterValidationInterface(peerLogic.get());
     if (g_connman) g_connman->Stop();
     if (g_txindex) g_txindex->Stop();
-    if (g_ticketindex) g_ticketindex->Stop();
 
     StopTorControl();
 
@@ -241,7 +237,6 @@ void Shutdown(InitInterfaces& interfaces)
     g_connman.reset();
     g_banman.reset();
     g_txindex.reset();
-    g_ticketindex.reset();
 
     if (g_is_mempool_loaded && gArgs.GetArg("-persistmempool", DEFAULT_PERSIST_MEMPOOL)) {
         DumpMempool();
@@ -283,6 +278,7 @@ void Shutdown(InitInterfaces& interfaces)
         pcoinscatcher.reset();
         pcoinsdbview.reset();
         pblocktree.reset();
+        pticketview.reset();
     }
     for (const auto& client : interfaces.chain_clients) {
         client->stop();
@@ -1043,9 +1039,6 @@ bool AppInitParameterInteraction()
         LogPrintf("Warning: nMinimumCumulativeDiff set below default value of %s\n", chainparams.GetConsensus().nMinimumCumulativeDiff.GetHex());
     }
 
-    nTicketSlot = chainparams.GetConsensus().nTicketSlot;
-    LogPrintf("Setting nTickeSlot=%s\n", nTicketSlot);
-
     // mempool limits
     int64_t nMempoolSizeMax = gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000;
     int64_t nMempoolSizeMin = gArgs.GetArg("-limitdescendantsize", DEFAULT_DESCENDANT_SIZE_LIMIT) * 1000 * 40;
@@ -1486,6 +1479,7 @@ bool AppInitMain(InitInterfaces& interfaces)
                 pcoinsTip.reset();
                 pcoinsdbview.reset();
                 pcoinscatcher.reset();
+                pticketview.reset();
                 // new CBlockTreeDB tries to delete the existing file, which
                 // fails if it's still open from the previous loop. Close it first:
                 pblocktree.reset();
@@ -1552,7 +1546,7 @@ bool AppInitMain(InitInterfaces& interfaces)
 
                 // The on-disk coinsdb is now in a good state, create the cache
                 pcoinsTip.reset(new CCoinsViewCache(pcoinscatcher.get()));
-
+                pticketview.reset(new CTicketView());
                 is_coinsview_empty = fReset || fReindexChainState || pcoinsTip->GetBestBlock().IsNull();
                 if (!is_coinsview_empty) {
                     // LoadChainTip sets chainActive based on pcoinsTip's best block
@@ -1649,13 +1643,8 @@ bool AppInitMain(InitInterfaces& interfaces)
     fFeeEstimatesInitialized = true;
 
     // ********************************************************* Step 8: start indexers
-
     g_txindex = MakeUnique<TxIndex>(nTxIndexCache, false, fReindex);
     g_txindex->Start();
-    g_ticketindex = MakeUnique<TicketIndex>(nTxIndexCache, false, fReindex);
-    g_ticketindex->Start();
-    g_ticket_slot = MakeUnique<TicketSlot>(nTxIndexCache, false, fReindex);
-    g_ticket_slot->Start();
 
     // ********************************************************* Step 9: load wallet
     for (const auto& client : interfaces.chain_clients) {

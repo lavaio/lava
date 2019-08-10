@@ -163,6 +163,33 @@ UniValue submitNonce(const JSONRPCRequest& request)
     return obj;
 }
 
+UniValue getslotinfo(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 0)
+        throw std::runtime_error(
+            RPCHelpMan{ "getslotinfo",
+                "Returns an object containing fire stone slot info.\n",
+                {},
+                RPCResult{
+            "{\n"
+            "  \"index\": xx,                  (numeric) the index of fire stone slot \n"
+            "  \"ticketprice\": xxxxxx,        (numeric) the current price of fire stone slot\n"
+            "  \"ticketcount\": xx,            (numeric) the count of tickets in this slot\n"
+            "  \"locktime\": xxxxx,            (numeric) the end of this slot\n"
+            "}\n" },
+                RPCExamples{
+                    HelpExampleCli("getslotinfo", ""),
+                },
+            }.ToString());
+    LOCK(cs_main);
+    UniValue obj(UniValue::VOBJ);
+    obj.pushKV("index", pticketview->SlotIndex());
+    obj.pushKV("ticketprice", pticketview->CurrentTicketPrice());
+    obj.pushKV("ticketcount", pticketview->CurrentSlotTicket().size());
+    obj.pushKV("locktime", pticketview->LockTime());
+    return obj;
+}
+
 // clang-format off
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
@@ -170,6 +197,7 @@ static const CRPCCommand commands[] =
     { "poc",               "getmininginfo",           &getMiningInfo,          {} },
     { "poc",               "submitnonce",             &submitNonce,            {"address", "nonce", "deadline"} },
 	{ "poc",               "getaddressplotid",        &getAddressPlotId,       {"address"} },
+    { "poc",               "getslotinfo",             &getslotinfo,            {} },
 };
 
 void RegisterPocRPCCommands(CRPCTable& t)

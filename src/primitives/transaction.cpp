@@ -176,25 +176,26 @@ bool CTransaction::IsTicketTx() const
 
 CTicketRef CTransaction::Ticket() const
 {
-	CScript redeemscript;
-	CScriptID scriptID;
-	int zeroValueVoutIndex;
-	int ticketVoutIndex;
-	for (auto i=0; i<vout.size();i++){
-		if (vout[i].nValue==0){
-			zeroValueVoutIndex = i;
-		}
-		auto ticketScript = vout[i].scriptPubKey;
-		if (IsTicketVout(ticketScript, scriptID)){
-			ticketVoutIndex = i;
-		}
-	}
-
-	CScript scriptzero = vout[zeroValueVoutIndex].scriptPubKey;
-	GetRedeemFromScript(scriptzero,redeemscript);
-	CScript ticketScript = vout[ticketVoutIndex].scriptPubKey;
-	// in heap
-	auto ticket = new CTicket(this->GetHash(), ticketVoutIndex, redeemscript, ticketScript);
-	CTicketRef pTicket(ticket);
-	return pTicket;
+    auto ticket = CTicketRef();
+    if (!IsTicketTx()) 
+        return ticket;
+    CScript redeemScript;
+    CScript ticketScript;
+    for (int i = 0; i < vout.size(); i++) {
+        auto out = vout[i];
+        if (out.nValue == 0) { // op_return script
+            if (!GetRedeemFromScript(out.scriptPubKey, redeemScript)) {
+                //TODO: logging
+                break;
+            }
+            ticketScript << OP_HASH160 << ToByteVector(CScriptID(redeemScript)) << OP_EQUAL;
+        } 
+    }
+    for (int i = 0; i < vout.size(); i++) {
+        auto out = vout[i];
+        if (out.nValue != 0 && ticketScript == out.scriptPubKey) {
+            ticket.reset(new CTicket(GetHash(), i, out.nValue, redeemScript, ticketScript));
+        }
+    }
+	return ticket;
 }

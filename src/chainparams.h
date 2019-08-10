@@ -85,6 +85,7 @@ public:
     const CCheckpointData& Checkpoints() const { return checkpointData; }
     const ChainTxData& TxData() const { return chainTxData; }
     const uint64_t TargetDeadline() { return 60 * 60 * 24; }
+    const uint32_t SlotLength() const { return nSlotLength; }
 protected:
     CChainParams() {}
 
@@ -106,6 +107,7 @@ protected:
     CCheckpointData checkpointData;
     ChainTxData chainTxData;
     bool m_fallback_fee_enabled;
+    uint32_t nSlotLength;
 };
 
 /**

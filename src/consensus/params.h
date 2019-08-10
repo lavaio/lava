@@ -77,7 +77,6 @@ struct Params {
     uint256 nMinimumCumulativeDiff;
     uint256 defaultAssumeValid;
     CAmount nActionFee;
-    uint64_t nTicketSlot;
 };
 } // namespace Consensus
 
