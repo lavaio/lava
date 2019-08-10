@@ -74,6 +74,12 @@ public:
 
     bool RollbackAction(const uint256& txid);
 
+    bool SetSynced();
+
+    bool ResetSynced();
+
+    int IsSynced();
+
     CRelationVector ListRelations() const;
 private:
     bool InsertRelation(const CKeyID& from, const CKeyID& to);

@@ -111,6 +111,7 @@ std::unique_ptr<CRelationDB> g_relationdb;
 
 static const char DB_RELATION_KEY = 'K';
 static const char DB_ACTIVE_ACTION_KEY = 'A';
+static const char DB_ACTION_SYNCED = 'S';
 
 CRelationDB::CRelationDB(size_t nCacheSize, bool fMemory, bool fWipe)
     : CDBWrapper(GetDataDir() / "index" / "relation", nCacheSize, fMemory, fWipe) 
@@ -157,7 +158,7 @@ bool CRelationDB::AcceptAction(const uint256& txid, const CAction& action)
         CRelationActive active{ std::make_pair(from, nowTo) };
         LogPrintf("unbind action, from:%u\n", from.GetPlotID());
         batch.Write(std::make_pair(DB_ACTIVE_ACTION_KEY, txid), active);
-        batch.Erase(std::make_pair(DB_RELATION_KEY, from));
+        batch.Erase(std::make_pair(DB_RELATION_KEY, from.GetPlotID()));
     }
     return WriteBatch(batch, true);
 }
@@ -177,6 +178,31 @@ bool CRelationDB::RollbackAction(const uint256& txid)
         batch.Erase(relKey);
     }
     return WriteBatch(batch, true);
+}
+
+bool CRelationDB::SetSynced()
+{
+    LogPrintf("Relation DB is SetSynced");
+    CDBBatch batch(*this);
+    batch.Write(DB_ACTION_SYNCED, int(1));
+    return WriteBatch(batch);
+}
+
+bool CRelationDB::ResetSynced()
+{
+    LogPrintf("Relation DB is ResetSynced");
+    CDBBatch batch(*this);
+    batch.Write(DB_ACTION_SYNCED, int(0));
+    return WriteBatch(batch);
+}
+
+int CRelationDB::IsSynced()
+{
+    int value;
+    if (!Read(DB_ACTION_SYNCED, value)) {
+        return 0;
+    }
+    return value;
 }
 
 CRelationVector CRelationDB::ListRelations() const

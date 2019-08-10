@@ -281,6 +281,8 @@ void Shutdown(InitInterfaces& interfaces)
         client->stop();
     }
 
+    g_relationdb->SetSynced();
+
 #if ENABLE_ZMQ
     if (g_zmq_notification_interface) {
         UnregisterValidationInterface(g_zmq_notification_interface);
