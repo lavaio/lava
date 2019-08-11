@@ -3112,29 +3112,30 @@ static UniValue getfirestone(const JSONRPCRequest& request)
 
     if (request.fHelp || request.params.size() > 4)
         throw std::runtime_error(
-            RPCHelpMan{"getfirestone",
-                "\nReturns array of unspent tickets\n"
-                "with between minconf and maxconf (inclusive) confirmations.\n"
-                "Optionally filter to only include txouts paid to specified addresses.\n",
-                {
-					{"address", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "bitcoin address"},
-                },
-                RPCResult{
-            "[                   (array of json object)\n"
-            "  {\n"
-			"    \"tickethash\" : x.xxx,	(string)the tickethash\n"
-            "    \"address\" : \"address\",    (string) the bitcoin address\n"
-            "    \"lockheight\" : \"lockheight\",(int) The height above which the tickets could be withdrawed\n"
-            "    \"state\" : \"useable\",   (bool) whether the tickets can be withdrawed\n"
-            "  }\n"
-            "  ,...\n"
-            "]\n"
-                },
-                RPCExamples{
-                    HelpExampleCli("getfirestone", "\"1PGFqEzfmQch1gKD3ra4k18PNj3tTUUSqg\"")
-            + HelpExampleCli("getfirestone", "\"1PGFqEzfmQch1gKD3ra4k18PNj3tTUUSqg\" 6 9999999 true")
-                },
-            }.ToString());
+        RPCHelpMan{"getfirestone",
+            "\nReturns array of unspent tickets\n"
+            "with between minconf and maxconf (inclusive) confirmations.\n"
+            "Optionally filter to only include txouts paid to specified addresses.\n",
+            {
+				{"address", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "bitcoin address"},
+                {"showAll", RPCArg::Type::BOOL, RPCArg::Optional::OMITTED, "wether show all firestone."},
+            },
+            RPCResult{
+        "[                   (array of json object)\n"
+        "  {\n"
+		"    \"tickethash\" : x.xxx,	(string)the tickethash\n"
+        "    \"address\" : \"address\",    (string) the bitcoin address\n"
+        "    \"lockheight\" : \"lockheight\",(int) The height above which the tickets could be withdrawed\n"
+        "    \"state\" : \"useable\",   (bool) whether the tickets can be withdrawed\n"
+        "  }\n"
+        "  ,...\n"
+        "]\n"
+            },
+            RPCExamples{
+                HelpExampleCli("getfirestone", "\"1PGFqEzfmQch1gKD3ra4k18PNj3tTUUSqg\"")
+        + HelpExampleCli("getfirestone", "\"1PGFqEzfmQch1gKD3ra4k18PNj3tTUUSqg\" 6 9999999 true")
+            },
+        }.ToString());
 
 	CTxDestination destination = DecodeDestination(request.params[0].get_str());
 	if (!IsValidDestination(destination)) {
@@ -3146,9 +3147,23 @@ static UniValue getfirestone(const JSONRPCRequest& request)
 
 	// Make sure the results are valid at least up to the most recent block
 	// the user could have gotten from another RPC command prior to now
+    bool showAll = true;
+    if (!request.params[1].isNull()){
+        showAll = request.params[1].get_bool();
+    }
 	UniValue results(UniValue::VARR);
-	std::vector<CTicketRef> tickets;
-    tickets = pticketview->FindeTickets(boost::get<CKeyID>(destination));
+	std::vector<CTicketRef> alltickets = pticketview->FindeTickets(boost::get<CKeyID>(destination));
+    std::vector<CTicketRef> tickets;
+    if(!showAll){
+        for(auto i=0;i<alltickets.size();i++){
+            auto ticket = alltickets[i];
+            if (!pcoinsTip->AccessCoin(COutPoint(ticket->GetTxHash(), ticket->GetIndex())).IsSpent()){
+                tickets.push_back(ticket);
+            }
+        }
+    }else{
+        tickets = alltickets;
+    }
 
 	for (auto iter = tickets.begin();iter!=tickets.end();iter++){
 		UniValue entry(UniValue::VOBJ);
@@ -3173,7 +3188,7 @@ static UniValue getfirestone(const JSONRPCRequest& request)
 			state= "UNKNOW";
 			break;
 		}
-		entry.pushKV("tickethash", tickethash.ToString());
+        entry.pushKV("outpoint", (*iter)->GetTxHash().ToString() + ":" + itostr((*iter)->GetIndex()));
 		entry.pushKV("address", EncodeDestination(keyid));
 		entry.pushKV("lockheight", height);
 		entry.pushKV("state",state);
@@ -3199,7 +3214,8 @@ static UniValue listslotfs(const JSONRPCRequest& request)
         "with between minconf and maxconf (inclusive) confirmations.\n"
         "Optionally filter to only include txouts paid to specified addresses.\n",
         {
-            {"slotIndex", RPCArg::Type::NUM, RPCArg::Optional::OMITTED, "slot index"},
+            {"slotIndex", RPCArg::Type::NUM, RPCArg::Optional::OMITTED, "slot index."},
+            {"showAll", RPCArg::Type::BOOL, RPCArg::Optional::OMITTED, "wether show all firestone."},
         },
         RPCResult{
             "[                   (array of json object)\n"
@@ -3225,9 +3241,23 @@ static UniValue listslotfs(const JSONRPCRequest& request)
     
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
+    bool showAll = true;
+    if (!request.params[1].isNull()){
+        showAll = request.params[1].get_bool();
+    }
     UniValue results(UniValue::VARR);
+    std::vector<CTicketRef> alltickets = pticketview->GetTicketsBySlotIndex(slotIndex);
     std::vector<CTicketRef> tickets;
-    tickets = pticketview->GetTicketsBySlotIndex(slotIndex);
+    if(!showAll){
+        for(auto i=0;i<alltickets.size();i++){
+            auto ticket = alltickets[i];
+            if (!pcoinsTip->AccessCoin(COutPoint(ticket->GetTxHash(), ticket->GetIndex())).IsSpent()){
+                tickets.push_back(ticket);
+            }
+        }
+    }else{
+        tickets = alltickets;
+    }
 
     for (auto iter = tickets.begin();iter!=tickets.end();iter++){
         UniValue entry(UniValue::VOBJ);
@@ -3252,7 +3282,7 @@ static UniValue listslotfs(const JSONRPCRequest& request)
             state= "UNKNOW";
             break;
         }
-        entry.pushKV("tickethash", tickethash.ToString());
+        entry.pushKV("outpoint", (*iter)->GetTxHash().ToString() + ":" + itostr((*iter)->GetIndex()));
         entry.pushKV("address", EncodeDestination(keyid));
         entry.pushKV("lockheight", height);
         entry.pushKV("state",state);
@@ -4521,7 +4551,7 @@ static CTransactionRef SendMoneyWithOpRet(interfaces::Chain::Lock& locked_chain,
     return tx;
 }
 
-UniValue freezefundsforticket(const JSONRPCRequest& request)
+UniValue buyfirestone(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     CWallet* const pwallet = wallet.get();
@@ -4533,7 +4563,7 @@ UniValue freezefundsforticket(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
             RPCHelpMan{
-                "freezefundsforticket",
+                "buyfirestone",
                 "\nFreeze some funds to get miner ticket\n",
                 {
                     {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The bitcoin address to recvie ticket(only keyid)."},
@@ -4541,7 +4571,7 @@ UniValue freezefundsforticket(const JSONRPCRequest& request)
                 RPCResult{
                     "\"txid\"                  (string) The tx id.\n"},
                 RPCExamples{
-                    HelpExampleCli("freezefundsforticket", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
+                    HelpExampleCli("buyfirestone", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
             }
     .ToString());
 
@@ -4857,7 +4887,7 @@ CTransactionRef CreateTicketAllSpendTx(CWallet* const pwallet, std::map<uint256,
 	return MakeTransactionRef(tx);
 }
 
-UniValue freetickets(const JSONRPCRequest& request){
+UniValue freefirestone(const JSONRPCRequest& request){
 	
 	std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
 	CWallet* const pwallet = wallet.get();
@@ -4869,7 +4899,7 @@ UniValue freetickets(const JSONRPCRequest& request){
 	if (request.fHelp || request.params.size() > 2)
 		throw std::runtime_error(
 			RPCHelpMan{
-				"freetickets",
+				"freefirestone",
 				"\nSpend overdue and usable frozen tickets output to address.\n",
 			{
 				{"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The bitcoin address who wants to free tickets."},
@@ -4887,7 +4917,7 @@ UniValue freetickets(const JSONRPCRequest& request){
 				"}\n"
 			},
 				RPCExamples{
-				HelpExampleCli("freetickets", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" \"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
+				HelpExampleCli("freefirestone", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" \"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
 			}
 	.ToString());
 
@@ -4914,8 +4944,14 @@ UniValue freetickets(const JSONRPCRequest& request){
 	}
 
 	// listtickets 
-	std::vector<CTicketRef> tickets;
-    tickets = pticketview->FindeTickets(boost::get<CKeyID>(destination));
+	std::vector<CTicketRef> alltickets = pticketview->FindeTickets(boost::get<CKeyID>(destination));
+    std::vector<CTicketRef> tickets;
+    for(auto i=0;i<alltickets.size();i++){
+        auto ticket = alltickets[i];
+        if (!pcoinsTip->AccessCoin(COutPoint(ticket->GetTxHash(), ticket->GetIndex())).IsSpent()){
+            tickets.push_back(ticket);
+        }
+    }
 
 	// get the overdue tickets
 	UniValue results(UniValue::VOBJ);
@@ -4929,7 +4965,7 @@ UniValue freetickets(const JSONRPCRequest& request){
 			uint256 txid = (*iter)->GetTxHash();
 			uint32_t n = (*iter)->GetIndex();
 			CScript redeemScript = (*iter)->GetRedeemScript();
-			ticketids.push_back(ticketid.ToString());
+			ticketids.push_back((*iter)->GetTxHash().ToString() + ":" + itostr((*iter)->GetIndex()));
 
 			// construct the freeticket tx inputs.
 			auto prevTx = MakeTransactionRef();
@@ -4941,7 +4977,7 @@ UniValue freetickets(const JSONRPCRequest& request){
 			outs.push_back(prevTx->vout[n]);
 		}
 	}
-	results.pushKV("tickethash", ticketids);
+	results.pushKV("firestoneID", ticketids);
 
 	// create tickets tx, just one tx for all tickets vins
 	CKeyID keyID = boost::get<CKeyID>(destination);	
@@ -5318,8 +5354,8 @@ static const CRPCCommand commands[] =
     { "wallet",             "listsinceblock",                   &listsinceblock,                {"blockhash","target_confirmations","include_watchonly","include_removed"} },
     { "wallet",             "listtransactions",                 &listtransactions,              {"label|dummy","count","skip","include_watchonly"} },
     { "wallet",             "listunspent",                      &listunspent,                   {"minconf","maxconf","addresses","include_unsafe","query_options"} },
-	{ "wallet",             "getfirestone",                     &getfirestone,                  {"addresses"} },
-    { "wallet",             "listslotfs",                       &listslotfs,                    {"slotIndex"} },
+	{ "wallet",             "getfirestone",                     &getfirestone,                  {"addresses","showAll"} },
+    { "wallet",             "listslotfs",                       &listslotfs,                    {"slotIndex","showAll"} },
     { "wallet",             "listwalletdir",                    &listwalletdir,                 {} },
     { "wallet",             "listwallets",                      &listwallets,                   {} },
     { "wallet",             "loadwallet",                       &loadwallet,                    {"filename"} },
@@ -5339,14 +5375,14 @@ static const CRPCCommand commands[] =
     { "wallet",             "walletpassphrase",                 &walletpassphrase,              {"passphrase","timeout"} },
     { "wallet",             "walletpassphrasechange",           &walletpassphrasechange,        {"oldpassphrase","newpassphrase"} },
     //{ "wallet",             "walletprocesspsbt",                &walletprocesspsbt,             {"psbt","sign","sighashtype","bip32derivs"} },
-    { "wallet",             "freezefundsforticket",             &freezefundsforticket,          {"address"} },
+    { "wallet",             "buyfirestone",                     &buyfirestone,                  {"address"} },
     { "poc",                "bindplotid",                       &bindplotid,                    {"address", "target"} },
     { "poc",                "unbindplotid",                     &unbindplotid,                  {"address"} },
     { "poc",                "listbindings",                     &listbindings,                  {""} },
     { "poc",                "getbindinginfo",                   &getbindinginfo,                {"address"} },
     { "wallet",             "wallethaskey",                     &wallethaskey,                  {"address"} },
-    { "wallet",             "spendticket",                      &spendticket,                   {"txid", "vout", "redeem", "address"} },
-	{ "wallet",             "freetickets",						&freetickets,				    {"address", "receiver"} },
+    //{ "wallet",             "spendticket",                      &spendticket,                   {"txid", "vout", "redeem", "address"} },
+	{ "wallet",             "freefirestone",					&freefirestone,				    {"address", "receiver"} },
 };
 // clang-format on
 

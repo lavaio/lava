@@ -166,6 +166,8 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "stop", 0, "wait" },
 	{ "getmineraddress",0,"new" },
     { "listslotfs",0,"slotIndex" },
+    { "listslotfs",1,"showAll" },
+    { "getfirestone",1,"showAll" },
 };
 // clang-format on
 
