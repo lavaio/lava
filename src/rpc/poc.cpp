@@ -151,8 +151,10 @@ UniValue submitNonce(const JSONRPCRequest& request)
     }
     uint64_t deadline = request.params[2].get_int64();
     int height = request.params[3].get_int();
+    CKey key;
+    pwallet->GetKey(keyid, key);
     UniValue obj(UniValue::VOBJ);
-    if (blockAssember.UpdateDeadline(height, keyid, nonce, deadline)) {
+    if (blockAssember.UpdateDeadline(height, keyid, nonce, deadline, key)) {
         obj.pushKV("plotid", plotID);
         obj.pushKV("deadline", deadline);
         auto params = Params();

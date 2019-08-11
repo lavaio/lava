@@ -4,6 +4,7 @@
 #include <script/standard.h>
 #include <util/system.h>
 #include <primitives/transaction.h>
+#include <key.h>
 
 #include <vector>
 
@@ -85,7 +86,6 @@ bool GetRedeemFromScript(const CScript script, CScript& redeemscript)
 	}
 	return false;
 }
-
 
 CTicket::CTicket(const uint256& txid, const uint32_t n, const CAmount nValue, const CScript& redeemScript, const CScript &scriptPubkey)
     :txid(txid), n(n), redeemScript(redeemScript), scriptPubkey(scriptPubkey), nValue(nValue)
@@ -188,12 +188,12 @@ void CTicketView::ConncetBlock(const int height, const CBlock &blk, CheckTicketF
         }
         ticketPrice = std::max(ticketPrice, 1 * COIN); 
     }
-    for (auto tx : blk.vtx) {
-        auto ticket = tx->Ticket();
-        if (!checkTicket(height, ticket)) {
+    for (auto tx : blk.vtx) {        
+        if (!tx->IsTicketTx() || !checkTicket(height, tx->Ticket())) {
             //TODO: logging
             continue;
         }
+        auto ticket = tx->Ticket();
         ticketsInSlot[slotIndex].emplace_back(ticket);
         ticketsInAddr[ticket->KeyID()].emplace_back(ticket);
     } 
@@ -212,6 +212,25 @@ CAmount CTicketView::CurrentTicketPrice() const
 std::vector<CTicketRef> CTicketView::CurrentSlotTicket()
 {
     return ticketsInSlot[slotIndex];
+}
+
+std::vector<CTicketRef> CTicketView::AvailableTickets() 
+{
+    std::vector<CTicketRef> tickets;
+    if (slotIndex - 1 >= 0) {
+        tickets = ticketsInSlot[slotIndex - 1];
+    }
+    return std::move(tickets);
+}
+
+std::vector<CTicketRef> CTicketView::GetTicketsBySlotIndex(const int slotIndex) 
+{
+    return  ticketsInSlot[slotIndex];
+}
+
+std::vector<CTicketRef> CTicketView::FindeTickets(const CKeyID key)
+{
+    return ticketsInAddr[key];
 }
 
 const int CTicketView::SlotLenght()

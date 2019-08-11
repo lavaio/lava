@@ -150,7 +150,7 @@ public:
         /* disable fallback fee on mainnet */
         m_fallback_fee_enabled = false;
 
-        nSlotLength = 2048 / 8 / 8;
+        nSlotLength = 2048;
     }
 };
 

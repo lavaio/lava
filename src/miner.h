@@ -10,6 +10,7 @@
 #include <primitives/block.h>
 #include <txmempool.h>
 #include <validation.h>
+#include <key.h>
 
 #include <memory>
 #include <stdint.h>
@@ -158,7 +159,7 @@ public:
     BlockAssembler(const CChainParams& params, const Options& options);
 
     /** Construct a new block template with coinbase to scriptPubKeyIn */
-    std::unique_ptr<CBlockTemplate> CreateNewBlock(const CScript& scriptPubKeyIn, const uint64_t& nonce, const uint64_t& plotID, const uint64_t& deadline);
+    std::unique_ptr<CBlockTemplate> CreateNewBlock(const CScript& scriptPubKeyIn, const uint64_t& nonce, const uint64_t& plotID, const uint64_t& deadline, const CKey& key);
 
     static Optional<int64_t> m_last_block_num_txs;
     static Optional<int64_t> m_last_block_weight;

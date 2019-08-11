@@ -4,6 +4,7 @@
 #include <config/bitcoin-config.h>
 #include <scheduler.h>
 #include <pubkey.h>
+#include <key.h>
 #include <uint256.h>
 
 class CPOCBlockAssember
@@ -13,7 +14,7 @@ public:
 
     ~CPOCBlockAssember() = default;
 
-    bool UpdateDeadline(const int height, const CKeyID& keyid, const uint64_t nonce, const uint64_t deadline);
+    bool UpdateDeadline(const int height, const CKeyID& keyid, const uint64_t nonce, const uint64_t deadline, const CKey& key);
 
     void CreateNewBlock();
 
@@ -28,6 +29,7 @@ private:
     uint64_t     nonce;
     uint64_t     deadline;
     uint64_t     dl;
+    CKey         key;
     boost::mutex mtx;
     std::shared_ptr<CScheduler> scheduler;
 };

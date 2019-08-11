@@ -87,7 +87,7 @@ void BlockAssembler::resetBlock()
 Optional<int64_t> BlockAssembler::m_last_block_num_txs{nullopt};
 Optional<int64_t> BlockAssembler::m_last_block_weight{nullopt};
 
-std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, const uint64_t& nonce, const uint64_t& plotID, const uint64_t& deadline)
+std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, const uint64_t& nonce, const uint64_t& plotID, const uint64_t& deadline, const CKey& key)
 {
     int64_t nTimeStart = GetTimeMicros();
 
@@ -120,6 +120,46 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
 
     nLockTimeCutoff = (STANDARD_LOCKTIME_VERIFY_FLAGS & LOCKTIME_MEDIAN_TIME_PAST) ? nMedianTimePast : pblock->GetBlockTime();
 
+    //use fire stone
+    CTxDestination dest;
+    ExtractDestination(scriptPubKeyIn, dest);
+    CTicketRef fs;
+    auto index = (nHeight / pticketview->SlotLenght()) - 1;
+    for (auto ticket : pticketview->GetTicketsBySlotIndex(index)) {
+        if (boost::get<CKeyID>(dest) == ticket->KeyID() && !pcoinsTip->AccessCoin(COutPoint(ticket->GetTxHash(), ticket->GetIndex())).IsSpent()) {
+            fs = ticket;
+            break;
+        }
+    }
+    auto useFireStone = false;
+    if (fs && fs->Invalid() && key.IsValid()) {
+        auto makeSpentTicketTx = [](const CTicketRef& ticket, const int height, const CTxDestination& dest, const CKey& key)->CTransactionRef {
+            CMutableTransaction mtx;
+            auto redeemScript = ticket->GetRedeemScript();
+            mtx.vin.push_back(CTxIn(ticket->GetTxHash(), ticket->GetIndex(), redeemScript, 0));
+            mtx.vout.push_back(CTxOut(ticket->Amount(), GetScriptForDestination(dest)));
+            mtx.nLockTime = height - 1;
+
+            CMutableTransaction txcopy(mtx);
+            txcopy.vin[0] = CTxIn(txcopy.vin[0].prevout, redeemScript, 0);
+            CHashWriter ss(SER_GETHASH, 0);
+            ss << txcopy << 1;
+            auto hash = ss.GetHash();
+            std::vector<unsigned char> vchSig;
+            if (!key.Sign(hash, vchSig)) {
+                //TODO: error catch 
+                return MakeTransactionRef();
+            }
+            vchSig.push_back((unsigned char)SIGHASH_ALL);
+            mtx.vin[0].scriptSig = CScript() << vchSig << ToByteVector(key.GetPubKey()) << ToByteVector(redeemScript);
+            CTransaction tx(mtx);
+            return MakeTransactionRef(tx);
+        };
+        auto fstx = makeSpentTicketTx(fs, nHeight, CTxDestination(boost::get<CKeyID>(dest)), key);
+        pblock->vtx.emplace_back(fstx);
+        useFireStone = true;
+    }
+
     int nPackagesSelected = 0;
     int nDescendantsUpdated = 0;
     addPackageTxs(nPackagesSelected, nDescendantsUpdated);
@@ -136,10 +176,15 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     coinbaseTx.vout.resize(1);
     coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
     coinbaseTx.vout[0].nValue = nFees + GetBlockSubsidy(nHeight, chainparams.GetConsensus());
-    coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
+    if (useFireStone) {
+        coinbaseTx.vin[0].scriptSig = CScript() << nHeight << ToByteVector(fs->GetTxHash()) << fs->GetIndex() << OP_0;
+        coinbaseTx.vout[0].nValue += GetBlockSubsidy(nHeight, chainparams.GetConsensus());
+    } else {
+        coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
+    }
     pblock->vtx[0] = MakeTransactionRef(std::move(coinbaseTx));
     pblocktemplate->vTxFees[0] = -nFees;
-
+    
     LogPrintf("CreateNewBlock(): block weight: %u txs: %u fees: %ld sigops %d\n", GetBlockWeight(*pblock), nBlockTx, nFees, nBlockSigOpsCost);
 
     // Fill in header
@@ -421,11 +466,11 @@ void IncrementExtraNonce(CBlock* pblock, const CBlockIndex* pindexPrev, uint64_t
         hashPrevBlock = pblock->hashPrevBlock;
     }
     ++nExtraNonce;
-    unsigned int nHeight = pindexPrev->nHeight + 1; // Height first in coinbase required for block.version=2
-    CMutableTransaction txCoinbase(*pblock->vtx[0]);
-    txCoinbase.vin[0].scriptSig = (CScript() << nHeight << CScriptNum(nExtraNonce)) + COINBASE_FLAGS;
-    assert(txCoinbase.vin[0].scriptSig.size() <= 100);
+    //unsigned int nHeight = pindexPrev->nHeight + 1; // Height first in coinbase required for block.version=2
+    //CMutableTransaction txCoinbase(*pblock->vtx[0]);
+    //txCoinbase.vin[0].scriptSig = (CScript() << nHeight << CScriptNum(nExtraNonce)) + COINBASE_FLAGS;
+    //assert(txCoinbase.vin[0].scriptSig.size() <= 100);
 
-    pblock->vtx[0] = MakeTransactionRef(std::move(txCoinbase));
+    //pblock->vtx[0] = MakeTransactionRef(std::move(txCoinbase));
     pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
 }

@@ -17,7 +17,7 @@ CPOCBlockAssember::CPOCBlockAssember()
     SetNull();
 }
 
-bool CPOCBlockAssember::UpdateDeadline(const int height, const CKeyID& keyid, const uint64_t nonce, const uint64_t deadline)
+bool CPOCBlockAssember::UpdateDeadline(const int height, const CKeyID& keyid, const uint64_t nonce, const uint64_t deadline, const CKey& key)
 {
     auto prevIndex = chainActive.Tip();
     
@@ -52,6 +52,7 @@ bool CPOCBlockAssember::UpdateDeadline(const int height, const CKeyID& keyid, co
         this->genSig = genSig;
         this->nonce = nonce;
         this->deadline = deadline;
+        this->key = key;
         auto lastBlockTime = prevIndex->GetBlockHeader().GetBlockTime();
         auto ts = (deadline / chainActive.Tip()->nBaseTarget);
         this->dl = lastBlockTime + ts;
@@ -80,7 +81,7 @@ void CPOCBlockAssember::CreateNewBlock()
     auto to = g_relationdb->To(form);
     auto target = to.IsNull() ? form : to;
     auto scriptPubKeyIn = GetScriptForDestination(CTxDestination(target));
-    auto blk = BlockAssembler(params).CreateNewBlock(scriptPubKeyIn, nonce, plotid, deadline);
+    auto blk = BlockAssembler(params).CreateNewBlock(scriptPubKeyIn, nonce, plotid, deadline, key);
     if (blk) {
         uint32_t extraNonce = 0;
         IncrementExtraNonce(&blk->block, chainActive.Tip(), extraNonce);

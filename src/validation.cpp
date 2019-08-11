@@ -2018,6 +2018,17 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs (%.2fms/blk)]\n", (unsigned)block.vtx.size(), MILLI * (nTime3 - nTime2), MILLI * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : MILLI * (nTime3 - nTime2) / (nInputs - 1), nTimeConnect * MICRO, nTimeConnect * MILLI / nBlocksTotal);
 
     CAmount blockReward = nFees + GetBlockSubsidy(pindex->nHeight, chainparams.GetConsensus());
+    if (block.vtx.size() >=2) {
+        auto out = block.vtx[1]->vin[0].prevout;
+        if (block.vtx[0]->vin[0].scriptSig == CScript() << pindex->nHeight << ToByteVector(out.hash) << out.n << OP_0) {
+            //check ticket
+            auto index = (pindex->nHeight / pticketview->SlotLenght()) - 1;
+            for (auto ticket : pticketview->GetTicketsBySlotIndex(index)) {
+                if (ticket->GetTxHash() == out.hash && ticket->GetIndex() == out.n)
+                    blockReward += GetBlockSubsidy(pindex->nHeight, chainparams.GetConsensus());
+            }
+        }
+    }
     if (block.vtx[0]->GetValueOut() > blockReward)
         return state.DoS(100,
             error("ConnectBlock(): coinbase pays too much (actual=%d vs limit=%d)",
@@ -4968,17 +4979,9 @@ public:
 
 bool TestTicket(const int height, const CTicketRef ticket)
 {
-    /*
-    1.redeem's scrpit id equal freeze's keyid
-    2.script's lock time must in next slot begin
-    3.freeze output equal ticket price
-    */
-    auto script = CScript() << OP_HASH160 << ToByteVector(ticket->GetRedeemScript()) << OP_EQUAL;
-    if (ticket->GetScriptPubkey() != script)
-        return false;
     auto index = pticketview->SlotIndex();
     auto len = pticketview->SlotLenght();
-    if (ticket->LockTime() != (index + 1) * len) {
+    if (ticket->LockTime() != ((index + 1) * len -1)) {
         return false;
     }
     if (ticket->Amount() != pticketview->CurrentTicketPrice()) {

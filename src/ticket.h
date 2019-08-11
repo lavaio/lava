@@ -12,6 +12,7 @@ CScript GenerateTicketScript(const CKeyID keyid, const int lockHeight);
 bool DecodeTicketScript(const CScript redeemScript, CKeyID& keyID, int &lockHeight);
 
 bool GetPublicKeyFromScript(const CScript script, CPubKey& pubkey);
+
 bool GetRedeemFromScript(const CScript script, CScript& redeemscript);
 
 class CTicket {
@@ -83,7 +84,7 @@ class CBlock;
 typedef std::function<bool(const int, const CTicketRef&)> CheckTicketFunc;
 
 class CTicketView {
-public:
+public: 
     CTicketView();
     ~CTicketView() = default;
 
@@ -94,6 +95,12 @@ public:
     CAmount CurrentTicketPrice() const;
 
     std::vector<CTicketRef> CurrentSlotTicket();
+
+    std::vector<CTicketRef> AvailableTickets();
+
+    std::vector<CTicketRef> FindeTickets(const CKeyID key);
+
+    std::vector<CTicketRef> GetTicketsBySlotIndex(const int slotIndex);
 
     const int SlotIndex() const { return slotIndex; }
 

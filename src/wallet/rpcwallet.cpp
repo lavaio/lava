@@ -4508,7 +4508,7 @@ UniValue freezefundsforticket(const JSONRPCRequest& request)
     }
 
     auto keyID = boost::get<CKeyID>(dest);
-    auto locktime = (pticketview->SlotIndex() + 1) * pticketview->SlotLenght();
+    auto locktime = (pticketview->SlotIndex() + 1) * pticketview->SlotLenght() - 1;
     auto redeemScript = GenerateTicketScript(keyID, locktime);
     dest = CTxDestination(CScriptID(redeemScript));
     auto scriptPubkey = GetScriptForDestination(dest);
@@ -4680,7 +4680,7 @@ UniValue spendticket(const JSONRPCRequest& request)
     uint256 spendTxID;
     const CAmount highfee{ ::maxTxFee };
     
-    if (TransactionError::OK != BroadcastTransaction (tx, spendTxID, errStr, highfee)) {
+    if (TransactionError::OK != BroadcastTransaction(tx, spendTxID, errStr, highfee)) {
         throw JSONRPCError(RPC_TRANSACTION_REJECTED, errStr);
     }
     return spendTxID.GetHex();
