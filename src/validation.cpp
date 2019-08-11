@@ -44,13 +44,11 @@
 #include <warnings.h>
 #include <actiondb.h>
 
-#include <index/ticketindex.h>
 #include <future>
 #include <sstream>
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/thread.hpp>
-#include <index/ticketslot.h>
 
 #if defined(NDEBUG)
 #error "Bitcoin cannot be compiled without assertions."

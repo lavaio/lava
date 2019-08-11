@@ -42,8 +42,6 @@
 #include <timedata.h>
 #include <txdb.h>
 #include <actiondb.h>
-#include <index/ticketindex.h>
-#include <index/ticketslot.h>
 #include <txmempool.h>
 #include <torcontrol.h>
 #include <ui_interface.h>

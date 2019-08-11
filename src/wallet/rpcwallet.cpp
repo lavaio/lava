@@ -40,8 +40,6 @@
 #include <ticket.h>
 #include <actiondb.h>
 #include <wallet/fees.h>
-#include <index/ticketindex.h>
-#include <index/ticketslot.h>
 #include <stdint.h>
 
 #include <univalue.h>
