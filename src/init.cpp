@@ -1546,7 +1546,7 @@ bool AppInitMain(InitInterfaces& interfaces)
 
                 // The on-disk coinsdb is now in a good state, create the cache
                 pcoinsTip.reset(new CCoinsViewCache(pcoinscatcher.get()));
-                pticketview.reset(new CTicketView());
+                pticketview.reset(new CTicketView(0));
                 is_coinsview_empty = fReset || fReindexChainState || pcoinsTip->GetBestBlock().IsNull();
                 if (!is_coinsview_empty) {
                     // LoadChainTip sets chainActive based on pcoinsTip's best block

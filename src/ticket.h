@@ -4,6 +4,7 @@
 #include <script/script.h>
 #include <pubkey.h>
 #include <amount.h>
+#include <dbwrapper.h>
 
 #include <functional>
 
@@ -83,9 +84,10 @@ typedef std::shared_ptr<const CTicket> CTicketRef;
 class CBlock;
 typedef std::function<bool(const int, const CTicketRef&)> CheckTicketFunc;
 
-class CTicketView {
+class CTicketView : public CDBWrapper {
 public: 
-    CTicketView();
+    CTicketView(size_t nCacheSize, bool fMemory = false, bool fWipe = false);
+
     ~CTicketView() = default;
 
     void ConncetBlock(const int height, const CBlock &blk, CheckTicketFunc checkTicket);
@@ -107,12 +109,19 @@ public:
     const int SlotLenght();
 
     const int LockTime();
+
+    void FlushToDisk();
+
+private:
+    void LoadTicketFromTicket();
+
 private:
     std::map<int, std::vector<CTicketRef>> ticketsInSlot;
     std::map<CKeyID, std::vector<CTicketRef>> ticketsInAddr;
     CAmount ticketPrice;
     int slotIndex;
     static CAmount BaseTicketPrice;
+    uint256 besthash;
 };
 
 #endif

@@ -262,4 +262,20 @@ const int CTicketView::LockTime()
     return (slotIndex + 1) * SlotLenght();
 }
 
-CTicketView::CTicketView() : ticketPrice(BaseTicketPrice), slotIndex(0) {}
+CTicketView::CTicketView(size_t nCacheSize, bool fMemory , bool fWipe) 
+    :CDBWrapper(GetDataDir() / "ticket" / "index", nCacheSize, fMemory, fWipe),
+    ticketPrice(BaseTicketPrice),
+    slotIndex(0) 
+{
+    LoadTicketFromTicket();
+}
+
+void CTicketView::LoadTicketFromTicket()
+{
+
+}
+
+void CTicketView::FlushToDisk()
+{
+
+}
