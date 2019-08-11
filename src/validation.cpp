@@ -3905,15 +3905,22 @@ CBlockIndex* CChainState::InsertBlockIndex(const uint256& hash)
 
 bool CChainState::LoadBlockIndex(const Consensus::Params& consensus_params, CBlockTreeDB& blocktree)
 {
-    // If the relationDB is not synced, 
+    // Check the relationDB is synced, 
     // 1. Do nothing Loading, the index is reset to genesisblock,
     // 2. Reset the relationDB.
     if (g_relationdb->IsSynced() == 0){
         g_relationdb->EraseDB();
         return true;
-    }else{
-        g_relationdb->ResetSynced();
     }
+    g_relationdb->ResetSynced();
+
+    // Check the ticketDB is synced
+    // Same logic like relationDB above
+    if (pticketview->IsSynced() == 0){
+        pticketview->EraseDB();
+        return true;
+    }
+    pticketview->ResetSynced();
 
     if (!blocktree.LoadBlockIndexGuts(consensus_params, [this](const uint256& hash) EXCLUSIVE_LOCKS_REQUIRED(cs_main) { return this->InsertBlockIndex(hash); }))
         return false;

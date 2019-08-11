@@ -1,6 +1,7 @@
 #ifndef BITCOIN_TICKET_H
 #define BITCOIN_TICKET_H
 
+#include <config/bitcoin-config.h>
 #include <script/script.h>
 #include <pubkey.h>
 #include <amount.h>
@@ -110,7 +111,18 @@ public:
 
     const int LockTime();
 
-    void FlushToDisk();
+    /**
+     * Disaster recovery functions
+     */
+    bool SetSynced();
+
+    bool ResetSynced();
+
+    int IsSynced();
+
+    bool EraseDB();
+
+    bool FlushToDisk();
 
 private:
     void LoadTicketFromTicket();
