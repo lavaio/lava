@@ -3909,29 +3909,7 @@ bool CChainState::LoadBlockIndex(const Consensus::Params& consensus_params, CBlo
     // 1. Do nothing Loading, the index is reset to genesisblock,
     // 2. Reset the relationDB.
     if (g_relationdb->IsSynced() == 0){
-        static const char DB_RELATION_KEY = 'K';
-        static const char DB_ACTIVE_ACTION_KEY = 'A';
-        static const char DB_ACTION_SYNCED = 'S';
-
-        std::unique_ptr<CDBIterator> pcursor_action(g_relationdb->NewIterator());
-        pcursor_action->Seek(std::make_pair(DB_ACTIVE_ACTION_KEY, uint256()));
-        while (pcursor_action->Valid()) {
-            std::pair<char, uint256> key;
-            if (pcursor_action->GetKey(key) && key.first == DB_ACTIVE_ACTION_KEY){
-                g_relationdb->Erase(std::make_pair(DB_ACTIVE_ACTION_KEY, key.second));
-            }
-            pcursor_action->Next();
-        }
-
-        std::unique_ptr<CDBIterator> pcursor_relation(g_relationdb->NewIterator());
-        pcursor_relation->Seek(std::make_pair(DB_RELATION_KEY, uint64_t()));
-        while (pcursor_relation->Valid()) {
-            std::pair<char, uint64_t> key;
-            if (pcursor_relation->GetKey(key) && key.first == DB_RELATION_KEY){
-                g_relationdb->Erase(std::make_pair(DB_RELATION_KEY, key.second));
-            }
-            pcursor_relation->Next();
-        }
+        g_relationdb->EraseDB();
         return true;
     }else{
         g_relationdb->ResetSynced();

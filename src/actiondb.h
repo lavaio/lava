@@ -80,6 +80,8 @@ public:
 
     int IsSynced();
 
+    bool EraseDB();
+
     CRelationVector ListRelations() const;
 private:
     bool InsertRelation(const CKeyID& from, const CKeyID& to);
