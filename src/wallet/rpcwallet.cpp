@@ -3123,7 +3123,7 @@ static UniValue getfirestone(const JSONRPCRequest& request)
             RPCResult{
         "[                   (array of json object)\n"
         "  {\n"
-		"    \"tickethash\" : x.xxx,	(string)the tickethash\n"
+		"    \"outpoint\" : xxx:xxx,	(string)the txid:vout\n"
         "    \"address\" : \"address\",    (string) the bitcoin address\n"
         "    \"lockheight\" : \"lockheight\",(int) The height above which the tickets could be withdrawed\n"
         "    \"state\" : \"useable\",   (bool) whether the tickets can be withdrawed\n"
@@ -3147,7 +3147,7 @@ static UniValue getfirestone(const JSONRPCRequest& request)
 
 	// Make sure the results are valid at least up to the most recent block
 	// the user could have gotten from another RPC command prior to now
-    bool showAll = true;
+    bool showAll = false;
     if (!request.params[1].isNull()){
         showAll = request.params[1].get_bool();
     }
@@ -3192,6 +3192,7 @@ static UniValue getfirestone(const JSONRPCRequest& request)
 		entry.pushKV("address", EncodeDestination(keyid));
 		entry.pushKV("lockheight", height);
 		entry.pushKV("state",state);
+        entry.pushKV("isSpent", pcoinsTip->AccessCoin(COutPoint((*iter)->GetTxHash(), (*iter)->GetIndex())).IsSpent());
 		results.push_back(entry);
 	}
 
@@ -3218,9 +3219,9 @@ static UniValue listslotfs(const JSONRPCRequest& request)
             {"showAll", RPCArg::Type::BOOL, RPCArg::Optional::OMITTED, "wether show all firestone."},
         },
         RPCResult{
-            "[                   (array of json object)\n"
-            "  {\n"
-        "    \"tickethash\" : x.xxx,	(string)the tickethash\n"
+        "[                   (array of json object)\n"
+        "  {\n"
+        "    \"outpoint\" : xxx:xxx,	(string)the txid:vout\n"
         "    \"address\" : \"address\",    (string) the bitcoin address\n"
         "    \"lockheight\" : \"lockheight\",(int) The height above which the tickets could be withdrawed\n"
         "    \"state\" : \"useable\",   (bool) whether the tickets can be withdrawed\n"
@@ -3241,7 +3242,7 @@ static UniValue listslotfs(const JSONRPCRequest& request)
     
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
-    bool showAll = true;
+    bool showAll = false;
     if (!request.params[1].isNull()){
         showAll = request.params[1].get_bool();
     }
@@ -3286,6 +3287,7 @@ static UniValue listslotfs(const JSONRPCRequest& request)
         entry.pushKV("address", EncodeDestination(keyid));
         entry.pushKV("lockheight", height);
         entry.pushKV("state",state);
+        entry.pushKV("isSpent", pcoinsTip->AccessCoin(COutPoint((*iter)->GetTxHash(), (*iter)->GetIndex())).IsSpent());
         results.push_back(entry);
     }
     return results;
@@ -4967,7 +4969,7 @@ UniValue freefirestone(const JSONRPCRequest& request){
 			CScript redeemScript = (*iter)->GetRedeemScript();
 			ticketids.push_back((*iter)->GetTxHash().ToString() + ":" + itostr((*iter)->GetIndex()));
 
-			// construct the freeticket tx inputs.
+			// construct the freefirestone tx inputs.
 			auto prevTx = MakeTransactionRef();
 			uint256 hashBlock;
 			if (!GetTransaction(txid, prevTx, Params().GetConsensus(), hashBlock)) {
@@ -5354,7 +5356,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "listsinceblock",                   &listsinceblock,                {"blockhash","target_confirmations","include_watchonly","include_removed"} },
     { "wallet",             "listtransactions",                 &listtransactions,              {"label|dummy","count","skip","include_watchonly"} },
     { "wallet",             "listunspent",                      &listunspent,                   {"minconf","maxconf","addresses","include_unsafe","query_options"} },
-	{ "wallet",             "getfirestone",                     &getfirestone,                  {"addresses","showAll"} },
+    { "wallet",             "getfirestone",                     &getfirestone,                  {"addresses","showAll"} },
     { "wallet",             "listslotfs",                       &listslotfs,                    {"slotIndex","showAll"} },
     { "wallet",             "listwalletdir",                    &listwalletdir,                 {} },
     { "wallet",             "listwallets",                      &listwallets,                   {} },

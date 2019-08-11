@@ -114,7 +114,7 @@ CTicket::CTicketState CTicket::State(int activeHeight) const
 	if (height!=0){
 		if (height > activeHeight){
 			return CTicketState::IMMATURATE;
-		}else if(height<=(activeHeight) && (activeHeight)<(height+18)) {
+		}else if(height<=(activeHeight) && (activeHeight)<(height + Params().SlotLength())) {
 			return CTicketState::USEABLE;
 		}else{
 			return CTicketState::OVERDUE;
