@@ -267,10 +267,9 @@ CTicketView::CTicketView(size_t nCacheSize, bool fMemory, bool fWipe)
     ticketPrice(BaseTicketPrice),
     slotIndex(0) 
 {
-    LoadTicketFromTicket();
 }
 
-void CTicketView::LoadTicketFromTicket()
+void CTicketView::LoadTicketFromDisk()
 {
     // Load info from ticket database
     std::pair<char, std::pair<int, uint256>> slotKey;

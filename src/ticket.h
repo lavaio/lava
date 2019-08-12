@@ -47,15 +47,6 @@ public:
     CKeyID KeyID() const;
 
     bool Invalid() const;
-
-    //void setValue(uint256 ticketid, uint256 txid, uint32_t n, CAmount nValue, CScript redeemscript, CScript scriptpubkey){
-	   // this->hash = ticketid;
-	   // this->txid = txid;
-	   // this->n = n;
-    //this->nValue = nValue;
-	   // this->redeemScript = redeemscript;
-	   // this->scriptPubkey = scriptpubkey;
-    //}
 };
 
 typedef std::shared_ptr<const CTicket> CTicketRef;
@@ -101,8 +92,7 @@ public:
 
     bool FlushToDisk();
 
-private:
-    void LoadTicketFromTicket();
+    void LoadTicketFromDisk();
 
 private:
     std::map<int, std::vector<CTicketRef>> ticketsInSlot;
