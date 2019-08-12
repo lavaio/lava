@@ -3083,7 +3083,7 @@ bool GetTicketList(CWallet * const pwallet, CChain& chainActive, bool include_un
 				//check wether the ticket KeyID is destination from requeset
 				CKeyID keyid;
 				int lockheight;
-				if (!DecodeTicketScript(pTicket->GetRedeemScript(), keyid, lockheight)) continue;
+				if (!DecodeTicketScript(pTicket->redeemScript, keyid, lockheight)) continue;
 				auto keyID = boost::get<CKeyID>(destination);
 				if (keyID == keyid){
 					ptickets.push_back(pTicket);
@@ -3157,7 +3157,7 @@ static UniValue getfirestone(const JSONRPCRequest& request)
     if(!showAll){
         for(auto i=0;i<alltickets.size();i++){
             auto ticket = alltickets[i];
-            if (!pcoinsTip->AccessCoin(COutPoint(ticket->GetTxHash(), ticket->GetIndex())).IsSpent()){
+            if (!pcoinsTip->AccessCoin(*(ticket->out)).IsSpent()){
                 tickets.push_back(ticket);
             }
         }
@@ -3167,14 +3167,15 @@ static UniValue getfirestone(const JSONRPCRequest& request)
 
 	for (auto iter = tickets.begin();iter!=tickets.end();iter++){
 		UniValue entry(UniValue::VOBJ);
-
-		int height = (*iter)->LockTime();
-		auto keyid = (*iter)->KeyID();
-		uint256 tickethash = (*iter)->GetHash();
+        auto ticket = *iter;
+		int height = ticket->LockTime();
+		auto keyid = ticket->KeyID();
+        auto out = ticket->out;
+		uint256 tickethash = out->hash;
 		if (keyid.size() == 0 || height == 0)
 			continue;
 		std::string state;
-		switch ((*iter)->State(chainActive.Tip()->nHeight)){
+		switch (ticket->State(chainActive.Tip()->nHeight)){
         case CTicket::CTicketState::IMMATURATE:
 			state="IMMATURATE";
 			break;
@@ -3188,11 +3189,11 @@ static UniValue getfirestone(const JSONRPCRequest& request)
 			state= "UNKNOW";
 			break;
 		}
-        entry.pushKV("outpoint", (*iter)->GetTxHash().ToString() + ":" + itostr((*iter)->GetIndex()));
+        entry.pushKV("outpoint", out->hash.ToString() + ":" + itostr(out->n));
 		entry.pushKV("address", EncodeDestination(keyid));
 		entry.pushKV("lockheight", height);
 		entry.pushKV("state",state);
-        entry.pushKV("isSpent", pcoinsTip->AccessCoin(COutPoint((*iter)->GetTxHash(), (*iter)->GetIndex())).IsSpent());
+        entry.pushKV("isSpent", pcoinsTip->AccessCoin(*out).IsSpent());
 		results.push_back(entry);
 	}
 
@@ -3250,9 +3251,8 @@ static UniValue listslotfs(const JSONRPCRequest& request)
     std::vector<CTicketRef> alltickets = pticketview->GetTicketsBySlotIndex(slotIndex);
     std::vector<CTicketRef> tickets;
     if(!showAll){
-        for(auto i=0;i<alltickets.size();i++){
-            auto ticket = alltickets[i];
-            if (!pcoinsTip->AccessCoin(COutPoint(ticket->GetTxHash(), ticket->GetIndex())).IsSpent()){
+        for(auto ticket : alltickets){
+            if (!pcoinsTip->AccessCoin(COutPoint(ticket->out->hash, ticket->out->n)).IsSpent()){
                 tickets.push_back(ticket);
             }
         }
@@ -3262,10 +3262,10 @@ static UniValue listslotfs(const JSONRPCRequest& request)
 
     for (auto iter = tickets.begin();iter!=tickets.end();iter++){
         UniValue entry(UniValue::VOBJ);
-
-        int height = (*iter)->LockTime();
-        auto keyid = (*iter)->KeyID();
-        uint256 tickethash = (*iter)->GetHash();
+        auto ticket = (*iter);
+        int height = ticket->LockTime();
+        auto keyid = ticket->KeyID();
+        uint256 tickethash = ticket->out->hash;
         if (keyid.size() == 0 || height == 0)
             continue;
         std::string state;
@@ -3283,11 +3283,12 @@ static UniValue listslotfs(const JSONRPCRequest& request)
             state= "UNKNOW";
             break;
         }
-        entry.pushKV("outpoint", (*iter)->GetTxHash().ToString() + ":" + itostr((*iter)->GetIndex()));
+        auto out = ticket->out;
+        entry.pushKV("outpoint", out->hash.ToString() + ":" + itostr(out->n));
         entry.pushKV("address", EncodeDestination(keyid));
         entry.pushKV("lockheight", height);
         entry.pushKV("state",state);
-        entry.pushKV("isSpent", pcoinsTip->AccessCoin(COutPoint((*iter)->GetTxHash(), (*iter)->GetIndex())).IsSpent());
+        entry.pushKV("isSpent", pcoinsTip->AccessCoin(*out).IsSpent());
         results.push_back(entry);
     }
     return results;
@@ -4700,9 +4701,9 @@ UniValue spendticket(const JSONRPCRequest& request)
         }
     }
 
-	auto txid = ticket.GetTxHash();
-	auto redeemScript = ticket.GetRedeemScript();
-	auto scriptPubkey = ticket.GetScriptPubkey();
+	auto txid = ticket.out->hash;
+	auto redeemScript = ticket.redeemScript;
+	auto scriptPubkey = ticket.scriptPubkey;
 
     auto prevTx = MakeTransactionRef();
     //LOCK(cs_main);
@@ -4736,8 +4737,8 @@ UniValue spendticket(const JSONRPCRequest& request)
 		}
     }
 
-	auto vout = ticket.GetIndex();
-    if (vout < 0 || vout >= prevTx->vout.size()) {
+	auto n = ticket.out->n;
+    if (n < 0 || n >= prevTx->vout.size()) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid params");
     }
     CTxDestination dest = DecodeDestination(request.params[1].get_str());
@@ -4755,7 +4756,7 @@ UniValue spendticket(const JSONRPCRequest& request)
     }
     CKey key;
     pwallet->GetKey(keyID, key);
-    auto tx = CreateTicketSpendTx(pwallet, redeemScript, prevTx->GetHash(), vout, prevTx->vout[vout], dest, key);
+    auto tx = CreateTicketSpendTx(pwallet, redeemScript, prevTx->GetHash(), n, prevTx->vout[n], dest, key);
     if (!tx) {
         throw JSONRPCError(RPC_TRANSACTION_REJECTED, "Create ticket spend transaction error.");
     }
@@ -4950,7 +4951,7 @@ UniValue freefirestone(const JSONRPCRequest& request){
     std::vector<CTicketRef> tickets;
     for(auto i=0;i<alltickets.size();i++){
         auto ticket = alltickets[i];
-        if (!pcoinsTip->AccessCoin(COutPoint(ticket->GetTxHash(), ticket->GetIndex())).IsSpent()){
+        if (!pcoinsTip->AccessCoin(*(ticket->out)).IsSpent()){
             tickets.push_back(ticket);
             if (tickets.size() > 4)
                 break;
@@ -4965,11 +4966,11 @@ UniValue freefirestone(const JSONRPCRequest& request){
 	for(auto iter = tickets.begin(); iter!=tickets.end(); iter++){
 		auto state = (*iter)->State(chainActive.Height());
 		if (state == CTicket::CTicketState::OVERDUE){
-			uint256 ticketid = (*iter)->GetHash();
-			uint256 txid = (*iter)->GetTxHash();
-			uint32_t n = (*iter)->GetIndex();
-			CScript redeemScript = (*iter)->GetRedeemScript();
-			ticketids.push_back((*iter)->GetTxHash().ToString() + ":" + itostr((*iter)->GetIndex()));
+            auto ticket = (*iter);
+            uint256 txid = ticket->out->hash;
+            uint32_t n = ticket->out->n;
+            CScript redeemScript = ticket->redeemScript;
+			ticketids.push_back(txid.ToString() + ":" + itostr(n));
 
 			// construct the freefirestone tx inputs.
 			auto prevTx = MakeTransactionRef();

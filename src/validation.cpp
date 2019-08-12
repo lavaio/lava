@@ -2016,14 +2016,19 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     LogPrint(BCLog::BENCH, "      - Connect %u transactions: %.2fms (%.3fms/tx, %.3fms/txin) [%.2fs (%.2fms/blk)]\n", (unsigned)block.vtx.size(), MILLI * (nTime3 - nTime2), MILLI * (nTime3 - nTime2) / block.vtx.size(), nInputs <= 1 ? 0 : MILLI * (nTime3 - nTime2) / (nInputs - 1), nTimeConnect * MICRO, nTimeConnect * MILLI / nBlocksTotal);
 
     CAmount blockReward = nFees + GetBlockSubsidy(pindex->nHeight, chainparams.GetConsensus());
-    if (block.vtx.size() >=2) {
+    if (block.vtx.size() >= 2) {
         auto out = block.vtx[1]->vin[0].prevout;
         if (block.vtx[0]->vin[0].scriptSig == CScript() << pindex->nHeight << ToByteVector(out.hash) << out.n << OP_0) {
             //check ticket
             auto index = (pindex->nHeight / pticketview->SlotLenght()) - 1;
             for (auto ticket : pticketview->GetTicketsBySlotIndex(index)) {
-                if (ticket->GetTxHash() == out.hash && ticket->GetIndex() == out.n)
-                    blockReward += GetBlockSubsidy(pindex->nHeight, chainparams.GetConsensus());
+                if (*(ticket->out) == out) {
+                    auto ticketInHeight = pcoinsTip->AccessCoin(COutPoint(out)).nHeight;
+                    auto beg = std::max((pticketview->SlotIndex() - 1)* pticketview->SlotLenght(), 0);
+                    auto end = pticketview->SlotIndex() * pticketview->SlotLenght() - 1;
+                    if (ticketInHeight >= beg && ticketInHeight <= end)
+                        blockReward += GetBlockSubsidy(pindex->nHeight, chainparams.GetConsensus());
+                }
             }
         }
     }
@@ -4993,7 +4998,7 @@ bool TestTicket(const int height, const CTicketRef ticket)
     if (ticket->LockTime() != ((index + 1) * len -1)) {
         return false;
     }
-    if (ticket->Amount() != pticketview->CurrentTicketPrice()) {
+    if (ticket->nValue != pticketview->CurrentTicketPrice()) {
         return false;
     }
     return true;
