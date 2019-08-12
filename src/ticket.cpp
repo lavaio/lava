@@ -329,7 +329,7 @@ bool CTicketView::SetSynced()
 {
     CDBBatch batch(*this);
     batch.Write(DB_TICKET_SYNCED_KEY, int(1));
-    LogPrintf("Ticket DB is SetSynced");
+    LogPrintf("Ticket DB is SetSynced\n");
     return WriteBatch(batch);
 }
 
@@ -337,7 +337,7 @@ bool CTicketView::ResetSynced()
 {
     CDBBatch batch(*this);
     batch.Write(DB_TICKET_SYNCED_KEY, int(0));
-    LogPrintf("Ticket DB is ResetSynced");
+    LogPrintf("Ticket DB is ResetSynced\n");
     return WriteBatch(batch);
 }
 
@@ -353,7 +353,7 @@ int CTicketView::IsSynced()
 bool CTicketView::EraseDB()
 {
     string key;
-    std::unique_ptr<CDBIterator> dbCursor(NewIterator());
+    std::unique_ptr<CDBIterator> dbCursor(pticketview->NewIterator());
 
     // Remove all tickets info
     for (dbCursor->SeekToFirst(); dbCursor->Valid(); dbCursor->Next()) {
@@ -362,7 +362,6 @@ bool CTicketView::EraseDB()
         }
     }
 
-    SetSynced();
     return true;
 }
 

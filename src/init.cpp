@@ -281,7 +281,6 @@ void Shutdown(InitInterfaces& interfaces)
         pcoinscatcher.reset();
         pcoinsdbview.reset();
         pblocktree.reset();
-        pticketview.reset();
     }
     for (const auto& client : interfaces.chain_clients) {
         client->stop();
@@ -1468,6 +1467,7 @@ bool AppInitMain(InitInterfaces& interfaces)
     LogPrintf("* Using %.1f MiB for in-memory UTXO set (plus up to %.1f MiB of unused mempool space)\n", nCoinCacheUsage * (1.0 / 1024 / 1024), nMempoolSizeMax * (1.0 / 1024 / 1024));
 
     g_relationdb.reset(new CRelationDB(0));
+    pticketview.reset(new CTicketView(0));
 
     bool fLoaded = false;
     while (!fLoaded && !ShutdownRequested()) {
@@ -1485,7 +1485,6 @@ bool AppInitMain(InitInterfaces& interfaces)
                 pcoinsTip.reset();
                 pcoinsdbview.reset();
                 pcoinscatcher.reset();
-                pticketview.reset();
                 // new CBlockTreeDB tries to delete the existing file, which
                 // fails if it's still open from the previous loop. Close it first:
                 pblocktree.reset();
@@ -1552,7 +1551,7 @@ bool AppInitMain(InitInterfaces& interfaces)
 
                 // The on-disk coinsdb is now in a good state, create the cache
                 pcoinsTip.reset(new CCoinsViewCache(pcoinscatcher.get()));
-                pticketview.reset(new CTicketView(0));
+                
                 is_coinsview_empty = fReset || fReindexChainState || pcoinsTip->GetBestBlock().IsNull();
                 if (!is_coinsview_empty) {
                     // LoadChainTip sets chainActive based on pcoinsTip's best block

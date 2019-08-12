@@ -4952,6 +4952,8 @@ UniValue freefirestone(const JSONRPCRequest& request){
         auto ticket = alltickets[i];
         if (!pcoinsTip->AccessCoin(COutPoint(ticket->GetTxHash(), ticket->GetIndex())).IsSpent()){
             tickets.push_back(ticket);
+            if (tickets.size() > 4)
+                break;
         }
     }
 

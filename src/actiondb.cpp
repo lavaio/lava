@@ -182,7 +182,7 @@ bool CRelationDB::RollbackAction(const uint256& txid)
 
 bool CRelationDB::SetSynced()
 {
-    LogPrintf("Relation DB is SetSynced");
+    LogPrintf("Relation DB is SetSynced\n");
     CDBBatch batch(*this);
     batch.Write(DB_ACTION_SYNCED, int(1));
     return WriteBatch(batch);
@@ -190,7 +190,7 @@ bool CRelationDB::SetSynced()
 
 bool CRelationDB::ResetSynced()
 {
-    LogPrintf("Relation DB is ResetSynced");
+    LogPrintf("Relation DB is ResetSynced\n");
     CDBBatch batch(*this);
     batch.Write(DB_ACTION_SYNCED, int(0));
     return WriteBatch(batch);
