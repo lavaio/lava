@@ -17,6 +17,35 @@ bool GetPublicKeyFromScript(const CScript script, CPubKey& pubkey);
 
 bool GetRedeemFromScript(const CScript script, CScript& redeemscript);
 
+class TicketValue
+{
+public:
+    uint256 hash;
+    uint32_t n;
+    CAmount nValue;
+    CScript redeemScript;
+    CScript scriptPubkey;
+
+    template <typename Stream>
+    inline void Serialize(Stream& s) const {
+        s << hash;
+        s << n;
+        s << nValue;
+        s << redeemScript;
+        s << scriptPubkey;
+    }
+
+    template <typename Stream>
+    inline void Unserialize(Stream& s) {
+        s >> hash;
+        s >> n;
+        s >> nValue;
+        s >> redeemScript;
+        s >> scriptPubkey;
+    }
+
+};
+
 class COutPoint;
 class CTicket {
 public:

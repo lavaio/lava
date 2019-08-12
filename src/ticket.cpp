@@ -108,7 +108,7 @@ CTicket::CTicket(const COutPoint& out, const CAmount nValue, const CScript& rede
 
 CTicket::~CTicket()
 {
-    delete out;
+
 }
 
 CTicket::CTicketState CTicket::State(int activeHeight) const
@@ -274,16 +274,15 @@ void CTicketView::LoadTicketFromDisk()
     // Load info from ticket database
     std::pair<char, std::pair<int, uint256>> slotKey;
     std::pair<char, std::pair<CKeyID, uint256>> addrKey;
-    std::pair<COutPoint, CScript> value;
+    TicketValue value;
     std::unique_ptr<CDBIterator> dbCursor(NewIterator());
 
     for (dbCursor->SeekToFirst(); dbCursor->Valid(); dbCursor->Next()) {
         // Load ticket slots
         if(dbCursor->GetKey(slotKey) && dbCursor->GetValue(value) && slotKey.first == DB_TICKET_SLOT_KEY) {
-            auto vout = value.first;
-            auto coin = pcoinsTip->AccessCoin(vout);
+            auto vout = COutPoint(value.hash, value.n);
 
-            CTicket ticket(vout, coin.out.nValue, value.second, coin.out.scriptPubKey);
+            CTicket ticket(vout, value.nValue, value.redeemScript, value.scriptPubkey);
             CTicketRef ticketref = std::make_shared<CTicket>(ticket);
 
             ticketsInSlot[slotKey.second.first].push_back(ticketref);
@@ -291,11 +290,10 @@ void CTicketView::LoadTicketFromDisk()
         }
 
         // Load ticket address
-        if(dbCursor->GetKey(addrKey) && dbCursor->GetValue(value) && addrKey.first == DB_TICKET_SLOT_KEY) {
-            auto vout = value.first;
-            auto coin = pcoinsTip->AccessCoin(vout);
+        if(dbCursor->GetKey(addrKey) && dbCursor->GetValue(value) && addrKey.first == DB_TICKET_ADDR_KEY) {
+            auto vout = COutPoint(value.hash, value.n);
 
-            CTicket ticket(vout, coin.out.nValue, value.second, coin.out.scriptPubKey);
+            CTicket ticket(vout, value.nValue, value.redeemScript, value.scriptPubkey);
             CTicketRef ticketref = std::make_shared<CTicket>(ticket);
 
             ticketsInAddr[addrKey.second.first].push_back(ticketref);
@@ -367,7 +365,13 @@ bool CTicketView::FlushToDisk()
     for (auto it = ticketsInSlot.begin(); it != ticketsInSlot.end(); ++ it) {
         for (auto ticket: it->second) {
             COutPoint* out = ticket->out;
-            batch.Write(std::make_pair(DB_TICKET_SLOT_KEY, std::make_pair(it->first, out->hash)), std::make_pair(*out, ticket->redeemScript));
+            TicketValue ticketValue;
+            ticketValue.hash         = ticket->out->hash;
+            ticketValue.n            = ticket->out->n;
+            ticketValue.nValue       = ticket->nValue;
+            ticketValue.redeemScript = ticket->redeemScript;
+            ticketValue.scriptPubkey = ticket->scriptPubkey;
+            batch.Write(std::make_pair(DB_TICKET_SLOT_KEY, std::make_pair(it->first, out->hash)), ticketValue);
         }
     }
 
@@ -375,7 +379,13 @@ bool CTicketView::FlushToDisk()
     for (auto it = ticketsInAddr.begin(); it != ticketsInAddr.end(); ++ it) {
         for (auto ticket: it->second) {
             COutPoint* out = ticket->out;
-            batch.Write(std::make_pair(DB_TICKET_ADDR_KEY, std::make_pair(it->first, out->hash)), std::make_pair(*out, ticket->redeemScript));
+            TicketValue ticketValue;
+            ticketValue.hash         = ticket->out->hash;
+            ticketValue.n            = ticket->out->n;
+            ticketValue.nValue       = ticket->nValue;
+            ticketValue.redeemScript = ticket->redeemScript;
+            ticketValue.scriptPubkey = ticket->scriptPubkey;
+            batch.Write(std::make_pair(DB_TICKET_ADDR_KEY, std::make_pair(it->first, out->hash)), ticketValue);
         }
     }
     return WriteBatch(batch);
