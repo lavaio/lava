@@ -257,6 +257,11 @@ void Shutdown(InitInterfaces& interfaces)
         FlushStateToDisk();
     }
 
+    // Flush TicketSlotToDisk
+    if (pticketview != nullptr) {
+        pticketview->FlushToDisk();
+    } 
+
     // After there are no more peers/RPC left to give us new data which may generate
     // CValidationInterface callbacks, flush them...
     GetMainSignals().FlushBackgroundCallbacks();
@@ -283,6 +288,7 @@ void Shutdown(InitInterfaces& interfaces)
     }
 
     g_relationdb->SetSynced();
+    pticketview->SetSynced();
 
 #if ENABLE_ZMQ
     if (g_zmq_notification_interface) {

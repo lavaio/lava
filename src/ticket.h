@@ -111,7 +111,18 @@ public:
 
     const int LockTime();
 
-    void FlushToDisk();
+    /**
+     * Disaster recovery functions
+     */
+    bool SetSynced();
+
+    bool ResetSynced();
+
+    int IsSynced();
+
+    bool EraseDB();
+
+    bool FlushToDisk();
 
 private:
     void LoadTicketFromTicket();
