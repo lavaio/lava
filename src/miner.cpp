@@ -126,7 +126,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     CTicketRef fs;
     auto index = (nHeight / pticketview->SlotLenght()) - 1;
     for (auto ticket : pticketview->GetTicketsBySlotIndex(index)) {
-        if (boost::get<CKeyID>(dest) == ticket->KeyID() && !pcoinsTip->AccessCoin(COutPoint(ticket->GetTxHash(), ticket->GetIndex())).IsSpent()) {
+        if (boost::get<CKeyID>(dest) == ticket->KeyID() && !pcoinsTip->AccessCoin(*(ticket->out)).IsSpent()) {
             fs = ticket;
             break;
         }
@@ -135,9 +135,9 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     if (fs && fs->Invalid() && key.IsValid()) {
         auto makeSpentTicketTx = [](const CTicketRef& ticket, const int height, const CTxDestination& dest, const CKey& key)->CTransactionRef {
             CMutableTransaction mtx;
-            auto redeemScript = ticket->GetRedeemScript();
-            mtx.vin.push_back(CTxIn(ticket->GetTxHash(), ticket->GetIndex(), redeemScript, 0));
-            mtx.vout.push_back(CTxOut(ticket->Amount(), GetScriptForDestination(dest)));
+            auto redeemScript = ticket->redeemScript;
+            mtx.vin.push_back(CTxIn(ticket->out->hash, ticket->out->n, redeemScript, 0));
+            mtx.vout.push_back(CTxOut(ticket->nValue, GetScriptForDestination(dest)));
             mtx.nLockTime = height - 1;
 
             CMutableTransaction txcopy(mtx);
@@ -177,7 +177,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
     coinbaseTx.vout[0].nValue = nFees + GetBlockSubsidy(nHeight, chainparams.GetConsensus());
     if (useFireStone) {
-        coinbaseTx.vin[0].scriptSig = CScript() << nHeight << ToByteVector(fs->GetTxHash()) << fs->GetIndex() << OP_0;
+        coinbaseTx.vin[0].scriptSig = CScript() << nHeight << ToByteVector(fs->out->hash) << fs->out->n << OP_0;
         coinbaseTx.vout[0].nValue += GetBlockSubsidy(nHeight, chainparams.GetConsensus());
     } else {
         coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;

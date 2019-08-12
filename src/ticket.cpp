@@ -88,8 +88,8 @@ bool GetRedeemFromScript(const CScript script, CScript& redeemscript)
 	return false;
 }
 
-CTicket::CTicket(const uint256& txid, const uint32_t n, const CAmount nValue, const CScript& redeemScript, const CScript &scriptPubkey)
-    :txid(txid), n(n), redeemScript(redeemScript), scriptPubkey(scriptPubkey), nValue(nValue)
+CTicket::CTicket(const COutPoint& out, const CAmount nValue, const CScript& redeemScript, const CScript &scriptPubkey)
+    :out(new COutPoint(out)), redeemScript(redeemScript), scriptPubkey(scriptPubkey), nValue(nValue)
 {
 	CScriptBase::const_iterator pc = scriptPubkey.begin();
 	opcodetype opcodeRet;
@@ -104,9 +104,11 @@ CTicket::CTicket(const uint256& txid, const uint32_t n, const CAmount nValue, co
 	// check the redeemScript and scriptPubkey, if unmatch throw
 	if (scriptID!=CScriptID(redeemScript))
 		throw error("error: unmatched redeemScript and scriptPubkey!");
+}
 
-	// generate hash(txid, n, redeemScript)
-	hash = ComputeHash();
+CTicket::~CTicket()
+{
+    delete out;
 }
 
 CTicket::CTicketState CTicket::State(int activeHeight) const
@@ -167,12 +169,6 @@ bool CTicket::Invalid() const
 	}
 	return true;
 }
-
-uint256 CTicket::ComputeHash() const
-{
-	return SerializeHash(*this, SER_GETHASH, SERIALIZE_TRANSACTION_NO_WITNESS);
-}
-
 
 CAmount CTicketView::BaseTicketPrice = 160 * COIN;
 static const char DB_TICKET_SYNCED_KEY = 'S';
@@ -288,7 +284,7 @@ void CTicketView::LoadTicketFromTicket()
             auto vout = value.first;
             auto coin = pcoinsTip->AccessCoin(vout);
 
-            CTicket ticket(vout.hash, vout.n, coin.out.nValue, value.second, coin.out.scriptPubKey);
+            CTicket ticket(vout, coin.out.nValue, value.second, coin.out.scriptPubKey);
             CTicketRef ticketref = std::make_shared<CTicket>(ticket);
 
             ticketsInSlot[slotKey.second.first].push_back(ticketref);
@@ -300,7 +296,7 @@ void CTicketView::LoadTicketFromTicket()
             auto vout = value.first;
             auto coin = pcoinsTip->AccessCoin(vout);
 
-            CTicket ticket(vout.hash, vout.n, coin.out.nValue, value.second, coin.out.scriptPubKey);
+            CTicket ticket(vout, coin.out.nValue, value.second, coin.out.scriptPubKey);
             CTicketRef ticketref = std::make_shared<CTicket>(ticket);
 
             ticketsInAddr[addrKey.second.first].push_back(ticketref);
@@ -371,17 +367,17 @@ bool CTicketView::FlushToDisk()
     CDBBatch batch(*this);
     // Write ticket slots
     for (auto it = ticketsInSlot.begin(); it != ticketsInSlot.end(); ++ it) {
-        for (auto ticketRef: it->second) {
-            COutPoint out(ticketRef->GetTxHash(), ticketRef->GetIndex());
-            batch.Write(std::make_pair(DB_TICKET_SLOT_KEY, std::make_pair(it->first, ticketRef->GetTxHash())), std::make_pair(out, ticketRef->GetRedeemScript()));
+        for (auto ticket: it->second) {
+            COutPoint* out = ticket->out;
+            batch.Write(std::make_pair(DB_TICKET_SLOT_KEY, std::make_pair(it->first, out->hash)), std::make_pair(*out, ticket->redeemScript));
         }
     }
 
     // Write ticket addrs
     for (auto it = ticketsInAddr.begin(); it != ticketsInAddr.end(); ++ it) {
-        for (auto ticketRef: it->second) {
-            COutPoint out(ticketRef->GetTxHash(), ticketRef->GetIndex());
-            batch.Write(std::make_pair(DB_TICKET_ADDR_KEY, std::make_pair(it->first, ticketRef->GetTxHash())), std::make_pair(out, ticketRef->GetRedeemScript()));
+        for (auto ticket: it->second) {
+            COutPoint* out = ticket->out;
+            batch.Write(std::make_pair(DB_TICKET_ADDR_KEY, std::make_pair(it->first, out->hash)), std::make_pair(*out, ticket->redeemScript));
         }
     }
     return WriteBatch(batch);

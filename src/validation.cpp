@@ -2022,7 +2022,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             //check ticket
             auto index = (pindex->nHeight / pticketview->SlotLenght()) - 1;
             for (auto ticket : pticketview->GetTicketsBySlotIndex(index)) {
-                if (ticket->GetTxHash() == out.hash && ticket->GetIndex() == out.n) {
+                if (*(ticket->out) == out) {
                     auto ticketInHeight = pcoinsTip->AccessCoin(COutPoint(out)).nHeight;
                     auto beg = std::max((pticketview->SlotIndex() - 1)* pticketview->SlotLenght(), 0);
                     auto end = pticketview->SlotIndex() * pticketview->SlotLenght() - 1;
@@ -5004,7 +5004,7 @@ bool TestTicket(const int height, const CTicketRef ticket)
     if (ticket->LockTime() != ((index + 1) * len -1)) {
         return false;
     }
-    if (ticket->Amount() != pticketview->CurrentTicketPrice()) {
+    if (ticket->nValue != pticketview->CurrentTicketPrice()) {
         return false;
     }
     return true;

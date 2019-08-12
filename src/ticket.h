@@ -17,6 +17,7 @@ bool GetPublicKeyFromScript(const CScript script, CPubKey& pubkey);
 
 bool GetRedeemFromScript(const CScript script, CScript& redeemscript);
 
+class COutPoint;
 class CTicket {
 public:
     static const int32_t VERSION = 1;
@@ -28,10 +29,16 @@ public:
         UNKNOW
     };
 
-    CTicket(const uint256& txid, const uint32_t n, const CAmount nValue, const CScript& redeemScript, const CScript &scriptPubkey);
+    COutPoint* out;
+    CAmount nValue;
+    CScript redeemScript;
+    CScript scriptPubkey;
+
+    CTicket(const COutPoint& out, const CAmount nValue, const CScript& redeemScript, const CScript &scriptPubkey);
 
     CTicket() = default;
-    ~CTicket() = default;
+
+    ~CTicket();
 
     CTicketState State(int activeHeight) const;
 
@@ -41,44 +48,14 @@ public:
 
     bool Invalid() const;
 
-    const uint256& GetHash() const { return hash; }
-    const uint256& GetTxHash() const { return txid; }
-    uint32_t GetIndex() const { return n; }
-    const CScript& GetRedeemScript() const { return redeemScript; }
-    const CScript& GetScriptPubkey() const { return scriptPubkey; }
-    const CAmount& Amount() const { return nValue; }
-    void setValue(uint256 ticketid, uint256 txid, uint32_t n, CAmount nValue, CScript redeemscript, CScript scriptpubkey){
-	    this->hash = ticketid;
-	    this->txid = txid;
-	    this->n = n;
-    this->nValue = nValue;
-	    this->redeemScript = redeemscript;
-	    this->scriptPubkey = scriptpubkey;
-    }
-
-    template <typename Stream>
-    inline void Serialize(Stream& s) const {
-	    s << txid;
-	    s << n;
-	    s << redeemScript;
-    }
-
-    template <typename Stream>
-    inline void Unserialize(Stream& s) {
-	    s >> txid;
-	    s >> n;
-	    s >> redeemScript;
-    }
-	
-private:
-    // only memory
-   uint256 hash; //hash(txid, n, redeemScript)
-   uint256 txid;
-   CAmount nValue;
-   uint32_t n;
-   CScript redeemScript;
-   CScript scriptPubkey;
-   uint256 ComputeHash() const;
+    //void setValue(uint256 ticketid, uint256 txid, uint32_t n, CAmount nValue, CScript redeemscript, CScript scriptpubkey){
+	   // this->hash = ticketid;
+	   // this->txid = txid;
+	   // this->n = n;
+    //this->nValue = nValue;
+	   // this->redeemScript = redeemscript;
+	   // this->scriptPubkey = scriptpubkey;
+    //}
 };
 
 typedef std::shared_ptr<const CTicket> CTicketRef;

@@ -194,7 +194,7 @@ CTicketRef CTransaction::Ticket() const
     for (int i = 0; i < vout.size(); i++) {
         auto out = vout[i];
         if (out.nValue != 0 && ticketScript == out.scriptPubKey) {
-            ticket.reset(new CTicket(GetHash(), i, out.nValue, redeemScript, ticketScript));
+            ticket.reset(new CTicket(COutPoint(hash, i), out.nValue, redeemScript, ticketScript));
         }
     }
     return ticket;
