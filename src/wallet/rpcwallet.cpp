@@ -4594,7 +4594,12 @@ UniValue buyfirestone(const JSONRPCRequest& request)
     }
 
     auto keyID = boost::get<CKeyID>(dest);
-    auto locktime = pticketview->LockTime();
+    int lockheight;
+    {
+        LOCK(cs_main);
+        lockheight = chainActive.Tip()->nHeight;
+    }
+    auto locktime = (lockheight+1)%18 == 0 ? (pticketview->LockTime()+18) : pticketview->LockTime();
     auto redeemScript = GenerateTicketScript(keyID, locktime);
     dest = CTxDestination(CScriptID(redeemScript));
     auto scriptPubkey = GetScriptForDestination(dest);
@@ -4949,12 +4954,17 @@ UniValue freefirestone(const JSONRPCRequest& request){
 	}
 
 	// listtickets 
-    LOCK(cs_main);
-	std::vector<CTicketRef> alltickets = pticketview->FindeTickets(boost::get<CKeyID>(destination));
+    std::vector<CTicketRef> alltickets;
+    {
+        LOCK(cs_main);
+        alltickets = pticketview->FindeTickets(boost::get<CKeyID>(destination));
+    }
+    
     std::vector<CTicketRef> tickets;
     for(auto i=0;i<alltickets.size();i++){
         auto ticket = alltickets[i];
-        if (!pcoinsTip->AccessCoin(*(ticket->out)).IsSpent()){
+        auto out = *(ticket->out);
+        if (!pcoinsTip->AccessCoin(out).IsSpent() && !mempool.isSpent(out)){
             tickets.push_back(ticket);
             if (tickets.size() > 4)
                 break;
@@ -4985,7 +4995,7 @@ UniValue freefirestone(const JSONRPCRequest& request){
 			outs.push_back(prevTx->vout[n]);
 		}
 	}
-	results.pushKV("firestoneID", ticketids);
+	results.pushKV("OutPoint", ticketids);
 
 	// create tickets tx, just one tx for all tickets vins
 	CKeyID keyID = boost::get<CKeyID>(destination);	
