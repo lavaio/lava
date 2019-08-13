@@ -6,6 +6,7 @@
 #include <util/system.h>
 #include <primitives/transaction.h>
 #include <key.h>
+#include <logging.h>
 
 #include <vector>
 
@@ -187,31 +188,34 @@ static const char DB_TICKET_SLOT_KEY = 'L';
 static const char DB_TICKET_ADDR_KEY = 'A';
 static const char DB_TICKET_HEIGHT_KEY = 'H';
 
-void CTicketView::ConncetBlock(const int height, const CBlock &blk, CheckTicketFunc checkTicket)
+void CTicketView::ConnectBlock(const int height, const CBlock &blk, CheckTicketFunc checkTicket)
 {
     updateTicketPrice(height);
     std::vector<CTicket> tickets;
     for (auto tx : blk.vtx) {        
-        if (!tx->IsTicketTx() || !checkTicket(height, tx->Ticket())) {
-            //TODO: logging
+        if (!tx->IsTicketTx())
+            continue;
+        auto ticket = tx->Ticket();
+        if( !checkTicket(height, ticket)) {
+            LogPrint(BCLog::FIRESTONE, "%s: CheckTicket failure, hash:%s:%d\n", __func__, ticket->out->hash.ToString(), ticket->out->n);
             continue;
         }
-        auto ticket = tx->Ticket();
-        tickets.emplace_back(CTicket(*(ticket->out), ticket->nValue, ticket->redeemScript, ticket->scriptPubkey));
+        tickets.emplace_back(*ticket);
         ticketsInSlot[slotIndex].emplace_back(ticket);
         ticketsInAddr[ticket->KeyID()].emplace_back(ticket);
+        LogPrint(BCLog::FIRESTONE, "%s: detected a new firestone, height:%d, hash:%s:%d\n", __func__, height, ticket->out->hash.ToString(), ticket->out->n);
     } 
     if (tickets.size() > 0) {
-        if (WriteTicketsToDisk(height, tickets)) {
-            //TODO: logging
+        if (!WriteTicketsToDisk(height, tickets)) {
+            LogPrint(BCLog::FIRESTONE, "%s: WriteTicketsToDisk retrun false, height:%d\n", __func__, height);
         }
     }
 }
 
 void CTicketView::DisconnectBlock(const int height, const CBlock &blk)
 {
+    LogPrint(BCLog::FIRESTONE, "%s: height:%d, block:%s\n", __func__, height, blk.GetHash().ToString());
     const auto len = Params().SlotLength();
-
     if (height % len == 0 && height != 0) {
         if (ticketsInSlot[slotIndex].size() > len) {
             ticketPrice /= 1.05;
@@ -289,10 +293,9 @@ bool CTicketView::LoadTicketFromDisk(const int height)
     updateTicketPrice(height);
     auto key = std::make_pair(DB_TICKET_HEIGHT_KEY, height);
     if (Exists(key)) {
-        //TODO: logging
         std::vector<CTicket> tickets;
         if (!Read(key, tickets)) {
-            //
+            LogPrint(BCLog::FIRESTONE, "%s: Read retrun false, height:%d\n", __func__, height);
             return false;
         }
         for (auto ticket : tickets) {

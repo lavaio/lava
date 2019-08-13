@@ -2028,6 +2028,9 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                     auto end = pticketview->SlotIndex() * pticketview->SlotLength() - 1;
                     if (ticketInHeight >= beg && ticketInHeight <= end)
                         blockReward += GetBlockSubsidy(pindex->nHeight, chainparams.GetConsensus());
+                    else {
+                        LogPrint(BCLog::FIRESTONE, "%s: firestone locktime error firestone:%s:%d", __func__, ticket->out->hash.ToString(), ticket->out->n);
+                    }
                 }
             }
         }
@@ -2083,7 +2086,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             }
         }
     }
-    pticketview->ConncetBlock(pindex->nHeight, block, TestTicket);
+    pticketview->ConnectBlock(pindex->nHeight, block, TestTicket);
     return true;
 }
 

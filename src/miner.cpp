@@ -128,6 +128,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     for (auto ticket : pticketview->GetTicketsBySlotIndex(index)) {
         if (boost::get<CKeyID>(dest) == ticket->KeyID() && !pcoinsTip->AccessCoin(*(ticket->out)).IsSpent()) {
             fs = ticket;
+            LogPrint(BCLog::FIRESTONE, "%s: generate new block with firestone:%s:%d", __func__, fs->out->hash.ToString(), fs->out->n);
             break;
         }
     }
@@ -157,6 +158,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
         };
         auto fstx = makeSpentTicketTx(fs, nHeight, CTxDestination(boost::get<CKeyID>(dest)), key);
         pblock->vtx.emplace_back(fstx);
+        LogPrint(BCLog::FIRESTONE, "%s: firestone spend in height:%d, %s:%d, tx:%s", __func__, nHeight, fs->out->hash.ToString(), fs->out->n, fstx->GetHash().ToString());
         useFireStone = true;
     }
 

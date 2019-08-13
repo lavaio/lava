@@ -108,7 +108,7 @@ public:
 
     ~CTicketView() = default;
 
-    void ConncetBlock(const int height, const CBlock &blk, CheckTicketFunc checkTicket);
+    void ConnectBlock(const int height, const CBlock &blk, CheckTicketFunc checkTicket);
 
     void DisconnectBlock(const int height, const CBlock &blk);
 
