@@ -246,18 +246,9 @@ std::vector<CTicketRef> CTicketView::CurrentSlotTicket()
     return ticketsInSlot[slotIndex];
 }
 
-std::vector<CTicketRef> CTicketView::AvailableTickets() 
-{
-    std::vector<CTicketRef> tickets;
-    if (slotIndex - 1 >= 0) {
-        tickets = ticketsInSlot[slotIndex - 1];
-    }
-    return std::move(tickets);
-}
-
 std::vector<CTicketRef> CTicketView::GetTicketsBySlotIndex(const int slotIndex) 
 {
-    return  ticketsInSlot[slotIndex];
+    return ticketsInSlot[slotIndex];
 }
 
 std::vector<CTicketRef> CTicketView::FindeTickets(const CKeyID key)
@@ -273,7 +264,7 @@ const int CTicketView::SlotLength()
 
 const int CTicketView::LockTime()
 {
-    return (slotIndex + 1) * SlotLength();
+    return (slotIndex + 1) * SlotLength() - 1;
 }
 
 CTicketView::CTicketView(size_t nCacheSize, bool fMemory, bool fWipe) 

@@ -2026,10 +2026,11 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
                     auto ticketInHeight = pcoinsTip->AccessCoin(COutPoint(out)).nHeight;
                     auto beg = std::max((pticketview->SlotIndex() - 1)* pticketview->SlotLength(), 0);
                     auto end = pticketview->SlotIndex() * pticketview->SlotLength() - 1;
-                    if (ticketInHeight >= beg && ticketInHeight <= end)
+                    if (ticketInHeight >= beg && ticketInHeight <= end) {
                         blockReward += GetBlockSubsidy(pindex->nHeight, chainparams.GetConsensus());
-                    else {
-                        LogPrint(BCLog::FIRESTONE, "%s: firestone locktime error firestone:%s:%d", __func__, ticket->out->hash.ToString(), ticket->out->n);
+                        LogPrint(BCLog::FIRESTONE, "%s: coinbase with firestone:%s:%d\n", __func__, ticket->out->hash.ToString(), ticket->out->n);
+                    } else {
+                        LogPrint(BCLog::FIRESTONE, "%s: firestone locktime error firestone:%s:%d\n", __func__, ticket->out->hash.ToString(), ticket->out->n);
                     }
                 }
             }

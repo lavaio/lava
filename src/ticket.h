@@ -116,8 +116,6 @@ public:
 
     std::vector<CTicketRef> CurrentSlotTicket();
 
-    std::vector<CTicketRef> AvailableTickets();
-
     std::vector<CTicketRef> FindeTickets(const CKeyID key);
 
     std::vector<CTicketRef> GetTicketsBySlotIndex(const int slotIndex);
