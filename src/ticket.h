@@ -17,35 +17,6 @@ bool GetPublicKeyFromScript(const CScript script, CPubKey& pubkey);
 
 bool GetRedeemFromScript(const CScript script, CScript& redeemscript);
 
-class TicketValue
-{
-public:
-    uint256 hash;
-    uint32_t n;
-    CAmount nValue;
-    CScript redeemScript;
-    CScript scriptPubkey;
-
-    template <typename Stream>
-    inline void Serialize(Stream& s) const {
-        s << hash;
-        s << n;
-        s << nValue;
-        s << redeemScript;
-        s << scriptPubkey;
-    }
-
-    template <typename Stream>
-    inline void Unserialize(Stream& s) {
-        s >> hash;
-        s >> n;
-        s >> nValue;
-        s >> redeemScript;
-        s >> scriptPubkey;
-    }
-
-};
-
 class COutPoint;
 class CTicket {
 public:
@@ -80,22 +51,10 @@ public:
     bool Invalid() const;
 
     template <typename Stream>
-    inline void Serialize(Stream& s) const {
-        s << out->hash;
-        s << out->n;
-        s << nValue;
-        s << redeemScript;
-        s << scriptPubkey;
-    }
+    void Serialize(Stream& s) const;
 
     template <typename Stream>
-    inline void Unserialize(Stream& s) {
-        s >> out->hash;
-        s >> out->n;
-        s >> nValue;
-        s >> redeemScript;
-        s >> scriptPubkey;
-    }
+    void Unserialize(Stream& s);
 };
 
 typedef std::shared_ptr<const CTicket> CTicketRef;

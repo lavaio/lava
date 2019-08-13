@@ -123,6 +123,26 @@ CTicket::~CTicket()
     if (out) delete out;
 }
 
+template <typename Stream>
+void CTicket::Serialize(Stream& s) const
+{
+    s << out->hash;
+    s << out->n;
+    s << nValue;
+    s << redeemScript;
+    s << scriptPubkey;
+}
+
+template <typename Stream>
+void CTicket::Unserialize(Stream& s) 
+{
+    s >> out->hash;
+    s >> out->n;
+    s >> nValue;
+    s >> redeemScript;
+    s >> scriptPubkey;
+}
+
 CTicket::CTicketState CTicket::State(int activeHeight) const
 {
 	int height = LockTime();

@@ -187,7 +187,7 @@ UniValue getslotinfo(const JSONRPCRequest& request)
     UniValue obj(UniValue::VOBJ);
     obj.pushKV("index", pticketview->SlotIndex());
     obj.pushKV("ticketprice", pticketview->CurrentTicketPrice());
-    obj.pushKV("ticketcount", pticketview->CurrentSlotTicket().size());
+    obj.pushKV("ticketcount", (uint64_t)pticketview->CurrentSlotTicket().size());
     obj.pushKV("locktime", pticketview->LockTime());
     return obj;
 }
