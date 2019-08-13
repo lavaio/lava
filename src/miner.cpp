@@ -124,7 +124,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     CTxDestination dest;
     ExtractDestination(scriptPubKeyIn, dest);
     CTicketRef fs;
-    auto index = (nHeight / pticketview->SlotLenght()) - 1;
+    auto index = (nHeight / pticketview->SlotLength()) - 1;
     for (auto ticket : pticketview->GetTicketsBySlotIndex(index)) {
         if (boost::get<CKeyID>(dest) == ticket->KeyID() && !pcoinsTip->AccessCoin(*(ticket->out)).IsSpent()) {
             fs = ticket;

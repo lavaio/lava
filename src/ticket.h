@@ -65,7 +65,9 @@ public:
 
     CTicket(const COutPoint& out, const CAmount nValue, const CScript& redeemScript, const CScript &scriptPubkey);
 
-    CTicket() = default;
+    CTicket(const CTicket& other);
+
+    CTicket();
 
     ~CTicket();
 
@@ -76,6 +78,24 @@ public:
     CKeyID KeyID() const;
 
     bool Invalid() const;
+
+    template <typename Stream>
+    inline void Serialize(Stream& s) const {
+        s << out->hash;
+        s << out->n;
+        s << nValue;
+        s << redeemScript;
+        s << scriptPubkey;
+    }
+
+    template <typename Stream>
+    inline void Unserialize(Stream& s) {
+        s >> out->hash;
+        s >> out->n;
+        s >> nValue;
+        s >> redeemScript;
+        s >> scriptPubkey;
+    }
 };
 
 typedef std::shared_ptr<const CTicket> CTicketRef;
@@ -104,24 +124,16 @@ public:
 
     const int SlotIndex() const { return slotIndex; }
 
-    const int SlotLenght();
+    const int SlotLength();
 
     const int LockTime();
 
-    /**
-     * Disaster recovery functions
-     */
-    bool SetSynced();
+    bool LoadTicketFromDisk(const int height);
 
-    bool ResetSynced();
+private:
+    bool WriteTicketsToDisk(const int height, const std::vector<CTicket> &tickets);
 
-    int IsSynced();
-
-    bool EraseDB();
-
-    bool FlushToDisk();
-
-    void LoadTicketFromDisk();
+    void updateTicketPrice(const int height);
 
 private:
     std::map<int, std::vector<CTicketRef>> ticketsInSlot;
@@ -129,7 +141,6 @@ private:
     CAmount ticketPrice;
     int slotIndex;
     static CAmount BaseTicketPrice;
-    uint256 besthash;
 };
 
 #endif

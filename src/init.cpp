@@ -257,11 +257,6 @@ void Shutdown(InitInterfaces& interfaces)
         FlushStateToDisk();
     }
 
-    // Flush TicketSlotToDisk
-    if (pticketview != nullptr) {
-        pticketview->FlushToDisk();
-    } 
-
     // After there are no more peers/RPC left to give us new data which may generate
     // CValidationInterface callbacks, flush them...
     GetMainSignals().FlushBackgroundCallbacks();
@@ -287,7 +282,6 @@ void Shutdown(InitInterfaces& interfaces)
     }
 
     g_relationdb->SetSynced();
-    pticketview->SetSynced();
 
 #if ENABLE_ZMQ
     if (g_zmq_notification_interface) {
@@ -1468,7 +1462,6 @@ bool AppInitMain(InitInterfaces& interfaces)
 
     g_relationdb.reset(new CRelationDB(0));
     pticketview.reset(new CTicketView(0));
-    pticketview->LoadTicketFromDisk();
 
     bool fLoaded = false;
     while (!fLoaded && !ShutdownRequested()) {
@@ -1560,6 +1553,11 @@ bool AppInitMain(InitInterfaces& interfaces)
                         break;
                     }
                     assert(chainActive.Tip() != nullptr);
+                }
+                // Load ticket from disk
+                if (!LoadTicketView()) {
+                    strLoadError = _("Error opening ticket database");
+                    break;
                 }
             } catch (const std::exception& e) {
                 LogPrintf("%s\n", e.what());

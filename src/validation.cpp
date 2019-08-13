@@ -2020,12 +2020,12 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         auto out = block.vtx[1]->vin[0].prevout;
         if (block.vtx[0]->vin[0].scriptSig == CScript() << pindex->nHeight << ToByteVector(out.hash) << out.n << OP_0) {
             //check ticket
-            auto index = (pindex->nHeight / pticketview->SlotLenght()) - 1;
+            auto index = (pindex->nHeight / pticketview->SlotLength()) - 1;
             for (auto ticket : pticketview->GetTicketsBySlotIndex(index)) {
                 if (*(ticket->out) == out) {
                     auto ticketInHeight = pcoinsTip->AccessCoin(COutPoint(out)).nHeight;
-                    auto beg = std::max((pticketview->SlotIndex() - 1)* pticketview->SlotLenght(), 0);
-                    auto end = pticketview->SlotIndex() * pticketview->SlotLenght() - 1;
+                    auto beg = std::max((pticketview->SlotIndex() - 1)* pticketview->SlotLength(), 0);
+                    auto end = pticketview->SlotIndex() * pticketview->SlotLength() - 1;
                     if (ticketInHeight >= beg && ticketInHeight <= end)
                         blockReward += GetBlockSubsidy(pindex->nHeight, chainparams.GetConsensus());
                 }
@@ -3913,13 +3913,11 @@ bool CChainState::LoadBlockIndex(const Consensus::Params& consensus_params, CBlo
     // Check whether the relationDB and ticketDB is synced, 
     // 1. Do nothing Loading, the index is reset to genesisblock,
     // 2. Reset the relationDB and ticketDB .
-    if (g_relationdb->IsSynced() == 0 || pticketview->IsSynced() == 0){
+    if (g_relationdb->IsSynced() == 0){
         g_relationdb->EraseDB();
-        pticketview->EraseDB();
         return true;
     }
     g_relationdb->ResetSynced();
-    pticketview->ResetSynced();
 
     if (!blocktree.LoadBlockIndexGuts(consensus_params, [this](const uint256& hash) EXCLUSIVE_LOCKS_REQUIRED(cs_main) { return this->InsertBlockIndex(hash); }))
         return false;
@@ -4994,12 +4992,26 @@ public:
 bool TestTicket(const int height, const CTicketRef ticket)
 {
     auto index = pticketview->SlotIndex();
-    auto len = pticketview->SlotLenght();
+    auto len = pticketview->SlotLength();
     if (ticket->LockTime() != ((index + 1) * len -1)) {
         return false;
     }
     if (ticket->nValue != pticketview->CurrentTicketPrice()) {
         return false;
+    }
+    return true;
+}
+
+bool LoadTicketView()
+{
+    //TODO: logging 
+    for (auto i = 0; i < chainActive.Height(); i++) {
+        try {
+            if (!pticketview->LoadTicketFromDisk(i))
+                return error("%s: failed to read ticket from disk, height: %d", __func__, i);
+        } catch (const std::runtime_error& e) {
+            return error("%s: failure: %s", __func__, e.what());
+        }
     }
     return true;
 }

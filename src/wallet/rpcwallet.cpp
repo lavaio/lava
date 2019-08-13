@@ -4592,7 +4592,7 @@ UniValue buyfirestone(const JSONRPCRequest& request)
     }
 
     auto keyID = boost::get<CKeyID>(dest);
-    auto locktime = (pticketview->SlotIndex() + 1) * pticketview->SlotLenght() - 1;
+    auto locktime = (pticketview->SlotIndex() + 1) * pticketview->SlotLength() - 1;
     auto redeemScript = GenerateTicketScript(keyID, locktime);
     dest = CTxDestination(CScriptID(redeemScript));
     auto scriptPubkey = GetScriptForDestination(dest);

@@ -444,7 +444,6 @@ public:
         READWRITE(nDeadline);
         READWRITE(nPlotID);
         READWRITE(nBaseTarget);
-        //READWRITE(nCumulativeDiff);
     }
 
     uint256 GetBlockHash() const

@@ -106,9 +106,20 @@ CTicket::CTicket(const COutPoint& out, const CAmount nValue, const CScript& rede
 		throw error("error: unmatched redeemScript and scriptPubkey!");
 }
 
+CTicket::CTicket(const CTicket& other) : out(new COutPoint(*(other.out)))
+{
+    nValue = other.nValue;
+    redeemScript = other.redeemScript;
+    scriptPubkey = other.scriptPubkey;
+}
+
+CTicket::CTicket():out(new COutPoint) {
+
+}
+
 CTicket::~CTicket()
 {
-
+    if (out) delete out;
 }
 
 CTicket::CTicketState CTicket::State(int activeHeight) const
@@ -174,28 +185,27 @@ CAmount CTicketView::BaseTicketPrice = 160 * COIN;
 static const char DB_TICKET_SYNCED_KEY = 'S';
 static const char DB_TICKET_SLOT_KEY = 'L';
 static const char DB_TICKET_ADDR_KEY = 'A';
+static const char DB_TICKET_HEIGHT_KEY = 'H';
 
 void CTicketView::ConncetBlock(const int height, const CBlock &blk, CheckTicketFunc checkTicket)
 {
-    const auto len = Params().SlotLength();
-    if (height % len == 0 && height != 0) { //update ticket price
-        if (ticketsInSlot[slotIndex].size() > len) {
-            ticketPrice *= 1.05;
-        } else if (ticketsInSlot[slotIndex].size() < len) {
-            ticketPrice *= 0.95;
-        }
-        slotIndex = int(height/len);
-        ticketPrice = std::max(ticketPrice, 1 * COIN);
-    }
+    updateTicketPrice(height);
+    std::vector<CTicket> tickets;
     for (auto tx : blk.vtx) {        
         if (!tx->IsTicketTx() || !checkTicket(height, tx->Ticket())) {
             //TODO: logging
             continue;
         }
         auto ticket = tx->Ticket();
+        tickets.emplace_back(CTicket(*(ticket->out), ticket->nValue, ticket->redeemScript, ticket->scriptPubkey));
         ticketsInSlot[slotIndex].emplace_back(ticket);
         ticketsInAddr[ticket->KeyID()].emplace_back(ticket);
     } 
+    if (tickets.size() > 0) {
+        if (WriteTicketsToDisk(height, tickets)) {
+            //TODO: logging
+        }
+    }
 }
 
 void CTicketView::DisconnectBlock(const int height, const CBlock &blk)
@@ -251,7 +261,7 @@ std::vector<CTicketRef> CTicketView::FindeTickets(const CKeyID key)
     return ticketsInAddr[key];
 }
 
-const int CTicketView::SlotLenght()
+const int CTicketView::SlotLength()
 {
     static int slotLenght = Params().SlotLength();
     return slotLenght;
@@ -259,134 +269,53 @@ const int CTicketView::SlotLenght()
 
 const int CTicketView::LockTime()
 {
-    return (slotIndex + 1) * SlotLenght();
+    return (slotIndex + 1) * SlotLength();
 }
 
 CTicketView::CTicketView(size_t nCacheSize, bool fMemory, bool fWipe) 
-    :CDBWrapper(GetDataDir() / "ticket" / "index", nCacheSize, fMemory, fWipe),
+    :CDBWrapper(GetDataDir() / "ticket", nCacheSize, fMemory, fWipe),
     ticketPrice(BaseTicketPrice),
     slotIndex(0) 
 {
 }
 
-void CTicketView::LoadTicketFromDisk()
+bool CTicketView::WriteTicketsToDisk(const int height, const std::vector<CTicket> &tickets)
 {
-    // Load info from ticket database
-    std::pair<char, std::pair<int, uint256>> slotKey;
-    std::pair<char, std::pair<CKeyID, uint256>> addrKey;
-    TicketValue value;
-    std::unique_ptr<CDBIterator> dbCursor(NewIterator());
-
-    for (dbCursor->SeekToFirst(); dbCursor->Valid(); dbCursor->Next()) {
-        // Load ticket slots
-        if(dbCursor->GetKey(slotKey) && dbCursor->GetValue(value) && slotKey.first == DB_TICKET_SLOT_KEY) {
-            auto vout = COutPoint(value.hash, value.n);
-
-            CTicket ticket(vout, value.nValue, value.redeemScript, value.scriptPubkey);
-            CTicketRef ticketref = std::make_shared<CTicket>(ticket);
-
-            ticketsInSlot[slotKey.second.first].push_back(ticketref);
-            
-        }
-
-        // Load ticket address
-        if(dbCursor->GetKey(addrKey) && dbCursor->GetValue(value) && addrKey.first == DB_TICKET_ADDR_KEY) {
-            auto vout = COutPoint(value.hash, value.n);
-
-            CTicket ticket(vout, value.nValue, value.redeemScript, value.scriptPubkey);
-            CTicketRef ticketref = std::make_shared<CTicket>(ticket);
-
-            ticketsInAddr[addrKey.second.first].push_back(ticketref);
-            
-        }
-    }
-    
-    // Calculate ticketPrice and slotIndex
-    if (!ticketsInSlot.empty()) {
-        
-        const auto slotLen = Params().SlotLength();
-        for (auto it = ticketsInSlot.begin(); it->first > 0 && it != ticketsInSlot.end(); ++ it) {
-            if (it->second.size() > slotLen) {
-                ticketPrice *= 1.05;
-            } else if (it->second.size() < slotLen) {
-                ticketPrice *= 0.95;
-            }
-            slotIndex = it->first;
-        }
-
-        ticketPrice = std::max(ticketPrice, 1 * COIN);
-    }
+    return Write(std::make_pair(DB_TICKET_HEIGHT_KEY, height), tickets);
 }
 
-bool CTicketView::SetSynced()
+bool CTicketView::LoadTicketFromDisk(const int height)
 {
-    CDBBatch batch(*this);
-    batch.Write(DB_TICKET_SYNCED_KEY, int(1));
-    LogPrintf("Ticket DB is SetSynced\n");
-    return WriteBatch(batch);
-}
-
-bool CTicketView::ResetSynced()
-{
-    CDBBatch batch(*this);
-    batch.Write(DB_TICKET_SYNCED_KEY, int(0));
-    LogPrintf("Ticket DB is ResetSynced\n");
-    return WriteBatch(batch);
-}
-
-int CTicketView::IsSynced()
-{
-    int value;
-    if (!Read(DB_TICKET_SYNCED_KEY, value)) {
-        return 0;
-    }
-    return value;
-}
-
-bool CTicketView::EraseDB()
-{
-    string key;
-    std::unique_ptr<CDBIterator> dbCursor(pticketview->NewIterator());
-
-    // Remove all tickets info
-    for (dbCursor->SeekToFirst(); dbCursor->Valid(); dbCursor->Next()) {
-        if (dbCursor->GetKey(key)) {
-            Erase(key);
+    updateTicketPrice(height);
+    auto key = std::make_pair(DB_TICKET_HEIGHT_KEY, height);
+    if (Exists(key)) {
+        //TODO: logging
+        std::vector<CTicket> tickets;
+        if (!Read(key, tickets)) {
+            //
+            return false;
+        }
+        for (auto ticket : tickets) {
+            CTicketRef t;
+            t.reset(new CTicket(ticket));
+            ticketsInSlot[slotIndex].emplace_back(t);
+            ticketsInAddr[ticket.KeyID()].emplace_back(t);
         }
     }
-
     return true;
 }
 
-bool CTicketView::FlushToDisk()
+void CTicketView::updateTicketPrice(const int height)
 {
-    CDBBatch batch(*this);
-    // Write ticket slots
-    for (auto it = ticketsInSlot.begin(); it != ticketsInSlot.end(); ++ it) {
-        for (auto ticket: it->second) {
-            COutPoint* out = ticket->out;
-            TicketValue ticketValue;
-            ticketValue.hash         = ticket->out->hash;
-            ticketValue.n            = ticket->out->n;
-            ticketValue.nValue       = ticket->nValue;
-            ticketValue.redeemScript = ticket->redeemScript;
-            ticketValue.scriptPubkey = ticket->scriptPubkey;
-            batch.Write(std::make_pair(DB_TICKET_SLOT_KEY, std::make_pair(it->first, out->hash)), ticketValue);
+    const auto len = Params().SlotLength();
+    if (height % len == 0 && height != 0) { //update ticket price
+        if (ticketsInSlot[slotIndex].size() > len) {
+            ticketPrice *= 1.05;
         }
-    }
-
-    // Write ticket addrs
-    for (auto it = ticketsInAddr.begin(); it != ticketsInAddr.end(); ++ it) {
-        for (auto ticket: it->second) {
-            COutPoint* out = ticket->out;
-            TicketValue ticketValue;
-            ticketValue.hash         = ticket->out->hash;
-            ticketValue.n            = ticket->out->n;
-            ticketValue.nValue       = ticket->nValue;
-            ticketValue.redeemScript = ticket->redeemScript;
-            ticketValue.scriptPubkey = ticket->scriptPubkey;
-            batch.Write(std::make_pair(DB_TICKET_ADDR_KEY, std::make_pair(it->first, out->hash)), ticketValue);
+        else if (ticketsInSlot[slotIndex].size() < len) {
+            ticketPrice *= 0.95;
         }
+        slotIndex = int(height / len);
+        ticketPrice = std::max(ticketPrice, 1 * COIN);
     }
-    return WriteBatch(batch);
 }
