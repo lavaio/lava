@@ -235,25 +235,15 @@ void CTicketView::ConnectBlock(const int height, const CBlock &blk, CheckTicketF
 void CTicketView::DisconnectBlock(const int height, const CBlock &blk)
 {
     LogPrint(BCLog::FIRESTONE, "%s: height:%d, block:%s\n", __func__, height, blk.GetHash().ToString());
-    const auto len = Params().SlotLength();
-    if (height % len == 0 && height != 0) {
-        if (ticketsInSlot[slotIndex].size() > len) {
-            ticketPrice /= 1.05;
-        } else if (ticketsInSlot[slotIndex].size() < len) {
-            ticketPrice /= 0.95;
-        }
-        ticketsInSlot.erase(slotIndex);
-        slotIndex = int(height/len);
-        ticketPrice = std::max(ticketPrice, 1 * COIN);
-    } else if (height == 0) {
-        ticketPrice = BaseTicketPrice;
+    auto key = std::make_pair(DB_TICKET_HEIGHT_KEY, height);
+    Erase(key, true);
+    ticketsInSlot.clear();
+    ticketsInAddr.clear();
+    slotIndex = 0;
+    ticketPrice = 0;
+    for (auto i = 0; i < height; i++) {
+        LoadTicketFromDisk(i);
     }
-
-    for (const auto tx : blk.vtx) {
-        const auto ticket = tx->Ticket();
-        if (ticket == nullptr) continue;
-        ticketsInAddr.erase(tx->Ticket()->KeyID());
-    } 
 }
 
 CAmount CTicketView::CurrentTicketPrice() const

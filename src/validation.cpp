@@ -2019,6 +2019,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     if (block.vtx.size() >= 2) {
         auto out = block.vtx[1]->vin[0].prevout;
         if (block.vtx[0]->vin[0].scriptSig == CScript() << pindex->nHeight << ToByteVector(out.hash) << out.n << OP_0) {
+            LogPrint(BCLog::FIRESTONE, "%s: coinbase with firestone:%s:%d\n", __func__, out.hash.ToString(), out.n);
             //check ticket
             auto index = (pindex->nHeight / pticketview->SlotLength()) - 1;
             for (auto ticket : pticketview->GetTicketsBySlotIndex(index)) {

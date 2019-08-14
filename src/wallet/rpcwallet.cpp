@@ -4592,22 +4592,19 @@ UniValue buyfirestone(const JSONRPCRequest& request)
     }
 
     auto keyID = boost::get<CKeyID>(dest);
-    CAmount nAmount;
-    int locktime;
-    {
-        LOCK(cs_main);
-        locktime = pticketview->LockTime();
-        if (locktime == chainActive.Height()) {
-            throw JSONRPCError(RPC_VERIFY_REJECTED, "Can't buy firestone on slot's last block.");
-        }
-        nAmount = pticketview->CurrentTicketPrice();
+    
+    LOCK(cs_main);
+    auto locktime = pticketview->LockTime();
+    if (locktime == chainActive.Height()) {
+        throw JSONRPCError(RPC_VERIFY_REJECTED, "Can't buy firestone on slot's last block.");
     }
     
+    auto nAmount = pticketview->CurrentTicketPrice();
     auto redeemScript = GenerateTicketScript(keyID, locktime);
     dest = CTxDestination(CScriptID(redeemScript));
     auto scriptPubkey = GetScriptForDestination(dest);
     auto opRetScript = CScript() << OP_RETURN << CTicket::VERSION << ToByteVector(redeemScript);
-    
+    LogPrint(BCLog::FIRESTONE, "%s: locktime:%d, nAmount:%d\n", __func__, locktime, nAmount);
     //set change dest
     std::shared_ptr<CReserveKey> rKey = std::make_shared<CReserveKey>(pwallet);
     CPubKey changePubKey;
@@ -5396,8 +5393,8 @@ static const CRPCCommand commands[] =
     { "wallet",             "walletpassphrasechange",           &walletpassphrasechange,        {"oldpassphrase","newpassphrase"} },
     //{ "wallet",             "walletprocesspsbt",                &walletprocesspsbt,             {"psbt","sign","sighashtype","bip32derivs"} },
     { "wallet",             "buyfirestone",                     &buyfirestone,                  {"address"} },
-    { "poc",                "bindplotid",                       &bindplotid,                    {"address", "target"} },
-    { "poc",                "unbindplotid",                     &unbindplotid,                  {"address"} },
+    //{ "poc",                "bindplotid",                       &bindplotid,                    {"address", "target"} },
+    //{ "poc",                "unbindplotid",                     &unbindplotid,                  {"address"} },
     { "poc",                "listbindings",                     &listbindings,                  {""} },
     { "poc",                "getbindinginfo",                   &getbindinginfo,                {"address"} },
     { "wallet",             "wallethaskey",                     &wallethaskey,                  {"address"} },

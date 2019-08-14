@@ -243,7 +243,7 @@ public:
         /* enable fallback fee on testnet */
         m_fallback_fee_enabled = true;
 
-        nSlotLength = 2048 / 8;
+        nSlotLength = 2048 / 8 / 2;
     }
 };
 
