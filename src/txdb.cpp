@@ -279,8 +279,8 @@ bool CBlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, 
 
                 auto params = Params();
                 //TODO: fix genesis block
-                if (pindexNew->nHeight != 0 && !CheckProofOfCapacity(pindexNew->genSign, pindexNew->nHeight, pindexNew->nPlotID, pindexNew->nNonce, pindexNew->nBaseTarget, pindexNew->nDeadline, params.TargetDeadline()))
-                    return error("%s: CheckProofOfCapacity failed: %s", __func__, pindexNew->ToString());
+                //if (pindexNew->nHeight != 0 && !CheckProofOfCapacity(pindexNew->genSign, pindexNew->nHeight, pindexNew->nPlotID, pindexNew->nNonce, pindexNew->nBaseTarget, pindexNew->nDeadline, params.TargetDeadline()))
+                 //   return error("%s: CheckProofOfCapacity failed: %s", __func__, pindexNew->ToString());
                 
                 pcursor->Next();
             } else {

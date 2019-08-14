@@ -213,7 +213,7 @@ static UniValue getmininginfo(const JSONRPCRequest& request)
             }.ToString());
     }
 
-    LOCK(cs_main);
+    //LOCK(cs_main);
 
     UniValue obj(UniValue::VOBJ);
     obj.pushKV("blocks",           (int)chainActive.Height());

@@ -4590,12 +4590,15 @@ UniValue buyfirestone(const JSONRPCRequest& request)
     }
 
     auto keyID = boost::get<CKeyID>(dest);
-    int lockheight;
+    int locktime;
     {
         LOCK(cs_main);
-        lockheight = chainActive.Tip()->nHeight;
+        locktime = pticketview->LockTime();
+        if (locktime == chainActive.Height()) {
+            throw JSONRPCError(RPC_VERIFY_REJECTED, "Can't buy firestone on slot's last block.");
+        }
     }
-    auto locktime = (lockheight+1) % pticketview->SlotLength() == 0 ? (pticketview->LockTime() + pticketview->SlotLength()) : pticketview->LockTime();
+    
     auto redeemScript = GenerateTicketScript(keyID, locktime);
     dest = CTxDestination(CScriptID(redeemScript));
     auto scriptPubkey = GetScriptForDestination(dest);

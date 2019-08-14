@@ -2024,8 +2024,9 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
             for (auto ticket : pticketview->GetTicketsBySlotIndex(index)) {
                 if (*(ticket->out) == out) {
                     auto ticketInHeight = pcoinsTip->AccessCoin(COutPoint(out)).nHeight;
-                    auto beg = std::max((pticketview->SlotIndex() - 1)* pticketview->SlotLength(), 0);
-                    auto end = pticketview->SlotIndex() * pticketview->SlotLength() - 1;
+                    auto index = pindex->nHeight / pticketview->SlotLength();
+                    auto beg = std::max((index - 1) * pticketview->SlotLength(), 0);
+                    auto end = index * pticketview->SlotLength() - 1;
                     if (ticketInHeight >= beg && ticketInHeight <= end) {
                         blockReward += GetBlockSubsidy(pindex->nHeight, chainparams.GetConsensus());
                         LogPrint(BCLog::FIRESTONE, "%s: coinbase with firestone:%s:%d\n", __func__, ticket->out->hash.ToString(), ticket->out->n);
