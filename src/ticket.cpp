@@ -240,7 +240,7 @@ void CTicketView::DisconnectBlock(const int height, const CBlock &blk)
     ticketsInSlot.clear();
     ticketsInAddr.clear();
     slotIndex = 0;
-    ticketPrice = 0;
+    ticketPrice = BaseTicketPrice;
     for (auto i = 0; i < height; i++) {
         LoadTicketFromDisk(i);
     }
