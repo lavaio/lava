@@ -289,7 +289,7 @@ const int CTicketView::LockTime()
 
 const int CTicketView::LockTime(const int index)
 {
-    return std::max((slotIndex + 1) * SlotLength() - 1, SlotLength() -1);
+    return std::max((index + 1) * SlotLength() - 1, SlotLength() -1);
 }
 
 CTicketView::CTicketView(size_t nCacheSize, bool fMemory, bool fWipe) 
@@ -324,13 +324,14 @@ bool CTicketView::LoadTicketFromDisk(const int height)
     return true;
 }
 
-CAmount CTicketView::TicketPriceInSlot(const int index) 
+CAmount CTicketView::TicketPriceInSlot(const int index)
 {
     CAmount price = BaseTicketPrice;
-    for (auto iter = ticketsInSlot.begin(); iter != ticketsInSlot.end() && (iter->first < index); iter++) {
-        if (iter->second.size() > SlotLength()) {
+    for (auto i = 0; i < index; i++) {
+        if (ticketsInSlot[i].size() > SlotLength()) {
             price *= 1.05;
-        } else if (iter->second.size() < SlotLength()) {
+        }
+        else if (ticketsInSlot[i].size() < SlotLength()) {
             price *= 0.95;
         }
     }
