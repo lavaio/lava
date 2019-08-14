@@ -3155,15 +3155,10 @@ static UniValue getfirestone(const JSONRPCRequest& request)
     LOCK(cs_main);
 	std::vector<CTicketRef> alltickets = pticketview->FindeTickets(boost::get<CKeyID>(destination));
     std::vector<CTicketRef> tickets;
-    if(!showAll){
-        for(auto i=0; i<alltickets.size(); i++){
-            auto ticket = alltickets[i];
-            if (!pcoinsTip->AccessCoin(*(ticket->out)).IsSpent()){
-                tickets.push_back(ticket);
-            }
+    for(auto ticket : alltickets){
+        if (!pcoinsTip->AccessCoin(COutPoint(ticket->out->hash, ticket->out->n)).IsSpent() || showAll){
+            tickets.push_back(ticket);
         }
-    }else{
-        tickets = alltickets;
     }
 
 	for (auto iter = tickets.begin();iter!=tickets.end();iter++){
@@ -3257,14 +3252,10 @@ static UniValue listslotfs(const JSONRPCRequest& request)
     
     std::vector<CTicketRef> alltickets = pticketview->GetTicketsBySlotIndex(slotIndex);
     std::vector<CTicketRef> tickets;
-    if(!showAll){
-        for(auto ticket : alltickets){
-            if (!pcoinsTip->AccessCoin(COutPoint(ticket->out->hash, ticket->out->n)).IsSpent()){
-                tickets.push_back(ticket);
-            }
+    for(auto ticket : alltickets){
+        if (!pcoinsTip->AccessCoin(COutPoint(ticket->out->hash, ticket->out->n)).IsSpent() || showAll){
+            tickets.push_back(ticket);
         }
-    }else{
-        tickets = alltickets;
     }
 
     for (auto iter = tickets.begin();iter!=tickets.end();iter++){
@@ -4604,7 +4595,7 @@ UniValue buyfirestone(const JSONRPCRequest& request)
         LOCK(cs_main);
         lockheight = chainActive.Tip()->nHeight;
     }
-    auto locktime = (lockheight+1)%18 == 0 ? (pticketview->LockTime()+18) : pticketview->LockTime();
+    auto locktime = (lockheight+1) % pticketview->SlotLength() == 0 ? (pticketview->LockTime() + pticketview->SlotLength()) : pticketview->LockTime();
     auto redeemScript = GenerateTicketScript(keyID, locktime);
     dest = CTxDestination(CScriptID(redeemScript));
     auto scriptPubkey = GetScriptForDestination(dest);
