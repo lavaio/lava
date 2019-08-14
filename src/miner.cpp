@@ -87,7 +87,7 @@ void BlockAssembler::resetBlock()
 Optional<int64_t> BlockAssembler::m_last_block_num_txs{nullopt};
 Optional<int64_t> BlockAssembler::m_last_block_weight{nullopt};
 
-std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, const uint64_t& nonce, const uint64_t& plotID, const uint64_t& deadline, const CKey& key)
+std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, const uint64_t& nonce, const uint64_t& plotID, const uint64_t& deadline, const CTransactionRef& tx)
 {
     int64_t nTimeStart = GetTimeMicros();
 
@@ -121,47 +121,10 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     nLockTimeCutoff = (STANDARD_LOCKTIME_VERIFY_FLAGS & LOCKTIME_MEDIAN_TIME_PAST) ? nMedianTimePast : pblock->GetBlockTime();
 
     //use fire stone
-    CTxDestination dest;
-    ExtractDestination(scriptPubKeyIn, dest);
-    CTicketRef fs;
-    auto index = (nHeight / pticketview->SlotLength()) - 1;
-    for (auto ticket : pticketview->GetTicketsBySlotIndex(index)) {
-        if (boost::get<CKeyID>(dest) == ticket->KeyID() && !pcoinsTip->AccessCoin(*(ticket->out)).IsSpent()) {
-            fs = ticket;
-            LogPrint(BCLog::FIRESTONE, "%s: generate new block with firestone:%s:%d", __func__, fs->out->hash.ToString(), fs->out->n);
-            break;
-        }
+    if (!tx->IsNull()) {
+        pblock->vtx.emplace_back(tx);
     }
-    auto useFireStone = false;
-    if (fs && fs->Invalid() && key.IsValid()) {
-        auto makeSpentTicketTx = [](const CTicketRef& ticket, const int height, const CTxDestination& dest, const CKey& key)->CTransactionRef {
-            CMutableTransaction mtx;
-            auto redeemScript = ticket->redeemScript;
-            mtx.vin.push_back(CTxIn(ticket->out->hash, ticket->out->n, redeemScript, 0));
-            mtx.vout.push_back(CTxOut(ticket->nValue, GetScriptForDestination(dest)));
-            mtx.nLockTime = height - 1;
-
-            CMutableTransaction txcopy(mtx);
-            txcopy.vin[0] = CTxIn(txcopy.vin[0].prevout, redeemScript, 0);
-            CHashWriter ss(SER_GETHASH, 0);
-            ss << txcopy << 1;
-            auto hash = ss.GetHash();
-            std::vector<unsigned char> vchSig;
-            if (!key.Sign(hash, vchSig)) {
-                //TODO: error catch 
-                return MakeTransactionRef();
-            }
-            vchSig.push_back((unsigned char)SIGHASH_ALL);
-            mtx.vin[0].scriptSig = CScript() << vchSig << ToByteVector(key.GetPubKey()) << ToByteVector(redeemScript);
-            CTransaction tx(mtx);
-            return MakeTransactionRef(tx);
-        };
-        auto fstx = makeSpentTicketTx(fs, nHeight, CTxDestination(boost::get<CKeyID>(dest)), key);
-        pblock->vtx.emplace_back(fstx);
-        LogPrint(BCLog::FIRESTONE, "%s: firestone spend in height:%d, %s:%d, tx:%s", __func__, nHeight, fs->out->hash.ToString(), fs->out->n, fstx->GetHash().ToString());
-        useFireStone = true;
-    }
-
+    
     int nPackagesSelected = 0;
     int nDescendantsUpdated = 0;
     addPackageTxs(nPackagesSelected, nDescendantsUpdated);
@@ -178,9 +141,11 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     coinbaseTx.vout.resize(1);
     coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
     coinbaseTx.vout[0].nValue = nFees + GetBlockSubsidy(nHeight, chainparams.GetConsensus());
-    if (useFireStone) {
-        coinbaseTx.vin[0].scriptSig = CScript() << nHeight << ToByteVector(fs->out->hash) << fs->out->n << OP_0;
+    if (!tx->IsNull()) {
+        auto out = tx->vin[0].prevout;
+        coinbaseTx.vin[0].scriptSig = CScript() << nHeight << ToByteVector(out.hash) << out.n << OP_0;
         coinbaseTx.vout[0].nValue += GetBlockSubsidy(nHeight, chainparams.GetConsensus());
+        LogPrint(BCLog::FIRESTONE, "%s: firestone spend in height:%d, %s:%d, tx:%s/n", __func__, nHeight, out.hash.ToString(), out.n, tx->GetHash().ToString());
     } else {
         coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
     }

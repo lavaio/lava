@@ -3118,7 +3118,7 @@ static UniValue getfirestone(const JSONRPCRequest& request)
             "Optionally filter to only include txouts paid to specified addresses.\n",
             {
 				{"address", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "bitcoin address"},
-                {"showAll", RPCArg::Type::BOOL, RPCArg::Optional::OMITTED, "wether show all firestone."},
+                {"all", RPCArg::Type::BOOL, RPCArg::Optional::OMITTED, "wether show all firestone."},
             },
             RPCResult{
         "[                   (array of json object)\n"
@@ -3210,15 +3210,15 @@ static UniValue listslotfs(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (request.fHelp || request.params.size() > 4)
+    if (request.fHelp || request.params.size() > 2)
         throw std::runtime_error(
         RPCHelpMan{"listslotfs",
-        "\nReturns array of unspent tickets\n"
+        "\nReturns array of unspent firestone\n"
         "with between minconf and maxconf (inclusive) confirmations.\n"
         "Optionally filter to only include txouts paid to specified addresses.\n",
         {
-            {"slotIndex", RPCArg::Type::NUM, RPCArg::Optional::OMITTED, "slot index."},
-            {"showAll", RPCArg::Type::BOOL, RPCArg::Optional::OMITTED, "wether show all firestone."},
+            {"index", RPCArg::Type::NUM, RPCArg::Optional::OMITTED, "slot index."},
+            {"all", RPCArg::Type::BOOL, RPCArg::Optional::OMITTED, "wether show all firestone."},
         },
         RPCResult{
         "[                   (array of json object)\n"
@@ -3232,14 +3232,19 @@ static UniValue listslotfs(const JSONRPCRequest& request)
         "]\n"
         },
         RPCExamples{
-            HelpExampleCli("getfirestone", "\"1PGFqEzfmQch1gKD3ra4k18PNj3tTUUSqg\"")
-            + HelpExampleCli("getfirestone", "\"1PGFqEzfmQch1gKD3ra4k18PNj3tTUUSqg\" 6 9999999 true")
+            HelpExampleCli("listslotfs", "")
+            + HelpExampleCli("listslotfs", "10")
+            + HelpExampleCli("listslotfs", "10 true")
         },
         }.ToString());
 
-    int slotIndex = 0;
+    LOCK(cs_main);
+    int slotIndex = pticketview->SlotIndex();
     if (!request.params[0].isNull()){
         slotIndex = request.params[0].get_int();
+    }
+    if (slotIndex < 0 || slotIndex > pticketview->SlotIndex()) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid slot index");
     }
     
     // Make sure the results are valid at least up to the most recent block
@@ -3249,7 +3254,7 @@ static UniValue listslotfs(const JSONRPCRequest& request)
         showAll = request.params[1].get_bool();
     }
     UniValue results(UniValue::VARR);
-    LOCK(cs_main);
+    
     std::vector<CTicketRef> alltickets = pticketview->GetTicketsBySlotIndex(slotIndex);
     std::vector<CTicketRef> tickets;
     if(!showAll){
@@ -5334,7 +5339,7 @@ UniValue importmulti(const JSONRPCRequest& request);
 static const CRPCCommand commands[] =
 { //  category              name                                actor (function)                argNames
     //  --------------------- ------------------------          -----------------------         ----------
-    //{ "generating",         "generate",                         &generate,                      {"nblocks","maxtries"} },
+    { "generating",         "generate",                         &generate,                      {"nblocks","maxtries"} },
     { "hidden",             "resendwallettransactions",         &resendwallettransactions,      {} },
     { "rawtransactions",    "fundrawtransaction",               &fundrawtransaction,            {"hexstring","options","iswitness"} },
     { "wallet",             "abandontransaction",               &abandontransaction,            {"txid"} },
@@ -5372,8 +5377,8 @@ static const CRPCCommand commands[] =
     { "wallet",             "listsinceblock",                   &listsinceblock,                {"blockhash","target_confirmations","include_watchonly","include_removed"} },
     { "wallet",             "listtransactions",                 &listtransactions,              {"label|dummy","count","skip","include_watchonly"} },
     { "wallet",             "listunspent",                      &listunspent,                   {"minconf","maxconf","addresses","include_unsafe","query_options"} },
-    { "wallet",             "getfirestone",                     &getfirestone,                  {"addresses","showAll"} },
-    { "wallet",             "listslotfs",                       &listslotfs,                    {"slotIndex","showAll"} },
+    { "wallet",             "getfirestone",                     &getfirestone,                  {"addresses","all"} },
+    { "wallet",             "listslotfs",                       &listslotfs,                    {"index","all"} },
     { "wallet",             "listwalletdir",                    &listwalletdir,                 {} },
     { "wallet",             "listwallets",                      &listwallets,                   {} },
     { "wallet",             "loadwallet",                       &loadwallet,                    {"filename"} },

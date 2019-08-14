@@ -85,7 +85,11 @@ public:
 
     const int LockTime();
 
+    const int LockTime(const int index);
+
     bool LoadTicketFromDisk(const int height);
+
+    CAmount TicketPriceInSlot(const int index);
 
 private:
     bool WriteTicketsToDisk(const int height, const std::vector<CTicket> &tickets);

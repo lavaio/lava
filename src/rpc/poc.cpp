@@ -167,28 +167,37 @@ UniValue submitNonce(const JSONRPCRequest& request)
 
 UniValue getslotinfo(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() != 0)
+    if (request.fHelp || request.params.size() > 1)
         throw std::runtime_error(
             RPCHelpMan{ "getslotinfo",
                 "Returns an object containing fire stone slot info.\n",
-                {},
+                {
+                    {"index", RPCArg::Type::NUM, RPCArg::Optional::OMITTED, "slot index."},
+                },
                 RPCResult{
             "{\n"
             "  \"index\": xx,                  (numeric) the index of fire stone slot \n"
-            "  \"ticketprice\": xxxxxx,        (numeric) the current price of fire stone slot\n"
-            "  \"ticketcount\": xx,            (numeric) the count of tickets in this slot\n"
+            "  \"price\": xxxxxx,              (numeric) the current price of fire stone slot\n"
+            "  \"count\": xx,                  (numeric) the count of tickets in this slot\n"
             "  \"locktime\": xxxxx,            (numeric) the end of this slot\n"
             "}\n" },
                 RPCExamples{
-                    HelpExampleCli("getslotinfo", ""),
+                    HelpExampleCli("getslotinfo", "") + HelpExampleCli("getslotinfo", "2")
                 },
             }.ToString());
     LOCK(cs_main);
+    int index = pticketview->SlotIndex();
+    if (!request.params[0].isNull()) {
+        index = request.params[0].get_int();
+    }
+    if (index < 0 || index > pticketview->SlotIndex()) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid slot index");
+    }
     UniValue obj(UniValue::VOBJ);
-    obj.pushKV("index", pticketview->SlotIndex());
-    obj.pushKV("ticketprice", pticketview->CurrentTicketPrice());
-    obj.pushKV("ticketcount", (uint64_t)pticketview->CurrentSlotTicket().size());
-    obj.pushKV("locktime", pticketview->LockTime());
+    obj.pushKV("index", index);
+    obj.pushKV("price", pticketview->TicketPriceInSlot(index));
+    obj.pushKV("count", (uint64_t)pticketview->GetTicketsBySlotIndex(index).size());
+    obj.pushKV("locktime", pticketview->LockTime(index));
     return obj;
 }
 
@@ -199,7 +208,7 @@ static const CRPCCommand commands[] =
     { "poc",               "getmininginfo",           &getMiningInfo,          {} },
     { "poc",               "submitnonce",             &submitNonce,            {"address", "nonce", "deadline"} },
 	{ "poc",               "getaddressplotid",        &getAddressPlotId,       {"address"} },
-    { "poc",               "getslotinfo",             &getslotinfo,            {} },
+    { "poc",               "getslotinfo",             &getslotinfo,            {"index"} },
 };
 
 void RegisterPocRPCCommands(CRPCTable& t)

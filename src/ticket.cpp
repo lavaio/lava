@@ -278,13 +278,18 @@ std::vector<CTicketRef> CTicketView::FindeTickets(const CKeyID key)
 
 const int CTicketView::SlotLength()
 {
-    static int slotLenght = Params().SlotLength();
-    return slotLenght;
+    static int slotLength= Params().SlotLength();
+    return slotLength;
 }
 
 const int CTicketView::LockTime()
 {
     return (slotIndex + 1) * SlotLength() - 1;
+}
+
+const int CTicketView::LockTime(const int index)
+{
+    return std::max((slotIndex + 1) * SlotLength() - 1, SlotLength() -1);
 }
 
 CTicketView::CTicketView(size_t nCacheSize, bool fMemory, bool fWipe) 
@@ -317,6 +322,19 @@ bool CTicketView::LoadTicketFromDisk(const int height)
         }
     }
     return true;
+}
+
+CAmount CTicketView::TicketPriceInSlot(const int index) 
+{
+    CAmount price = BaseTicketPrice;
+    for (auto iter = ticketsInSlot.begin(); iter != ticketsInSlot.end() && (iter->first < index); iter++) {
+        if (iter->second.size() > SlotLength()) {
+            price *= 1.05;
+        } else if (iter->second.size() < SlotLength()) {
+            price *= 0.95;
+        }
+    }
+    return price;
 }
 
 void CTicketView::updateTicketPrice(const int height)

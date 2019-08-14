@@ -63,25 +63,67 @@ bool CPOCBlockAssember::UpdateDeadline(const int height, const CKeyID& keyid, co
 void CPOCBlockAssember::CreateNewBlock()
 {
     int height{ 0 };
-    CKeyID form;
+    CKeyID from;
     uint256 genSig;
     uint64_t deadline{ 0 };
     uint64_t nonce{ 0 };
     {
         boost::lock_guard<boost::mutex> lock(mtx);
         height = this->height;
-        form = this->keyid;
+        from = this->keyid;
         genSig = this->genSig;
         nonce = this->nonce;
         deadline = this->deadline;
     }
-    auto plotid = form.GetPlotID();
+    auto plotid = from.GetPlotID();
     LogPrintf("CPOCBlockAssember CreateNewBlock, plotid: %u nonce:%u newheight:%u deadline:%u utc:%u\n", plotid, nonce, height, deadline, GetTimeMillis()/1000);
     auto params = Params();
-    auto to = g_relationdb->To(form);
-    auto target = to.IsNull() ? form : to;
+    //plotid bind
+    auto to = g_relationdb->To(from);
+    auto target = to.IsNull() ? from : to;
+    //find firestone for coinbase
+    auto fstx = MakeTransactionRef();
+    
+    {
+        LOCK(cs_main);
+        CTicketRef fs;
+        auto index = (height / pticketview->SlotLength()) - 1;
+        for (auto ticket : pticketview->GetTicketsBySlotIndex(index)) {
+            if (from == ticket->KeyID() && !pcoinsTip->AccessCoin(*(ticket->out)).IsSpent()) {
+                fs = ticket;
+                LogPrint(BCLog::FIRESTONE, "%s: generate new block with firestone:%s:%d\n", __func__, fs->out->hash.ToString(), fs->out->n);
+                break;
+            }
+        }
+        if (fs && fs->Invalid() && key.IsValid()) {
+            auto makeSpentTicketTx = [](const CTicketRef& ticket, const int height, const CTxDestination& dest, const CKey& key)->CTransactionRef {
+                CMutableTransaction mtx;
+                auto redeemScript = ticket->redeemScript;
+                mtx.vin.push_back(CTxIn(ticket->out->hash, ticket->out->n, redeemScript, 0));
+                mtx.vout.push_back(CTxOut(ticket->nValue, GetScriptForDestination(dest)));
+                mtx.nLockTime = height - 1;
+
+                CMutableTransaction txcopy(mtx);
+                txcopy.vin[0] = CTxIn(txcopy.vin[0].prevout, redeemScript, 0);
+                CHashWriter ss(SER_GETHASH, 0);
+                ss << txcopy << 1;
+                auto hash = ss.GetHash();
+                std::vector<unsigned char> vchSig;
+                if (!key.Sign(hash, vchSig)) {
+                    LogPrint(BCLog::FIRESTONE, "%s: sign firestone tx failure, key:%d, %s:%d, keyid:%s\n", __func__, key.GetPubKey().GetID().ToString());
+                    return MakeTransactionRef();
+                }
+                vchSig.push_back((unsigned char)SIGHASH_ALL);
+                mtx.vin[0].scriptSig = CScript() << vchSig << ToByteVector(key.GetPubKey()) << ToByteVector(redeemScript);
+                CTransaction tx(mtx);
+                return MakeTransactionRef(tx);
+            };
+            fstx = makeSpentTicketTx(fs, height, CTxDestination(from), key);
+        }
+    }
+    
     auto scriptPubKeyIn = GetScriptForDestination(CTxDestination(target));
-    auto blk = BlockAssembler(params).CreateNewBlock(scriptPubKeyIn, nonce, plotid, deadline, key);
+    auto blk = BlockAssembler(params).CreateNewBlock(scriptPubKeyIn, nonce, plotid, deadline, fstx);
     if (blk) {
         uint32_t extraNonce = 0;
         IncrementExtraNonce(&blk->block, chainActive.Tip(), extraNonce);

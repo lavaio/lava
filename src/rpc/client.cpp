@@ -164,10 +164,11 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "createwallet", 2, "blank"},
     { "getnodeaddresses", 0, "count"},
     { "stop", 0, "wait" },
-    { "getmineraddress",0,"new" },
-    { "listslotfs",0,"slotIndex" },
-    { "listslotfs",1,"showAll" },
-    { "getfirestone",1,"showAll" },
+    { "getmineraddress", 0, "new" },
+    { "listslotfs", 0, "index" },
+    { "listslotfs", 1, "all" },
+    { "getfirestone", 1, "all" },
+    { "getslotinfo", 0, "index" }, 
 };
 // clang-format on
 
