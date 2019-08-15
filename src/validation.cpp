@@ -1592,11 +1592,13 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
     // move best block pointer to prevout block
     view.SetBestBlock(pindex->pprev->GetBlockHash());
 
+    /*
     for (auto tx : block.vtx) {
         g_relationdb->RollbackAction(tx->GetHash());
     }
 
     pticketview->DisconnectBlock(pindex->nHeight, block);
+    */
     return fClean ? DISCONNECT_OK : DISCONNECT_UNCLEAN;
 }
 
