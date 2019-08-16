@@ -5013,7 +5013,7 @@ bool TestTicket(const int height, const CTicketRef ticket)
 bool LoadTicketView()
 {
     //TODO: logging 
-    for (auto i = 0; i < chainActive.Height(); i++) {
+    for (auto i = 0; i <= chainActive.Height(); i++) {
         try {
             if (!pticketview->LoadTicketFromDisk(i))
                 return error("%s: failed to read ticket from disk, height: %d", __func__, i);

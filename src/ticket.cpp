@@ -210,6 +210,7 @@ static const char DB_TICKET_HEIGHT_KEY = 'H';
 
 void CTicketView::ConnectBlock(const int height, const CBlock &blk, CheckTicketFunc checkTicket)
 {
+    LogPrint(BCLog::FIRESTONE, "%s: height:%d\n", __func__, height);
     updateTicketPrice(height);
     std::vector<CTicket> tickets;
     for (auto tx : blk.vtx) {        
@@ -332,13 +333,15 @@ void CTicketView::updateTicketPrice(const int height)
 {
     const auto len = Params().SlotLength();
     if (height % len == 0 && height != 0) { //update ticket price
-        if (ticketsInSlot[slotIndex].size() > len) {
+        auto prevSlotTicketSize = ticketsInSlot[slotIndex].size();
+        if (prevSlotTicketSize > len) {
             ticketPrice *= 1.05;
         }
-        else if (ticketsInSlot[slotIndex].size() < len) {
+        else if (prevSlotTicketSize < len) {
             ticketPrice *= 0.95;
         }
         slotIndex = int(height / len);
         ticketPrice = std::max(ticketPrice, 1 * COIN);
+        LogPrint(BCLog::FIRESTONE, "%s: updata ticket slot, index:%d, price:%d, prevSlotTicketCount:%d\n", __func__, slotIndex, ticketPrice, prevSlotTicketSize);
     }
 }
