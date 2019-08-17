@@ -4972,6 +4972,12 @@ UniValue freefirestone(const JSONRPCRequest& request){
 
 	// get the overdue tickets
 	UniValue results(UniValue::VOBJ);
+    if (tickets.size() == 0){
+        // return txid, all overdue ticketid
+        results.pushKV("ATTENTION:","YOUR ADDRESS HAS NO FIRESTONES!");
+        return results;
+    }
+
 	std::map<uint256,std::pair<int,CScript>> txScriptInputs;
 	std::vector<CTxOut> outs;
 	UniValue ticketids(UniValue::VARR);
@@ -4999,7 +5005,12 @@ UniValue freefirestone(const JSONRPCRequest& request){
 	// create tickets tx, just one tx for all tickets vins
 	CKeyID keyID = boost::get<CKeyID>(destination);	
 	CKey key;
-	pwallet->GetKey(keyID, key);
+    if (!pwallet->GetKey(keyID, key)){
+        // return txid, all overdue ticketid
+        UniValue results(UniValue::VOBJ);
+        results.pushKV("ATTENTION:","YOUR ADDRESS HAS NO FIRESTONES!");
+        return results;
+    }
 	auto tx = CreateTicketAllSpendTx(pwallet, txScriptInputs, outs, receiver, key);
 
 	std::string errStr;

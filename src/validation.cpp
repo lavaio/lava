@@ -3920,6 +3920,9 @@ bool CChainState::LoadBlockIndex(const Consensus::Params& consensus_params, CBlo
     // 2. Reset the relationDB and ticketDB .
     if (g_relationdb->IsSynced() == 0){
         g_relationdb->EraseDB();
+        leveldb::Options options;
+        auto path = GetDataDir() / "chainstate";
+        leveldb::DestroyDB(path.string(),options);
         return true;
     }
     g_relationdb->ResetSynced();
