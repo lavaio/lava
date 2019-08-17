@@ -114,13 +114,13 @@ static const char DB_ACTIVE_ACTION_KEY = 'A';
 static const char DB_ACTION_SYNCED = 'S';
 
 CRelationDB::CRelationDB(size_t nCacheSize, bool fMemory, bool fWipe)
-    : CDBWrapper(GetDataDir() / "index" / "relation", nCacheSize, fMemory, fWipe) 
+    : CDBWrapper(GetDataDir() / "action" / "relation", nCacheSize, fMemory, fWipe) 
 {
 }
 
 bool CRelationDB::InsertRelation(const CKeyID& from, const CKeyID& to)
 {
-    return Write(std::make_pair(DB_RELATION_KEY, from), to);
+    return Write(std::make_pair(DB_RELATION_KEY, from), to, true);
 }
 
 CKeyID CRelationDB::To(const CKeyID& from) const
@@ -131,9 +131,12 @@ CKeyID CRelationDB::To(const CKeyID& from) const
 
 CKeyID CRelationDB::To(const uint64_t plotid) const
 {
+    auto key = std::make_pair(DB_RELATION_KEY, plotid);
     auto value = std::make_pair(CKeyID(), CKeyID());
-    if (!Read(std::make_pair(DB_RELATION_KEY, plotid), value)) {
-        LogPrint(BCLog::DB, "CRelationDB::To failure, get bind to, from:%u\n", plotid);
+    if (Exists(key)) {
+        if (!Read(std::make_pair(DB_RELATION_KEY, plotid), value)) {
+            throw error("error: CRelationDB::To read db failure!");
+        }
     }
     return std::move(value.second);
 }
