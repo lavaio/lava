@@ -176,7 +176,7 @@ bool CRelationDB::RollbackAction(const uint256& txid)
     batch.Erase(activeKey);
     auto relKey = std::make_pair(DB_RELATION_KEY, active.first.GetPlotID());
     if (active.second != CKeyID()) {
-        batch.Write(relKey, active.second);
+        batch.Write(relKey, std::make_pair(active.first,active.second));
     } else if (Exists(relKey)) {
         batch.Erase(relKey);
     }

@@ -1592,13 +1592,6 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
     // move best block pointer to prevout block
     view.SetBestBlock(pindex->pprev->GetBlockHash());
 
-    /*
-    for (auto tx : block.vtx) {
-        g_relationdb->RollbackAction(tx->GetHash());
-    }
-
-    pticketview->DisconnectBlock(pindex->nHeight, block);
-    */
     return fClean ? DISCONNECT_OK : DISCONNECT_UNCLEAN;
 }
 
@@ -2318,6 +2311,10 @@ bool CChainState::DisconnectTip(CValidationState& state, const CChainParams& cha
     {
         CCoinsViewCache view(pcoinsTip.get());
         assert(view.GetBestBlock() == pindexDelete->GetBlockHash());
+        pticketview->DisconnectBlock(pindexDelete->nHeight, block);
+        for (auto tx : block.vtx) {
+            g_relationdb->RollbackAction(tx->GetHash());
+        }
         if (DisconnectBlock(block, pindexDelete, view) != DISCONNECT_OK)
             return error("DisconnectTip(): DisconnectBlock %s failed", pindexDelete->GetBlockHash().ToString());
         bool flushed = view.Flush();
