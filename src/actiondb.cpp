@@ -240,7 +240,8 @@ CRelationVector CRelationDB::ListRelations() const
     iter->Seek(std::make_pair(DB_RELATION_KEY, 0));
     while (iter->Valid()) {
         auto value = std::make_pair(CKeyID(), CKeyID());
-        iter->GetValue(value);
+        if (!iter->GetValue(value))
+            continue;
         vch.push_back(value);
         iter->Next();
     }
