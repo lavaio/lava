@@ -19,12 +19,16 @@ CPOCBlockAssember::CPOCBlockAssember()
 
 bool CPOCBlockAssember::UpdateDeadline(const int height, const CKeyID& keyid, const uint64_t nonce, const uint64_t deadline, const CKey& key)
 {
-    auto prevIndex = chainActive.Tip();
-    
+    if (prevIndex == nullptr)
+    {
+        LOCK(cs_main);
+        prevIndex = chainActive.Tip();
+    }
+
     if (prevIndex->nHeight != (height - 1)) {
         LogPrintf("chainActive has been update, the new index is %uul, but the height to be produced is %uul\n", prevIndex->nHeight, height);
-		return false;
-	}
+        return false;
+    }
     auto params = Params();
     if (deadline / prevIndex->nBaseTarget > params.TargetDeadline()) {
         LogPrintf("Invalid deadline %uul\n", deadline);
@@ -56,6 +60,7 @@ bool CPOCBlockAssember::UpdateDeadline(const int height, const CKeyID& keyid, co
         auto lastBlockTime = prevIndex->GetBlockHeader().GetBlockTime();
         auto ts = (deadline / chainActive.Tip()->nBaseTarget);
         this->dl = lastBlockTime + ts;
+        this->nCumulativeDiff = prevIndex->nCumulativeDiff + arith_uint256(CUMULATIVE_DIFF_DENOM / prevIndex->nBaseTarget);
     }
     return true;
 }
@@ -123,7 +128,7 @@ void CPOCBlockAssember::CreateNewBlock()
     }
     
     auto scriptPubKeyIn = GetScriptForDestination(CTxDestination(target));
-    auto blk = BlockAssembler(params).CreateNewBlock(scriptPubKeyIn, nonce, plotid, deadline, fstx);
+    auto blk = BlockAssembler(params).CreateNewBlock(scriptPubKeyIn, nonce, plotid, deadline, fstx, prevIndex);
     if (blk) {
         uint32_t extraNonce = 0;
         IncrementExtraNonce(&blk->block, chainActive.Tip(), extraNonce);
@@ -154,4 +159,21 @@ void CPOCBlockAssember::SetNull()
     genSig = uint256();
     keyid.SetNull();
     dl = 0;
+    nCumulativeDiff = arith_uint256{};
+    prevIndex = nullptr;
+}
+
+CBlockIndex* CPOCBlockAssember::GetAssemberBlockIndex(){
+    return prevIndex == nullptr ? chainActive.Tip(): prevIndex;
+}
+
+void CPOCBlockAssember::ConnectBlock(){
+    auto chainPrevIndex = chainActive.Tip();
+    if (dl != 0 && prevIndex->nHeight != chainPrevIndex->nHeight) {
+        //do diff comp
+        if (chainPrevIndex->nCumulativeDiff > nCumulativeDiff) {
+            LogPrintf("Connect Assember Block failed");
+            SetNull();
+        }
+    }
 }
