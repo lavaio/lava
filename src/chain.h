@@ -18,7 +18,7 @@
  * Maximum amount of time that a block timestamp is allowed to exceed the
  * current network-adjusted time before the block will be accepted.
  */
-static constexpr int64_t MAX_FUTURE_BLOCK_TIME = 2 * 60 * 60;
+static constexpr int64_t MAX_FUTURE_BLOCK_TIME = 30;
 
 /**
  * Timestamp window used as a grace period by code that compares external
@@ -340,7 +340,7 @@ public:
         return (int64_t)nTimeMax;
     }
 
-    static constexpr int nMedianTimeSpan = 11;
+    static constexpr int nMedianTimeSpan = 21;
 
     int64_t GetMedianTimePast() const
     {
