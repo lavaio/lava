@@ -3326,7 +3326,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
             strprintf("rejected nVersion=0x%08x block", block.nVersion));
     
     auto dl = block.nDeadline / pindexPrev->nBaseTarget;
-    if (block.nTime <= pindexPrev->nTime || block.nTime > GetSystemTimeInSeconds() + MAX_FUTURE_BLOCK_TIME) {
+    if (block.nTime <= pindexPrev->nTime + dl || block.nTime > GetSystemTimeInSeconds() + MAX_FUTURE_BLOCK_TIME) {
         return state.Invalid(false, REJECT_INVALID, "block-time-err", "block timestamp error");
     }
 
