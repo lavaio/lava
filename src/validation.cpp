@@ -3299,9 +3299,6 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
 
     // Check proof of work
     const Consensus::Params& consensusParams = params.GetConsensus();
-    /*if (block.nBaseTarget != 0)
-        return state.DoS(100, false, REJECT_INVALID, "bad-diffbits", false, "incorrect proof of work");
-        */
 
     // Check against checkpoints
     if (fCheckpointsEnabled) {
@@ -3330,11 +3327,19 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
             strprintf("rejected nVersion=0x%08x block", block.nVersion));
     
     auto dl = block.nDeadline / pindexPrev->nBaseTarget;
+    if (block.nTime <= pindexPrev->nTime || block.nTime > GetSystemTimeInSeconds() + MAX_FUTURE_BLOCK_TIME) {
+        return state.Invalid(false, REJECT_INVALID, "block-time-err", "block timestamp error");
+    }
+
+    auto generationSignature = CalcGenerationSignature(pindexPrev->genSign, pindexPrev->nPlotID);
+    if (block.genSign != generationSignature){
+        return state.Invalid(false, REJECT_INVALID, "block-sig-err", "block genSign error");
+    }
+
     if (pindexPrev->nTime + dl > block.nTime) {
         return state.Invalid(false, REJECT_INVALID, "time-too-new", "block deadline too far in the future");
     }
 
-    // TODO.. Check baseTarget
     if (block.nBaseTarget != AdjustBaseTarget(pindexPrev, block.nTime)) {
         return state.Invalid(false, REJECT_INVALID, "base-target-error", "block basetarget error");
     }

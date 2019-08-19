@@ -114,10 +114,10 @@ public:
         m_assumed_blockchain_size = 240;
         m_assumed_chain_state_size = 3;
 
-        genesis = CreateGenesisBlock(1231006505, 2083236893, 18325193796L, 1, 320 * COIN);
+        genesis = CreateGenesisBlock(1565259498, 2083236893, 18325193796L, 1, 320 * COIN);
         auto tmp = genesis.GetHash().ToString();
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0xdc32ce556d0c3c08d1e770ca772cd2367b46c9b0f4151b276fbf0c7013c4ed0e"));
+        assert(consensus.hashGenesisBlock == uint256S("0x92da2dfa6f22dce165647bec66a4456065ad2d9190ba60b57d5fee1add3670fe"));
         assert(genesis.hashMerkleRoot == uint256S("0xdacd4be8878e0eb726076245d6fe9d8a6d97f15b4de53e77e66617968df73b08"));
 
         // Note that of those which support the service bits prefix, most only support a subset of
@@ -204,9 +204,10 @@ public:
         m_assumed_blockchain_size = 30;
         m_assumed_chain_state_size = 2;
 
-        genesis = CreateGenesisBlock(1296688602, 414098458, 18325193796L, 1, 640 * COIN);
+        genesis = CreateGenesisBlock(1565259498, 414098458, 18325193796L, 1, 640 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x62ca4ef31a124cedd557a97fd59f623ae7eff424a15a13304dd44ec2263a9b03"));
+        auto tmp = genesis.GetHash().ToString();
+        assert(consensus.hashGenesisBlock == uint256S("0x14bae830529b0eab724dc6af9c1f4aeeea448efe35679fd941993d3aeb59f906"));
         assert(genesis.hashMerkleRoot == uint256S("0x3c63497eecc04913c16fd286e834d17911d4f3913f72c6b2c7991be2da81ac2d"));
 
         vFixedSeeds.clear();
@@ -296,9 +297,10 @@ public:
 
         UpdateVersionBitsParametersFromArgs(args);
 
-        genesis = CreateGenesisBlock(1296688602, 2, 18325193796L, 1, 640 * COIN);
+        genesis = CreateGenesisBlock(1565259498, 2, 18325193796L, 1, 640 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0xba24fc75e36a4d724c1a0d9db6a57b971e0b6d8aff8f1da2b00f0c14a505f367"));
+        auto tmp = genesis.GetHash().ToString();
+        assert(consensus.hashGenesisBlock == uint256S("0x93e852bba7c88aab9fc4a99f845a9066b81fc40d8ae6fc3b452426060911cef5"));
         assert(genesis.hashMerkleRoot == uint256S("0x3c63497eecc04913c16fd286e834d17911d4f3913f72c6b2c7991be2da81ac2d"));
 
         vFixedSeeds.clear(); //!< Regtest mode doesn't have any fixed seeds.
