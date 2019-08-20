@@ -50,6 +50,7 @@
 #include <validationinterface.h>
 #include <warnings.h>
 #include <walletinitinterface.h>
+#include <blockcache.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -1817,5 +1818,6 @@ bool AppInitMain(InitInterfaces& interfaces)
     }, DUMP_BANS_INTERVAL * 1000);
 
     scheduler.scheduleEvery([] {blockAssember.CheckDeadline(); }, 200);
+    scheduler.scheduleEvery([] {BlockCacheInstance.PushBlock(); }, 200);
     return true;
 }

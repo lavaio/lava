@@ -12,19 +12,13 @@
 #include <boost/bind.hpp>
 
 CPOCBlockAssember::CPOCBlockAssember()
-    : scheduler(std::make_shared<CScheduler>())
 {
     SetNull();
 }
 
 bool CPOCBlockAssember::UpdateDeadline(const int height, const CKeyID& keyid, const uint64_t nonce, const uint64_t deadline, const CKey& key)
 {
-    if (prevIndex == nullptr)
-    {
-        LOCK(cs_main);
-        prevIndex = chainActive.Tip();
-    }
-
+    auto prevIndex = chainActive.Tip();
     if (prevIndex->nHeight != (height - 1)) {
         LogPrintf("chainActive has been update, the new index is %uul, but the height to be produced is %uul\n", prevIndex->nHeight, height);
         return false;
@@ -60,7 +54,6 @@ bool CPOCBlockAssember::UpdateDeadline(const int height, const CKeyID& keyid, co
         auto lastBlockTime = prevIndex->GetBlockHeader().GetBlockTime();
         auto ts = (deadline / chainActive.Tip()->nBaseTarget);
         this->dl = lastBlockTime + ts;
-        this->nCumulativeDiff = prevIndex->nCumulativeDiff + arith_uint256(CUMULATIVE_DIFF_DENOM / prevIndex->nBaseTarget);
     }
     return true;
 }
@@ -128,7 +121,7 @@ void CPOCBlockAssember::CreateNewBlock()
     }
     
     auto scriptPubKeyIn = GetScriptForDestination(CTxDestination(target));
-    auto blk = BlockAssembler(params).CreateNewBlock(scriptPubKeyIn, nonce, plotid, deadline, fstx, prevIndex);
+    auto blk = BlockAssembler(params).CreateNewBlock(scriptPubKeyIn, nonce, plotid, deadline, fstx);
     if (blk) {
         uint32_t extraNonce = 0;
         IncrementExtraNonce(&blk->block, chainActive.Tip(), extraNonce);
@@ -159,21 +152,4 @@ void CPOCBlockAssember::SetNull()
     genSig = uint256();
     keyid.SetNull();
     dl = 0;
-    nCumulativeDiff = arith_uint256{};
-    prevIndex = nullptr;
-}
-
-CBlockIndex* CPOCBlockAssember::GetAssemberBlockIndex(){
-    return prevIndex == nullptr ? chainActive.Tip(): prevIndex;
-}
-
-void CPOCBlockAssember::ConnectBlock(){
-    auto chainPrevIndex = chainActive.Tip();
-    if (dl != 0 && prevIndex->nHeight != chainPrevIndex->nHeight) {
-        //do diff comp
-        if (chainPrevIndex->nCumulativeDiff > nCumulativeDiff) {
-            LogPrintf("Connect Assember Block failed");
-            SetNull();
-        }
-    }
 }

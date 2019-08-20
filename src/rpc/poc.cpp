@@ -90,10 +90,9 @@ UniValue getMiningInfo(const JSONRPCRequest& request)
     }
     LOCK(cs_main);
 
-    auto ActiveIndex = blockAssember.GetAssemberBlockIndex();
-    auto height = ActiveIndex->nHeight + 1;
-    auto diff = ActiveIndex->nCumulativeDiff;
-    auto block = ActiveIndex->GetBlockHeader();
+    auto height = chainActive.Height() + 1;
+    auto diff = chainActive.Tip()->nCumulativeDiff;
+    auto block = chainActive.Tip()->GetBlockHeader();
     auto generationSignature = CalcGenerationSignature(block.genSign, block.nPlotID);
     auto nBaseTarget = block.nBaseTarget;
     auto param = Params();

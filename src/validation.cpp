@@ -43,6 +43,7 @@
 #include <validationinterface.h>
 #include <warnings.h>
 #include <actiondb.h>
+#include <blockcache.h>
 
 #include <future>
 #include <sstream>
@@ -2338,7 +2339,7 @@ bool CChainState::DisconnectTip(CValidationState& state, const CChainParams& cha
         }
     }
 
-    blockAssember.ConnectBlock();
+    blockAssember.SetNull();
     chainActive.SetTip(pindexDelete->pprev);
 
     UpdateTip(pindexDelete->pprev, chainparams);
@@ -2487,7 +2488,7 @@ bool CChainState::ConnectTip(CValidationState& state, const CChainParams& chainp
 
 
     connectTrace.BlockConnected(pindexNew, std::move(pthisBlock));
-    blockAssember.ConnectBlock();
+    blockAssember.SetNull();
     return true;
 }
 
@@ -3326,7 +3327,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
         return state.Invalid(false, REJECT_OBSOLETE, strprintf("bad-version(0x%08x)", block.nVersion),
             strprintf("rejected nVersion=0x%08x block", block.nVersion));
     
-    auto dl = block.nDeadline / pindexPrev->nBaseTarget;
+    
     if (block.nTime <= pindexPrev->nTime || block.nTime > GetSystemTimeInSeconds() + MAX_FUTURE_BLOCK_TIME) {
         return state.Invalid(false, REJECT_INVALID, "block-time-err", "block timestamp error");
     }
@@ -3336,6 +3337,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
         return state.Invalid(false, REJECT_INVALID, "block-sig-err", "block genSign error");
     }
 
+    auto dl = block.nDeadline / pindexPrev->nBaseTarget;
     if (pindexPrev->nTime + dl > block.nTime) {
         return state.Invalid(false, REJECT_INVALID, "time-too-new", "block deadline too far in the future");
     }
@@ -3648,9 +3650,20 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
 
     NotifyHeaderTip();
 
-    CValidationState state; // Only used to report errors, not invalidity - ignore it
-    if (!g_chainstate.ActivateBestChain(state, chainparams, pblock))
-        return error("%s: ActivateBestChain failed (%s)", __func__, FormatStateMessage(state));
+    auto activeteBestChain = [chainparams, pblock]()->bool {
+        CValidationState state; // Only used to report errors, not invalidity - ignore it
+        if (!g_chainstate.ActivateBestChain(state, chainparams, pblock))
+            return error("%s: ActivateBestChain failed (%s)", __func__, FormatStateMessage(state));
+
+        return true;
+    };
+    auto prevIndex = chainActive.Tip();
+    if (pblock->nDeadline / prevIndex->nBaseTarget + prevIndex->nTime > GetSystemTimeInSeconds()) {
+        LogPrintf("%s: deadline in feature, add to cache, block:%s, time:%d\n", __func__, pblock->GetHash().ToString(), pblock->nTime);
+        BlockCacheInstance.AddBlock(pblock, activeteBestChain);
+        return true;
+    }
+    activeteBestChain();
 
     return true;
 }
