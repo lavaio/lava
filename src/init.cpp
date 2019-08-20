@@ -1461,6 +1461,7 @@ bool AppInitMain(InitInterfaces& interfaces)
 
     prelationview.reset(new CRelationView(0));
     pticketview.reset(new CTicketView(0));
+    g_blockCache.reset(new CBlockCache());
 
     bool fLoaded = false;
     while (!fLoaded && !ShutdownRequested()) {
@@ -1822,6 +1823,6 @@ bool AppInitMain(InitInterfaces& interfaces)
     }, DUMP_BANS_INTERVAL * 1000);
 
     scheduler.scheduleEvery([] {blockAssember.CheckDeadline(); }, 200);
-    scheduler.scheduleEvery([] {BlockCacheInstance.PushBlock(); }, 200);
+    scheduler.scheduleEvery([] {g_blockCache->PushBlock(); }, 200);
     return true;
 }

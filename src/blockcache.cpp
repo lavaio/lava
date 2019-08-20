@@ -40,3 +40,5 @@ void CBlockCache::PushBlock()
         blocks.clear();
     }
 }
+
+std::unique_ptr<CBlockCache> g_blockCache;

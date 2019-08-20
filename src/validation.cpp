@@ -3645,7 +3645,7 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
     auto prevIndex = chainActive.Tip();
     if (pblock->nDeadline / prevIndex->nBaseTarget + prevIndex->nTime > GetSystemTimeInSeconds()) {
         LogPrintf("%s: deadline in feature, add to cache, block:%s, time:%d\n", __func__, pblock->GetHash().ToString(), pblock->nTime);
-        BlockCacheInstance.AddBlock(pblock, activeteBestChain);
+        g_blockCache->AddBlock(pblock, activeteBestChain);
         return true;
     }
     activeteBestChain();
