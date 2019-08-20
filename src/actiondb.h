@@ -6,7 +6,6 @@
 #include <key.h>
 #include <streams.h>
 #include <primitives/block.h>
-#include <primitives/transaction.h>
 
 #include <boost/variant.hpp>
 
@@ -51,42 +50,43 @@ std::vector<unsigned char> SerializeAction(const CAction& action);
 
 CAction UnserializeAction(const std::vector<unsigned char>& vch);
 
-bool SignAction(const CAction &action, const CKey& key, std::vector<unsigned char>& vch);
+bool SignAction(const uint256 prevTxHash, const CAction &action, const CKey& key, std::vector<unsigned char>& vch);
 
-bool VerifyAction(const CAction& action, std::vector<unsigned char>& vchSig);
+bool VerifyAction(const uint256 prevTxHash, const CAction& action, std::vector<unsigned char>& vchSig);
 
 CAction DecodeAction(const CTransactionRef tx, std::vector<unsigned char>& vchSig);
 
 typedef std::pair<CKeyID, CKeyID> CRelation;
 typedef std::vector<CRelation> CRelationVector;
-class CRelationDB : public CDBWrapper
+typedef std::map<uint64_t,uint64_t> RelationMap;
+typedef std::map<int,RelationMap> RelationMapIndex;
+typedef std::pair<CKeyID, CKeyID> CRelationActive;
+
+class CRelationView : public CDBWrapper
 {
 public:
-    explicit CRelationDB(size_t nCacheSize, bool fMemory = false, bool fWipe = false);
+    explicit CRelationView(size_t nCacheSize, bool fMemory = false, bool fWipe = false);
 
-    ~CRelationDB() = default;
+    ~CRelationView() = default;
 
     CKeyID To(const CKeyID& from) const;
 
     CKeyID To(const uint64_t plotid) const;
 
-    bool AcceptAction(const uint256& txid, const CAction& action);
+    bool AcceptAction(const int height, const uint256& txid, const CAction& action, std::vector<std::pair<uint256, CRelationActive>> &relations);
 
-    bool RollbackAction(const uint256& txid);
+    void ConnectBlock(const int height, const CBlock &blk);
 
-    bool SetSynced();
+    void DisconnectBlock(const int height, const CBlock &blk);
 
-    bool ResetSynced();
+    bool WriteTicketsToDisk(const int height, const std::vector<std::pair<uint256, CRelationActive>> &relations);
 
-    int IsSynced();
-
-    bool EraseDB();
+    bool LoadRelationFromDisk(const int height);
 
     CRelationVector ListRelations() const;
 private:
-    bool InsertRelation(const CKeyID& from, const CKeyID& to);
+    RelationMap relationTip;
+    RelationMapIndex relationMapIndex; 
 };
 
-/// The global transaction index, used in GetTransaction. May be null.
-extern std::unique_ptr<CRelationDB> g_relationdb;
 #endif
