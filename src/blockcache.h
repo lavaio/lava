@@ -7,7 +7,6 @@
 
 #include <primitives/block.h>
 
-#include <boost/serialization/singleton.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include <vector>
@@ -15,7 +14,7 @@
 
 class CBlockIndex;
 
-class CBlockCache: public boost::serialization::singleton<CBlockCache>{
+class CBlockCache {
 public:
     CBlockCache();
     ~CBlockCache() = default;
@@ -33,6 +32,5 @@ private:
     std::function<bool()> handle;
 };
 
-#define BlockCacheInstance CBlockCache::get_mutable_instance()
-
+extern std::unique_ptr<CBlockCache> g_blockCache;
 #endif // LAVA_BLOCKCACHE_H
