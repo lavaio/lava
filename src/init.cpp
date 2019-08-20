@@ -282,8 +282,6 @@ void Shutdown(InitInterfaces& interfaces)
         client->stop();
     }
 
-    g_relationdb->SetSynced();
-
 #if ENABLE_ZMQ
     if (g_zmq_notification_interface) {
         UnregisterValidationInterface(g_zmq_notification_interface);
@@ -1461,7 +1459,7 @@ bool AppInitMain(InitInterfaces& interfaces)
     LogPrintf("* Using %.1f MiB for chain state database\n", nCoinDBCache * (1.0 / 1024 / 1024));
     LogPrintf("* Using %.1f MiB for in-memory UTXO set (plus up to %.1f MiB of unused mempool space)\n", nCoinCacheUsage * (1.0 / 1024 / 1024), nMempoolSizeMax * (1.0 / 1024 / 1024));
 
-    g_relationdb.reset(new CRelationDB(0));
+    prelationview.reset(new CRelationView(0));
     pticketview.reset(new CTicketView(0));
 
     bool fLoaded = false;
@@ -1558,6 +1556,12 @@ bool AppInitMain(InitInterfaces& interfaces)
                 // Load ticket from disk
                 if (!LoadTicketView()) {
                     strLoadError = _("Error opening ticket database");
+                    break;
+                }
+
+                // Load relation from disk
+                if (!LoadRelationView()) {
+                    strLoadError = _("Error opening relation database");
                     break;
                 }
             } catch (const std::exception& e) {

@@ -5050,7 +5050,8 @@ uint256 SendAction(CWallet *const pwallet, const CAction& action, const CKey &ke
     CMutableTransaction mtx(*newTx);
     BOOST_ASSERT(mtx.vout.size() == 2);
     std::vector<unsigned char> vch;
-    if (!SignAction(action, key, vch)) {
+    auto prevTxHash = mtx.vin[0].prevout.hash;
+    if (!SignAction(prevTxHash, action, key, vch)) {
         throw JSONRPCError(RPC_WALLET_ENCRYPTION_FAILED, "Private key sign error");
     }
     auto opRetScript = CScript() << OP_RETURN << ToByteVector(vch);
@@ -5202,7 +5203,7 @@ static UniValue getbindinginfo(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
     }
     auto from = boost::get<CKeyID>(dest);
-    auto to = g_relationdb->To(from);
+    auto to = prelationview->To(from);
     if (to == CKeyID()) {
         return UniValue(UniValue::VOBJ);
     }
@@ -5259,7 +5260,7 @@ static UniValue listbindings(const JSONRPCRequest& request)
     }
     LOCK(cs_main);
     UniValue results(UniValue::VARR);
-    for (auto relation : g_relationdb->ListRelations()) {
+    for (auto relation : prelationview->ListRelations()) {
         auto from = relation.first;
         auto to = relation.second;
         UniValue fromVal(UniValue::VOBJ);

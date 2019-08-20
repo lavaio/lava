@@ -20,7 +20,7 @@
 #include <sync.h>
 #include <versionbits.h>
 #include <assember.h>
-
+#include <actiondb.h>
 #include <algorithm>
 #include <exception>
 #include <map>
@@ -355,6 +355,7 @@ bool TestLockPointValidity(const LockPoints* lp) EXCLUSIVE_LOCKS_REQUIRED(cs_mai
 bool CheckSequenceLocks(const CTxMemPool& pool, const CTransaction& tx, int flags, LockPoints* lp = nullptr, bool useExistingLockPoints = false) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
 bool LoadTicketView();
+bool LoadRelationView();
 /**
  * Closure representing one script verification
  * Note that this stores references to the spending transaction
@@ -474,6 +475,9 @@ extern std::unique_ptr<CCoinsViewCache> pcoinsTip;
 
 /** Global variable that points to the active CTicketView (protected by cs_main) */
 extern std::unique_ptr<CTicketView> pticketview;
+
+/** Global variable that points to the active CRelationView (protected by cs_main) */
+extern std::unique_ptr<CRelationView> prelationview;
 
 /** Global variable that points to the active block tree (protected by cs_main) */
 extern std::unique_ptr<CBlockTreeDB> pblocktree;

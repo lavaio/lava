@@ -42,7 +42,7 @@
 #include <util/system.h>
 #include <validationinterface.h>
 #include <warnings.h>
-#include <actiondb.h>
+//#include <actiondb.h>
 #include <blockcache.h>
 
 #include <future>
@@ -311,6 +311,7 @@ CBlockIndex* FindForkInGlobalIndex(const CChain& chain, const CBlockLocator& loc
 std::unique_ptr<CCoinsViewDB> pcoinsdbview;
 std::unique_ptr<CCoinsViewCache> pcoinsTip;
 std::unique_ptr<CTicketView> pticketview;
+std::unique_ptr<CRelationView> prelationview;
 std::unique_ptr<CBlockTreeDB> pblocktree;
 
 enum class FlushStateMode {
@@ -2070,21 +2071,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     LogPrint(BCLog::BENCH, "    - Callbacks: %.2fms [%.2fs (%.2fms/blk)]\n", MILLI * (nTime6 - nTime5), nTimeCallbacks * MICRO, nTimeCallbacks * MILLI / nBlocksTotal);
 
     //accept action
-    for (auto tx: block.vtx) {
-        std::vector<unsigned char> vchSig;
-        auto action = DecodeAction(tx, vchSig);
-        if (action.type() != typeid(CNilAction)) {
-            LogPrintf("DecodeAction not nil action: %s\n", tx->GetHash().GetHex());
-            if (VerifyAction(action, vchSig)) {
-                if (!g_relationdb->AcceptAction(tx->GetHash(), action)) {
-                    LogPrintf("AcceptAction failure: %s\n", tx->GetHash().GetHex());
-                }
-            }
-            else {
-                LogPrintf("VerifyAction failure: %s\n", tx->GetHash().GetHex());
-            }
-        }
-    }
+    prelationview->ConnectBlock(pindex->nHeight, block);
     pticketview->ConnectBlock(pindex->nHeight, block, TestTicket);
     return true;
 }
@@ -2313,9 +2300,7 @@ bool CChainState::DisconnectTip(CValidationState& state, const CChainParams& cha
         CCoinsViewCache view(pcoinsTip.get());
         assert(view.GetBestBlock() == pindexDelete->GetBlockHash());
         pticketview->DisconnectBlock(pindexDelete->nHeight, block);
-        for (auto tx : block.vtx) {
-            g_relationdb->RollbackAction(tx->GetHash());
-        }
+        prelationview->DisconnectBlock(pindexDelete->nHeight, block);
         if (DisconnectBlock(block, pindexDelete, view) != DISCONNECT_OK)
             return error("DisconnectTip(): DisconnectBlock %s failed", pindexDelete->GetBlockHash().ToString());
         bool flushed = view.Flush();
@@ -3401,7 +3386,7 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
         CTxDestination dest;
         ExtractDestination(script, dest);
         auto coinbaseDest = boost::get<CKeyID>(dest);
-        auto to = g_relationdb->To(block.nPlotID);
+        auto to = prelationview->To(block.nPlotID);
         auto targetPlotid = to.IsNull() ? block.nPlotID : to.GetPlotID();
         if (targetPlotid != coinbaseDest.GetPlotID()) {
             return state.DoS(100, false, REJECT_INVALID, "bad-coinbase-plotid", false, "coinbase public key error plot id");
@@ -3929,18 +3914,6 @@ CBlockIndex* CChainState::InsertBlockIndex(const uint256& hash)
 
 bool CChainState::LoadBlockIndex(const Consensus::Params& consensus_params, CBlockTreeDB& blocktree)
 {
-    // Check whether the relationDB and ticketDB is synced, 
-    // 1. Do nothing Loading, the index is reset to genesisblock,
-    // 2. Reset the relationDB and ticketDB .
-    if (g_relationdb->IsSynced() == 0){
-        g_relationdb->EraseDB();
-        leveldb::Options options;
-        auto path = GetDataDir() / "chainstate";
-        leveldb::DestroyDB(path.string(),options);
-        return true;
-    }
-    g_relationdb->ResetSynced();
-
     if (!blocktree.LoadBlockIndexGuts(consensus_params, [this](const uint256& hash) EXCLUSIVE_LOCKS_REQUIRED(cs_main) { return this->InsertBlockIndex(hash); }))
         return false;
 
@@ -5036,4 +5009,24 @@ bool LoadTicketView()
         }
     }
     return true;
+}
+
+bool LoadRelationView()
+{
+    //TODO: logging 
+    if (chainActive.Tip()==nullptr){
+        // new chain
+        return true;
+    }else{
+        // assember relationMap index.
+        for (auto i = 0; i <= chainActive.Height(); i++) {
+            try {
+                if (!prelationview->LoadRelationFromDisk(i))
+                    return error("%s: failed to read relation from disk, height: %s", __func__, i);
+            } catch (const std::runtime_error& e) {
+                return error("%s: failure: %s", __func__, e.what());
+            }
+        }
+        return true;
+    }
 }

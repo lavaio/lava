@@ -77,7 +77,7 @@ void CPOCBlockAssember::CreateNewBlock()
     LogPrintf("CPOCBlockAssember CreateNewBlock, plotid: %u nonce:%u newheight:%u deadline:%u utc:%u\n", plotid, nonce, height, deadline, GetTimeMillis()/1000);
     auto params = Params();
     //plotid bind
-    auto to = g_relationdb->To(from);
+    auto to = prelationview->To(from);
     auto target = to.IsNull() ? from : to;
     //find firestone for coinbase
     auto fstx = MakeTransactionRef();
