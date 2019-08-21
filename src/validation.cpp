@@ -3639,10 +3639,10 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
         CValidationState state; // Only used to report errors, not invalidity - ignore it
         if (!g_chainstate.ActivateBestChain(state, chainparams, pblock))
             return error("%s: ActivateBestChain failed (%s)", __func__, FormatStateMessage(state));
-        uint256 prevhash = pblock->hashPrevBlock;
-        BlockMap::iterator miSelf = mapBlockIndex.find(prevhash);
-        auto prevIndex = miSelf->second;
-	    g_blockCache->UpdateBestBlockIndex(prevIndex);
+        uint256 hash = pblock->GetHash();
+        BlockMap::iterator miSelf = mapBlockIndex.find(hash);
+        auto blockIndex = miSelf->second;
+	    g_blockCache->UpdateBestBlockIndex(blockIndex);
         return true;
     };
 
