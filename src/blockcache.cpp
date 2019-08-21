@@ -18,7 +18,10 @@ void CBlockCache::UpdateBestBlockIndex(const CBlockIndex* index)
 void CBlockCache::AddBlock(const std::shared_ptr<const CBlock>& blk, std::function<bool()> const &func)
 {
     boost::lock_guard<boost::mutex> lock(mtx);
-    assert(blk->hashPrevBlock == prevIndex->GetBlockHash());
+    if (blk->hashPrevBlock != prevIndex->GetBlockHash()){
+        LogPrintf("%s: AddBlock in too far away, discard from cache, block:%s", __func__, blk->GetHash());
+        return;
+    }
     blocks.emplace_back(std::make_shared<CBlock>(*blk));
     static auto compare = [](const std::shared_ptr<const CBlock> blk1, const std::shared_ptr<const CBlock> blk2)->bool {
         return blk1->nDeadline < blk2->nDeadline;
