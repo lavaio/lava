@@ -3639,7 +3639,7 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
         CValidationState state; // Only used to report errors, not invalidity - ignore it
         if (!g_chainstate.ActivateBestChain(state, chainparams, pblock))
             return error("%s: ActivateBestChain failed (%s)", __func__, FormatStateMessage(state));
-
+	g_blockCache->UpdateBestBlockIndex(chainActive.Tip());
         return true;
     };
     auto prevIndex = chainActive.Tip();
