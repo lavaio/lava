@@ -33,7 +33,7 @@ void CBlockCache::PushBlock()
     if (blocks.empty()) return;
     auto block = blocks[0];
     auto dl = block->nDeadline / prevIndex->nBaseTarget;
-    if (GetSystemTimeInSeconds() >= dl) { //accept best chain
+    if (GetSystemTimeInSeconds() >= dl + prevIndex->nTime) { //accept best chain
         //pop block
         LogPrintf("%s: accpet active chain block, block:%s\n", __func__, block->GetHash().ToString());
         handle();

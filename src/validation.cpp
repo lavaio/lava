@@ -3639,10 +3639,20 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
         CValidationState state; // Only used to report errors, not invalidity - ignore it
         if (!g_chainstate.ActivateBestChain(state, chainparams, pblock))
             return error("%s: ActivateBestChain failed (%s)", __func__, FormatStateMessage(state));
-	g_blockCache->UpdateBestBlockIndex(chainActive.Tip());
+        uint256 prevhash = pblock->hashPrevBlock;
+        BlockMap::iterator miSelf = mapBlockIndex.find(prevhash);
+        auto prevIndex = miSelf->second;
+	    g_blockCache->UpdateBestBlockIndex(prevIndex);
         return true;
     };
-    auto prevIndex = chainActive.Tip();
+
+    uint256 prevhash = pblock->hashPrevBlock;
+    BlockMap::iterator miSelf = mapBlockIndex.find(prevhash);
+    if (miSelf == mapBlockIndex.end()) {
+        return error("%s: ActivateBestChain failed: new block ancestor is not in mapBlock.\n", __func__);
+    }
+    //auto prevIndex = chainActive.Tip();
+    auto prevIndex = miSelf->second;
     if (pblock->nDeadline / prevIndex->nBaseTarget + prevIndex->nTime > GetSystemTimeInSeconds()) {
         LogPrintf("%s: deadline in feature, add to cache, block:%s, time:%d\n", __func__, pblock->GetHash().ToString(), pblock->nTime);
         g_blockCache->AddBlock(pblock, activeteBestChain);
