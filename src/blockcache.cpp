@@ -19,7 +19,7 @@ void CBlockCache::AddBlock(const std::shared_ptr<const CBlock>& blk, std::functi
 {
     boost::lock_guard<boost::mutex> lock(mtx);
     if (blk->hashPrevBlock != prevIndex->GetBlockHash()){
-        LogPrintf("%s: AddBlock in too far away, discard from cache, block:%s", __func__, blk->GetHash());
+        LogPrintf("%s: AddBlock in too far away, discard from cache, block:%s", __func__, blk->GetHash().ToString());
         return;
     }
     blocks.emplace_back(std::make_shared<CBlock>(*blk));
