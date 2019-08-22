@@ -79,7 +79,7 @@ public:
 
     void DisconnectBlock(const int height, const CBlock &blk);
 
-    bool WriteTicketsToDisk(const int height, const std::vector<std::pair<uint256, CRelationActive>> &relations);
+    bool WriteRelationsToDisk(const int height, const std::vector<std::pair<uint256, CRelationActive>> &relations);
 
     bool LoadRelationFromDisk(const int height);
 

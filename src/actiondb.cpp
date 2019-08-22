@@ -194,14 +194,14 @@ void CRelationView::ConnectBlock(const int height, const CBlock &blk){
     relationMapIndex[height] = relationTip;
 
     if (relations.size() > 0) {
-        if (!WriteTicketsToDisk(height, relations)) {
+        if (!WriteRelationsToDisk(height, relations)) {
             LogPrint(BCLog::FIRESTONE, "%s: WriteTicketsToDisk retrun false, height:%d\n", __func__, height);
         }
     }
 
 }
 
-bool CRelationView::WriteTicketsToDisk(const int height, const std::vector<std::pair<uint256, CRelationActive>>& relations)
+bool CRelationView::WriteRelationsToDisk(const int height, const std::vector<std::pair<uint256, CRelationActive>>& relations)
 {
     return Write(std::make_pair(DB_ACTIVE_ACTION_KEY, height), relations);
 }
