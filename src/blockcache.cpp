@@ -7,7 +7,6 @@ CBlockCache::CBlockCache():prevIndex(nullptr) {}
 
 void CBlockCache::UpdateBestBlockIndex(const CBlockIndex* index)
 {
-    boost::lock_guard<boost::mutex> lock(mtx);
     if (!blocks.empty()) {
         LogPrintf("%s: active chain update block, cache remove %d blocks\n", __func__, blocks.size());
         blocks.clear();
@@ -17,7 +16,6 @@ void CBlockCache::UpdateBestBlockIndex(const CBlockIndex* index)
 
 void CBlockCache::AddBlock(const std::shared_ptr<const CBlock>& blk, std::function<bool()> const &func)
 {
-    boost::lock_guard<boost::mutex> lock(mtx);
     if (blk->hashPrevBlock != prevIndex->GetBlockHash()){
         LogPrintf("%s: AddBlock in too far away, discard from cache, block:%s", __func__, blk->GetHash().ToString());
         return;
@@ -32,7 +30,6 @@ void CBlockCache::AddBlock(const std::shared_ptr<const CBlock>& blk, std::functi
 
 void CBlockCache::PushBlock()
 {
-    boost::lock_guard<boost::mutex> lock(mtx);
     if (blocks.empty()) return;
     auto block = blocks[0];
     auto dl = block->nDeadline / prevIndex->nBaseTarget;

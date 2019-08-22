@@ -7,10 +7,7 @@
 
 #include <primitives/block.h>
 
-#include <boost/thread/mutex.hpp>
-
 #include <vector>
-#include <mutex>
 
 class CBlockIndex;
 
@@ -26,7 +23,6 @@ public:
     void PushBlock();
 
 private:
-    boost::mutex  mtx;
     std::vector<std::shared_ptr<CBlock> > blocks;
     const CBlockIndex* prevIndex;
     std::function<bool()> handle;

@@ -3636,9 +3636,10 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
     NotifyHeaderTip();
 
     auto activeteBestChain = [chainparams, pblock]()->bool {
+        LOCK(cs_main);
         CValidationState state; // Only used to report errors, not invalidity - ignore it
         if (!g_chainstate.ActivateBestChain(state, chainparams, pblock))
-            return error("%s: ActivateBestChain failed (%s)", __func__, FormatStateMessage(state));
+            return error("%s: ActivateBestChain failed (%s)\n", __func__, FormatStateMessage(state));
         uint256 hash = pblock->GetHash();
         BlockMap::iterator miSelf = mapBlockIndex.find(hash);
         auto blockIndex = miSelf->second;
@@ -3658,8 +3659,13 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
         g_blockCache->AddBlock(pblock, activeteBestChain);
         return true;
     }
-    activeteBestChain();
-
+    CValidationState state; // Only used to report errors, not invalidity - ignore it
+    if (!g_chainstate.ActivateBestChain(state, chainparams, pblock))
+        return error("%s: ActivateBestChain failed (%s)\n", __func__, FormatStateMessage(state));
+    uint256 hash = pblock->GetHash();
+    miSelf = mapBlockIndex.find(hash);
+    auto blockIndex = miSelf->second;
+    g_blockCache->UpdateBestBlockIndex(blockIndex);
     return true;
 }
 
