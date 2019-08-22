@@ -5096,8 +5096,8 @@ uint256 SendAction(CWallet *const pwallet, const CAction& action, const CKey &ke
     CMutableTransaction mtx(*newTx);
     BOOST_ASSERT(mtx.vout.size() == 2);
     std::vector<unsigned char> vch;
-    auto prevTxHash = mtx.vin[0].prevout.hash;
-    if (!SignAction(prevTxHash, action, key, vch)) {
+    auto out = mtx.vin[0].prevout;
+    if (!SignAction(out, action, key, vch)) {
         throw JSONRPCError(RPC_WALLET_ENCRYPTION_FAILED, "Private key sign error");
     }
     auto opRetScript = CScript() << OP_RETURN << ToByteVector(vch);

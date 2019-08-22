@@ -50,9 +50,9 @@ std::vector<unsigned char> SerializeAction(const CAction& action);
 
 CAction UnserializeAction(const std::vector<unsigned char>& vch);
 
-bool SignAction(const uint256 prevTxHash, const CAction &action, const CKey& key, std::vector<unsigned char>& vch);
+bool SignAction(const COutPoint out, const CAction &action, const CKey& key, std::vector<unsigned char>& vch);
 
-bool VerifyAction(const uint256 prevTxHash, const CAction& action, std::vector<unsigned char>& vchSig);
+bool VerifyAction(const COutPoint out, const CAction& action, std::vector<unsigned char>& vchSig);
 
 CAction DecodeAction(const CTransactionRef tx, std::vector<unsigned char>& vchSig);
 

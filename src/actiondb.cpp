@@ -9,13 +9,13 @@ CAction MakeBindAction(const CKeyID& from, const CKeyID& to)
     return std::move(CAction(ba));
 }
 
-bool SignAction(const uint256 prevTxHash, const CAction &action, const CKey& key, std::vector<unsigned char>& vch)
+bool SignAction(const COutPoint out, const CAction &action, const CKey& key, std::vector<unsigned char>& vch)
 {
     vch.clear();
     auto actionVch = SerializeAction(action);
     vch.insert(vch.end(), actionVch.begin(), actionVch.end());
     CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
-    ss << actionVch << prevTxHash;
+    ss << actionVch << out;
     std::vector<unsigned char> vchSig;
     if (!key.SignCompact(ss.GetHash(), vchSig)) {
         return false;
@@ -24,10 +24,10 @@ bool SignAction(const uint256 prevTxHash, const CAction &action, const CKey& key
     return true;
 }
 
-bool VerifyAction(const uint256 prevTxHash, const CAction& action, std::vector<unsigned char>& vchSig)
+bool VerifyAction(const COutPoint out, const CAction& action, std::vector<unsigned char>& vchSig)
 {
     CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
-    ss << SerializeAction(action) << prevTxHash;
+    ss << SerializeAction(action) << out;
     CPubKey pubkey;
     if (!pubkey.RecoverCompact(ss.GetHash(), vchSig))
         return false;
@@ -180,8 +180,8 @@ void CRelationView::ConnectBlock(const int height, const CBlock &blk){
         auto action = DecodeAction(tx, vchSig);
         if (action.type() != typeid(CNilAction)) {
             LogPrintf("DecodeAction not nil action: %s\n", tx->GetHash().GetHex());
-            auto prevTxHash = tx->vin[0].prevout.hash;
-            if (VerifyAction(prevTxHash, action, vchSig)) {
+            auto out = tx->vin[0].prevout;
+            if (VerifyAction(out, action, vchSig)) {
                 if (!AcceptAction(height, tx->GetHash(), action, relations)) {
                     LogPrintf("AcceptAction failure: %s\n", tx->GetHash().GetHex());
                 }
