@@ -19,12 +19,16 @@ public:
 
     void SetNull();
 
+    void SetSource(const CKeyID setUser);
+
     void CheckDeadline();
 
 private:
     uint256       genSig;
     int           height;
     CKeyID        keyid;
+    CKeyID        fsSource;
+    bool          fsSourceIsSet;
     uint64_t      nonce;
     uint64_t      deadline;
     uint64_t      dl;
