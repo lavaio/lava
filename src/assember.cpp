@@ -80,23 +80,25 @@ void CPOCBlockAssember::CreateNewBlock()
     //plotid bind
     auto to = prelationview->To(from);
     auto target = to.IsNull() ? from : to;
+    auto fstx = MakeTransactionRef();
 
     //find firestone for coinbase
-    auto fstx = MakeTransactionRef();
-    auto fskey = firestoneKey.IsValid() ? firestoneKey : key;
-    auto sourceKeyid = fskey.GetPubKey().GetID();
     {
         LOCK(cs_main);
         CTicketRef fs;
-        auto index = (height / pticketview->SlotLength()) - 1;
-        for (auto ticket : pticketview->GetTicketsBySlotIndex(index)) {
-            if (sourceKeyid == ticket->KeyID() && !pcoinsTip->AccessCoin(*(ticket->out)).IsSpent()) {
-                fs = ticket;
-                LogPrint(BCLog::FIRESTONE, "%s: generate new block with firestone:%s:%d\n", __func__, fs->out->hash.ToString(), fs->out->n);
-                break;
+        auto fskey = firestoneKey.IsValid() ? firestoneKey : key;
+        if (fskey.IsValid()) {
+            auto index = (height / pticketview->SlotLength()) - 1;
+            for (auto ticket : pticketview->GetTicketsBySlotIndex(index)) {
+                if (fskey.GetPubKey().GetID() == ticket->KeyID() && !pcoinsTip->AccessCoin(*(ticket->out)).IsSpent()) {
+                    fs = ticket;
+                    LogPrint(BCLog::FIRESTONE, "%s: generate new block with firestone:%s:%d\n", __func__, fs->out->hash.ToString(), fs->out->n);
+                    break;
+                }
             }
         }
-        if (fs && fs->Invalid() && fskey.IsValid()) {
+
+        if (fs && fs->Invalid() && fskey.IsValid()) { //find firestone
             auto makeSpentTicketTx = [](const CTicketRef& ticket, const int height, const CTxDestination& dest, const CKey& key)->CTransactionRef {
                 CMutableTransaction mtx;
                 auto redeemScript = ticket->redeemScript;
@@ -119,7 +121,7 @@ void CPOCBlockAssember::CreateNewBlock()
                 CTransaction tx(mtx);
                 return MakeTransactionRef(tx);
             };
-            fstx = makeSpentTicketTx(fs, height, CTxDestination(sourceKeyid), fskey);
+            fstx = makeSpentTicketTx(fs, height, CTxDestination(fskey.GetPubKey().GetID()), fskey);
         }
     }
     
@@ -155,8 +157,8 @@ void CPOCBlockAssember::SetNull()
     genSig = uint256();
     keyid.SetNull();
     dl = 0;
-    firestoneKey = CKey();
-    key = CKey();
+    //firestoneKey = CKey();
+    //key = CKey();
 }
 
 void CPOCBlockAssember::SetFirestoneAt(const CKey& key)
