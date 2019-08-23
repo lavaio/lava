@@ -201,6 +201,50 @@ UniValue getslotinfo(const JSONRPCRequest& request)
     return obj;
 }
 
+UniValue setfssource(const JSONRPCRequest& request){
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+        RPCHelpMan{
+            "setfsource",
+            "\nset the mining fs user.\n",
+        {
+            {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The address to use fs(only keyid)."},
+        },
+        RPCResult{
+            "true|false        (boolean) Returns true if successful\n"
+        },
+        RPCExamples{
+            HelpExampleCli("setfsource", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
+        }
+    .ToString());
+
+    auto locked_chain = pwallet->chain().lock();
+    LOCK(pwallet->cs_wallet);
+    if (pwallet->IsLocked()) {
+        throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with walletpassphrase first.");
+    }
+
+    CTxDestination dest = DecodeDestination(request.params[0].get_str());
+    if (!IsValidDestination(dest)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid sfSource address");
+    }
+    if (dest.type() != typeid(CKeyID)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Only support PUBKEYHASH");
+    }
+    auto keyID = boost::get<CKeyID>(dest);
+    CKey fsSourceKey;
+    pwallet->GetKey(keyID, fsSourceKey);
+    blockAssember.SetFirestoneAt(fsSourceKey);
+    return true;
+}
+
 // clang-format off
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
@@ -209,6 +253,7 @@ static const CRPCCommand commands[] =
     { "poc",               "submitnonce",             &submitNonce,            {"address", "nonce", "deadline"} },
 	{ "poc",               "getaddressplotid",        &getAddressPlotId,       {"address"} },
     { "poc",               "getslotinfo",             &getslotinfo,            {"index"} },
+    { "wallet",            "setfssource",             &setfssource,            {"address"} },    
 };
 
 void RegisterPocRPCCommands(CRPCTable& t)

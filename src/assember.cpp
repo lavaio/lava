@@ -62,7 +62,6 @@ void CPOCBlockAssember::CreateNewBlock()
 {
     int height{ 0 };
     CKeyID from;
-    CKeyID setUser;
     uint256 genSig;
     uint64_t deadline{ 0 };
     uint64_t nonce{ 0 };
@@ -74,28 +73,30 @@ void CPOCBlockAssember::CreateNewBlock()
         nonce = this->nonce;
         deadline = this->deadline;
     }
-    setUser = this->fsSourceIsSet ? this->fsSource : from;
+    
     auto plotid = from.GetPlotID();
     LogPrintf("CPOCBlockAssember CreateNewBlock, plotid: %u nonce:%u newheight:%u deadline:%u utc:%u\n", plotid, nonce, height, deadline, GetTimeMillis()/1000);
     auto params = Params();
     //plotid bind
     auto to = prelationview->To(from);
     auto target = to.IsNull() ? from : to;
+
     //find firestone for coinbase
     auto fstx = MakeTransactionRef();
-    
+    auto fskey = firestoneKey.IsValid() ? firestoneKey : key;
+    auto sourceKeyid = fskey.GetPubKey().GetID();
     {
         LOCK(cs_main);
         CTicketRef fs;
         auto index = (height / pticketview->SlotLength()) - 1;
         for (auto ticket : pticketview->GetTicketsBySlotIndex(index)) {
-            if (setUser == ticket->KeyID() && !pcoinsTip->AccessCoin(*(ticket->out)).IsSpent()) {
+            if (sourceKeyid == ticket->KeyID() && !pcoinsTip->AccessCoin(*(ticket->out)).IsSpent()) {
                 fs = ticket;
                 LogPrint(BCLog::FIRESTONE, "%s: generate new block with firestone:%s:%d\n", __func__, fs->out->hash.ToString(), fs->out->n);
                 break;
             }
         }
-        if (fs && fs->Invalid() && key.IsValid()) {
+        if (fs && fs->Invalid() && fskey.IsValid()) {
             auto makeSpentTicketTx = [](const CTicketRef& ticket, const int height, const CTxDestination& dest, const CKey& key)->CTransactionRef {
                 CMutableTransaction mtx;
                 auto redeemScript = ticket->redeemScript;
@@ -118,7 +119,7 @@ void CPOCBlockAssember::CreateNewBlock()
                 CTransaction tx(mtx);
                 return MakeTransactionRef(tx);
             };
-            fstx = makeSpentTicketTx(fs, height, CTxDestination(setUser), key);
+            fstx = makeSpentTicketTx(fs, height, CTxDestination(sourceKeyid), fskey);
         }
     }
     
@@ -153,12 +154,15 @@ void CPOCBlockAssember::SetNull()
     deadline = 0;
     genSig = uint256();
     keyid.SetNull();
-    fsSource.SetNull();
-    fsSourceIsSet = false;
     dl = 0;
+    firestoneKey = CKey();
+    key = CKey();
 }
 
-void CPOCBlockAssember::SetSource(const CKeyID setUser){
-    fsSource = setUser;
-    fsSourceIsSet = true;
+void CPOCBlockAssember::SetFirestoneAt(const CKey& key)
+{
+    if (key.IsValid()) {
+        LogPrint(BCLog::FIRESTONE, "%s: set firestone source, keyid:%s\n", __func__, EncodeDestination(CTxDestination( key.GetPubKey().GetID())));
+        firestoneKey = key;
+    } 
 }

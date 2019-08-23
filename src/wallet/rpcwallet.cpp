@@ -4552,42 +4552,6 @@ static CTransactionRef SendMoneyWithOpRet(interfaces::Chain::Lock& locked_chain,
     return tx;
 }
 
-UniValue setfssource(const JSONRPCRequest& request){
-    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
-    CWallet* const pwallet = wallet.get();
-
-    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
-        return NullUniValue;
-    }
-
-    if (request.fHelp || request.params.size() != 1)
-        throw std::runtime_error(
-        RPCHelpMan{
-            "setfsource",
-            "\nset the mining fs user.\n",
-        {
-            {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The address to use fs(only keyid)."},
-        },
-        RPCResult{
-            "true|false        (boolean) Returns true if successful\n"
-        },
-            RPCExamples{
-            HelpExampleCli("setfsource", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
-        }
-    .ToString());
-    LOCK(cs_main);
-
-    CTxDestination dest = DecodeDestination(request.params[0].get_str());
-    if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid sfSource address");
-    }
-    if (dest.type() != typeid(CKeyID)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Only support PUBKEYHASH");
-    }
-    auto keyID = boost::get<CKeyID>(dest);
-    blockAssember.SetSource(keyID);
-    return true;
-}
 
 UniValue buyfirestone(const JSONRPCRequest& request)
 {
@@ -4605,12 +4569,12 @@ UniValue buyfirestone(const JSONRPCRequest& request)
                 "\nFreeze some funds to get miner fs\n",
                 {
                     {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The address to recvie fs(only keyid)."},
-                    {"changeAddr", RPCArg::Type::STR, RPCArg::Optional::NO, "The address to recvie fs(only keyid)."},
+                    {"changeAddr", RPCArg::Type::STR, RPCArg::Optional::NO, "The address to recvie LV change(only keyid)."},
                 },
                 RPCResult{
                     "\"txid\"                  (string) The tx id.\n"},
                 RPCExamples{
-                    HelpExampleCli("buyfirestone", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
+                    HelpExampleCli("buyfirestone", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" \"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
             }
     .ToString());
     if (IsInitialBlockDownload()) {
@@ -5450,7 +5414,6 @@ static const CRPCCommand commands[] =
     { "wallet",             "walletpassphrase",                 &walletpassphrase,              {"passphrase","timeout"} },
     { "wallet",             "walletpassphrasechange",           &walletpassphrasechange,        {"oldpassphrase","newpassphrase"} },
     //{ "wallet",             "walletprocesspsbt",                &walletprocesspsbt,             {"psbt","sign","sighashtype","bip32derivs"} },
-    { "wallet",             "setfsource",                       &setfssource,                   {"address"} },    
     { "wallet",             "buyfirestone",                     &buyfirestone,                  {"address","changer"} },
     { "poc",                "bindplotid",                       &bindplotid,                    {"address", "target"} },
     { "poc",                "unbindplotid",                     &unbindplotid,                  {"address"} },
