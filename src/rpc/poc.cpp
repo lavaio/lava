@@ -241,6 +241,9 @@ UniValue setfsowner(const JSONRPCRequest& request){
     auto keyID = boost::get<CKeyID>(dest);
     CKey fsSourceKey;
     pwallet->GetKey(keyID, fsSourceKey);
+    if (!fsSourceKey.IsValid()){
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "YOU HAVE NO PRIVATEKEY");
+    }
     blockAssember.SetFirestoneAt(fsSourceKey);
     return true;
 }
