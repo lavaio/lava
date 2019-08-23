@@ -201,7 +201,7 @@ UniValue getslotinfo(const JSONRPCRequest& request)
     return obj;
 }
 
-UniValue setfssource(const JSONRPCRequest& request){
+UniValue setfsowner(const JSONRPCRequest& request){
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     CWallet* const pwallet = wallet.get();
 
@@ -212,7 +212,7 @@ UniValue setfssource(const JSONRPCRequest& request){
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
         RPCHelpMan{
-            "setfsource",
+            "setfsowner",
             "\nset the mining fs user.\n",
         {
             {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The address to use fs(only keyid)."},
@@ -221,7 +221,7 @@ UniValue setfssource(const JSONRPCRequest& request){
             "true|false        (boolean) Returns true if successful\n"
         },
         RPCExamples{
-            HelpExampleCli("setfsource", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
+            HelpExampleCli("setfsowner", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
         }
     .ToString());
 
@@ -253,7 +253,7 @@ static const CRPCCommand commands[] =
     { "poc",               "submitnonce",             &submitNonce,            {"address", "nonce", "deadline"} },
 	{ "poc",               "getaddressplotid",        &getAddressPlotId,       {"address"} },
     { "poc",               "getslotinfo",             &getslotinfo,            {"index"} },
-    { "wallet",            "setfssource",             &setfssource,            {"address"} },    
+    { "wallet",            "setfsowner",             &setfsowner,            {"address"} },    
 };
 
 void RegisterPocRPCCommands(CRPCTable& t)
