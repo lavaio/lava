@@ -195,7 +195,7 @@ void CRelationView::ConnectBlock(const int height, const CBlock &blk){
 
     if (relations.size() > 0) {
         if (!WriteRelationsToDisk(height, relations)) {
-            LogPrint(BCLog::FIRESTONE, "%s: WriteTicketsToDisk retrun false, height:%d\n", __func__, height);
+            LogPrint(BCLog::RELATION, "%s: WriteRelationToDisk retrun false, height:%d\n", __func__, height);
         }
     }
 

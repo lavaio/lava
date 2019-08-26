@@ -5015,7 +5015,7 @@ bool TestTicket(const int height, const CTicketRef ticket)
 
 bool LoadTicketView()
 {
-    //TODO: logging 
+    LogPrintf("%s: Load FireStones from block database...\n", __func__);
     for (auto i = 0; i <= chainActive.Height(); i++) {
         try {
             if (!pticketview->LoadTicketFromDisk(i))
@@ -5029,7 +5029,7 @@ bool LoadTicketView()
 
 bool LoadRelationView()
 {
-    //TODO: logging 
+    LogPrintf("%s: Load Relations from block database...\n", __func__);
     if (chainActive.Tip()==nullptr){
         // new chain
         return true;
