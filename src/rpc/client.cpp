@@ -28,8 +28,8 @@ public:
 static const CRPCConvertParam vRPCConvertParams[] =
 {
     { "setmocktime", 0, "timestamp" },
-    //{ "generate", 0, "nblocks" },
-    //{ "generate", 1, "maxtries" },
+    { "generate", 0, "nblocks" },
+    { "generate", 1, "maxtries" },
     //{ "generatetoaddress", 0, "nblocks" },
     //{ "generatetoaddress", 2, "maxtries" },
     { "getnetworkhashps", 0, "nblocks" },
@@ -164,7 +164,11 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "createwallet", 2, "blank"},
     { "getnodeaddresses", 0, "count"},
     { "stop", 0, "wait" },
-	{ "getmineraddress",0,"new" },
+    { "getmineraddress", 0, "new" },
+    { "listslotfs", 0, "index" },
+    { "listslotfs", 1, "all" },
+    { "getfirestone", 1, "all" },
+    { "getslotinfo", 0, "index" }, 
 };
 // clang-format on
 

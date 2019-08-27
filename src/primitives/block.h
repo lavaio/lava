@@ -70,7 +70,7 @@ public:
 
     bool IsNull() const
     {
-        return (nDeadline == 0 && nBaseTarget ==0);
+        return (nDeadline == 0 && nBaseTarget == 0);
     }
 
     uint256 GetHash() const;

@@ -20,7 +20,7 @@
 static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesisOutputScript, uint32_t nTime, uint32_t nNonce, uint64_t nBaseTarget, int32_t nVersion, const CAmount& genesisReward)
 {
     CMutableTransaction txNew;
-    txNew.nVersion = 1;
+    txNew.nVersion = 2;
     txNew.vin.resize(1);
     txNew.vout.resize(1);
     txNew.vin[0].scriptSig = CScript() << 486604799 << CScriptNum(4) << std::vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
@@ -49,10 +49,9 @@ static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesi
  *     CTxOut(nValue=50.00000000, scriptPubKey=0x5F1DF16B2B704C8A578D0B)
  *   vMerkleTree: 4a5e1e
  */
-static CBlock CreateGenesisBlock(uint32_t nTime, uint32_t nNonce, uint64_t nBaseTarget, int32_t nVersion, const CAmount& genesisReward)
+static CBlock CreateGenesisBlock(uint32_t nTime, uint32_t nNonce, uint64_t nBaseTarget, int32_t nVersion, const CScript& genesisOutputScript, const CAmount& genesisReward)
 {
-    const char* pszTimestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
-    const CScript genesisOutputScript = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
+    const char* pszTimestamp = "A Root-of-Trust and Top-level indexing for global storage.";
     return CreateGenesisBlock(pszTimestamp, genesisOutputScript, nTime, nNonce, nBaseTarget, nVersion, genesisReward);
 }
 
@@ -77,6 +76,7 @@ public:
         consensus.nRuleChangeActivationThreshold = 1916; // 95% of 2016
         consensus.nMinerConfirmationWindow = 2016; // nPowTargetTimespan / nPowTargetSpacing
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
+
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = Consensus::BIP9Deployment::ALWAYS_ACTIVE;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
 
@@ -113,11 +113,13 @@ public:
         m_assumed_blockchain_size = 240;
         m_assumed_chain_state_size = 3;
 
-        genesis = CreateGenesisBlock(1231006505, 2083236893, 18325193796L, 1, 320 * COIN);
-        auto tmp = genesis.GetHash().ToString();
+        std::vector<unsigned char> scriptData(ParseHex("76a9141171f22512e85af9f6adbe69b562d32619693df888ac"));
+        const CScript genesisOutputScript = CScript(scriptData.begin(), scriptData.end());
+        auto genesisReward = 23296000 * COIN;
+        genesis = CreateGenesisBlock(1565259498, 2083236893, 18325193796L, 1, genesisOutputScript, genesisReward);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0xdc32ce556d0c3c08d1e770ca772cd2367b46c9b0f4151b276fbf0c7013c4ed0e"));
-        assert(genesis.hashMerkleRoot == uint256S("0xdacd4be8878e0eb726076245d6fe9d8a6d97f15b4de53e77e66617968df73b08"));
+        assert(consensus.hashGenesisBlock == uint256S("0x6ec182dbcdbca112346e5aba6cac760d271f874eceae7cb4efe1bbab8df68509"));
+        assert(genesis.hashMerkleRoot == uint256S("0x3adb98d48ff23bf6f75972faca104652538b38b8c343159aa88a223fa9e79029"));
 
         // Note that of those which support the service bits prefix, most only support a subset of
         // possible options.
@@ -148,6 +150,8 @@ public:
 
         /* disable fallback fee on mainnet */
         m_fallback_fee_enabled = false;
+
+        nSlotLength = 2048;
     }
 };
 
@@ -201,10 +205,13 @@ public:
         m_assumed_blockchain_size = 30;
         m_assumed_chain_state_size = 2;
 
-        genesis = CreateGenesisBlock(1296688602, 414098458, 18325193796L, 1, 640 * COIN);
+        std::vector<unsigned char> scriptData(ParseHex("76a9141171f22512e85af9f6adbe69b562d32619693df888ac"));
+        const CScript genesisOutputScript = CScript(scriptData.begin(), scriptData.end());
+        auto genesisReward = 23296000 * COIN;
+        genesis = CreateGenesisBlock(1565259498, 414098458, 18325193796L, 1, genesisOutputScript, genesisReward);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x62ca4ef31a124cedd557a97fd59f623ae7eff424a15a13304dd44ec2263a9b03"));
-        assert(genesis.hashMerkleRoot == uint256S("0x3c63497eecc04913c16fd286e834d17911d4f3913f72c6b2c7991be2da81ac2d"));
+        assert(consensus.hashGenesisBlock == uint256S("0x54746281650914f19f4b4e80002c4a9b7ab6e2334b25d6e141bc9130ea4ec572"));
+        assert(genesis.hashMerkleRoot == uint256S("0x3adb98d48ff23bf6f75972faca104652538b38b8c343159aa88a223fa9e79029"));
 
         vFixedSeeds.clear();
         vSeeds.clear();
@@ -239,6 +246,8 @@ public:
 
         /* enable fallback fee on testnet */
         m_fallback_fee_enabled = true;
+
+        nSlotLength = 2048 / 8 / 2;
     }
 };
 
@@ -291,10 +300,13 @@ public:
 
         UpdateVersionBitsParametersFromArgs(args);
 
-        genesis = CreateGenesisBlock(1296688602, 2, 18325193796L, 1, 640 * COIN);
+        std::vector<unsigned char> scriptData(ParseHex("76a9141171f22512e85af9f6adbe69b562d32619693df888ac"));
+        const CScript genesisOutputScript = CScript(scriptData.begin(), scriptData.end());
+        auto genesisReward = 23296000 * COIN;
+        genesis = CreateGenesisBlock(1565259498, 2, 18325193796L, 1, genesisOutputScript, genesisReward);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0xba24fc75e36a4d724c1a0d9db6a57b971e0b6d8aff8f1da2b00f0c14a505f367"));
-        assert(genesis.hashMerkleRoot == uint256S("0x3c63497eecc04913c16fd286e834d17911d4f3913f72c6b2c7991be2da81ac2d"));
+        assert(consensus.hashGenesisBlock == uint256S("0x3b5660a9a053ba17e410fdbcde7944ea0705445c08d22fce1b061c1cf75730bc"));
+        assert(genesis.hashMerkleRoot == uint256S("0x3adb98d48ff23bf6f75972faca104652538b38b8c343159aa88a223fa9e79029"));
 
         vFixedSeeds.clear(); //!< Regtest mode doesn't have any fixed seeds.
         vSeeds.clear();      //!< Regtest mode doesn't have any DNS seeds.
@@ -325,6 +337,8 @@ public:
 
         /* enable fallback fee on regtest */
         m_fallback_fee_enabled = true;
+
+        nSlotLength = 2048 / 8;
     }
 
     /**

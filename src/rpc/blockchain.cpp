@@ -139,7 +139,8 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
     result.pushKV("plotid", block.nPlotID);
     result.pushKV("generationsignature", block.genSign.ToString());
     result.pushKV("basetarget", block.nBaseTarget);
-    result.pushKV("cumulativeDiff", blockindex->nCumulativeDiff.GetHex());
+    result.pushKV("cumulativediff", blockindex->nCumulativeDiff.GetHex());
+    result.pushKV("ticketprice", pticketview->CurrentTicketPrice());
     result.pushKV("nTx", (uint64_t)blockindex->nTx);
 
     if (blockindex->pprev)

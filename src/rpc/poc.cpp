@@ -122,7 +122,7 @@ UniValue submitNonce(const JSONRPCRequest& request)
                     "  \"deadline\": \"nnn\"\n"
                     "}\n"},
                 RPCExamples{
-                    HelpExampleCli("submitnonce", "\"3MhzFQAXQMsmtTmdkciLE3EJsgAQkzR4Sg\" 15032170525642997731 6170762982435") + HelpExampleRpc("submitnonce", "\"3MhzFQAXQMsmtTmdkciLE3EJsgAQkzR4Sg\", 15032170525642997731, 6170762982435")},
+                    HelpExampleCli("submitnonce", "\"3MhzFQAXQMsmtTmdkciLE3EJsgAQkzR4Sg\" 15032170525642997731 6170762982435 100") + HelpExampleRpc("submitnonce", "\"3MhzFQAXQMsmtTmdkciLE3EJsgAQkzR4Sg\", 15032170525642997731, 6170762982435 100")},
             }
                 .ToString());
     }
@@ -137,7 +137,6 @@ UniValue submitNonce(const JSONRPCRequest& request)
     if (pwallet->IsLocked()) {
         throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with walletpassphrase first.");
     }
-    LOCK(cs_main);
     std::string strAddress = request.params[0].get_str();
     CTxDestination dest = DecodeDestination(strAddress);
     if (!IsValidDestination(dest) && dest.type() != typeid(CKeyID)) {
@@ -152,8 +151,10 @@ UniValue submitNonce(const JSONRPCRequest& request)
     }
     uint64_t deadline = request.params[2].get_int64();
     int height = request.params[3].get_int();
+    CKey key;
+    pwallet->GetKey(keyid, key);
     UniValue obj(UniValue::VOBJ);
-    if (blockAssember.UpdateDeadline(height, keyid, nonce, deadline)) {
+    if (blockAssember.UpdateDeadline(height, keyid, nonce, deadline, key)) {
         obj.pushKV("plotid", plotID);
         obj.pushKV("deadline", deadline);
         auto params = Params();
@@ -164,6 +165,89 @@ UniValue submitNonce(const JSONRPCRequest& request)
     return obj;
 }
 
+UniValue getslotinfo(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() > 1)
+        throw std::runtime_error(
+            RPCHelpMan{ "getslotinfo",
+                "Returns an object containing fire stone slot info.\n",
+                {
+                    {"index", RPCArg::Type::NUM, RPCArg::Optional::OMITTED, "slot index."},
+                },
+                RPCResult{
+            "{\n"
+            "  \"index\": xx,                  (numeric) the index of fire stone slot \n"
+            "  \"price\": xxxxxx,              (numeric) the current price of fire stone slot\n"
+            "  \"count\": xx,                  (numeric) the count of tickets in this slot\n"
+            "  \"locktime\": xxxxx,            (numeric) the end of this slot\n"
+            "}\n" },
+                RPCExamples{
+                    HelpExampleCli("getslotinfo", "") + HelpExampleCli("getslotinfo", "2")
+                },
+            }.ToString());
+    LOCK(cs_main);
+    int index = pticketview->SlotIndex();
+    if (!request.params[0].isNull()) {
+        index = request.params[0].get_int();
+    }
+    if (index < 0 || index > pticketview->SlotIndex()) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid slot index");
+    }
+    UniValue obj(UniValue::VOBJ);
+    obj.pushKV("index", index);
+    obj.pushKV("price", pticketview->TicketPriceInSlot(index));
+    obj.pushKV("count", (uint64_t)pticketview->GetTicketsBySlotIndex(index).size());
+    obj.pushKV("locktime", pticketview->LockTime(index));
+    return obj;
+}
+
+UniValue setfsowner(const JSONRPCRequest& request){
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+        RPCHelpMan{
+            "setfsowner",
+            "\nset the mining fs user.\n",
+        {
+            {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The address to use fs(only keyid)."},
+        },
+        RPCResult{
+            "true|false        (boolean) Returns true if successful\n"
+        },
+        RPCExamples{
+            HelpExampleCli("setfsowner", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
+        }
+    .ToString());
+
+    auto locked_chain = pwallet->chain().lock();
+    LOCK(pwallet->cs_wallet);
+    if (pwallet->IsLocked()) {
+        throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with walletpassphrase first.");
+    }
+
+    CTxDestination dest = DecodeDestination(request.params[0].get_str());
+    if (!IsValidDestination(dest)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid sfSource address");
+    }
+    if (dest.type() != typeid(CKeyID)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Only support PUBKEYHASH");
+    }
+    auto keyID = boost::get<CKeyID>(dest);
+    CKey fsSourceKey;
+    pwallet->GetKey(keyID, fsSourceKey);
+    if (!fsSourceKey.IsValid()){
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "YOU HAVE NO PRIVATEKEY");
+    }
+    blockAssember.SetFirestoneAt(fsSourceKey);
+    return true;
+}
+
 // clang-format off
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
@@ -171,6 +255,8 @@ static const CRPCCommand commands[] =
     { "poc",               "getmininginfo",           &getMiningInfo,          {} },
     { "poc",               "submitnonce",             &submitNonce,            {"address", "nonce", "deadline"} },
 	{ "poc",               "getaddressplotid",        &getAddressPlotId,       {"address"} },
+    { "poc",               "getslotinfo",             &getslotinfo,            {"index"} },
+    { "wallet",            "setfsowner",             &setfsowner,            {"address"} },    
 };
 
 void RegisterPocRPCCommands(CRPCTable& t)

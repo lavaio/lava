@@ -289,6 +289,7 @@ libbitcoin_server_a_SOURCES = \
   ticket.cpp \
   assember.cpp \
   actiondb.cpp \
+  blockcache.cpp \
   $(BITCOIN_CORE_H)
 
 if !ENABLE_WALLET

@@ -1,11 +1,107 @@
 #ifndef BITCOIN_TICKET_H
 #define BITCOIN_TICKET_H
 
+#include <config/bitcoin-config.h>
 #include <script/script.h>
 #include <pubkey.h>
+#include <amount.h>
+#include <dbwrapper.h>
 
-CScript GenerateTicketScript(const CPubKey keyid, const int lockHeight);
+#include <functional>
+
+CScript GenerateTicketScript(const CKeyID keyid, const int lockHeight);
+
+bool DecodeTicketScript(const CScript redeemScript, CKeyID& keyID, int &lockHeight);
 
 bool GetPublicKeyFromScript(const CScript script, CPubKey& pubkey);
+
+bool GetRedeemFromScript(const CScript script, CScript& redeemscript);
+
+class COutPoint;
+class CTicket {
+public:
+    static const int32_t VERSION = 1;
+
+    enum CTicketState {
+        IMMATURATE = 0,
+        USEABLE,
+        OVERDUE,
+        UNKNOW
+    };
+
+    COutPoint* out;
+    CAmount nValue;
+    CScript redeemScript;
+    CScript scriptPubkey;
+
+    CTicket(const COutPoint& out, const CAmount nValue, const CScript& redeemScript, const CScript &scriptPubkey);
+
+    CTicket(const CTicket& other);
+
+    CTicket();
+
+    ~CTicket();
+
+    CTicketState State(int activeHeight) const;
+
+    int LockTime()const;
+
+    CKeyID KeyID() const;
+
+    bool Invalid() const;
+
+    template <typename Stream>
+    void Serialize(Stream& s) const;
+
+    template <typename Stream>
+    void Unserialize(Stream& s);
+};
+
+typedef std::shared_ptr<const CTicket> CTicketRef;
+class CBlock;
+typedef std::function<bool(const int, const CTicketRef&)> CheckTicketFunc;
+
+class CTicketView : public CDBWrapper {
+public: 
+    CTicketView(size_t nCacheSize, bool fMemory = false, bool fWipe = false);
+
+    ~CTicketView() = default;
+
+    void ConnectBlock(const int height, const CBlock &blk, CheckTicketFunc checkTicket);
+
+    void DisconnectBlock(const int height, const CBlock &blk);
+
+    CAmount CurrentTicketPrice() const;
+
+    std::vector<CTicketRef> CurrentSlotTicket();
+
+    std::vector<CTicketRef> FindeTickets(const CKeyID key);
+
+    std::vector<CTicketRef> GetTicketsBySlotIndex(const int slotIndex);
+
+    const int SlotIndex() const { return slotIndex; }
+
+    const int SlotLength();
+
+    const int LockTime();
+
+    const int LockTime(const int index);
+
+    bool LoadTicketFromDisk(const int height);
+
+    CAmount TicketPriceInSlot(const int index);
+
+private:
+    bool WriteTicketsToDisk(const int height, const std::vector<CTicket> &tickets);
+
+    void updateTicketPrice(const int height);
+
+private:
+    std::map<int, std::vector<CTicketRef>> ticketsInSlot;
+    std::map<CKeyID, std::vector<CTicketRef>> ticketsInAddr;
+    CAmount ticketPrice;
+    int slotIndex;
+    static CAmount BaseTicketPrice;
+};
 
 #endif

@@ -20,7 +20,7 @@
 #include <sync.h>
 #include <versionbits.h>
 #include <assember.h>
-
+#include <actiondb.h>
 #include <algorithm>
 #include <exception>
 #include <map>
@@ -118,7 +118,6 @@ static const int64_t MAX_FEE_ESTIMATION_TIP_AGE = 3 * 60 * 60;
 /** Default for -permitbaremultisig */
 static const bool DEFAULT_PERMIT_BAREMULTISIG = true;
 static const bool DEFAULT_CHECKPOINTS_ENABLED = true;
-static const bool DEFAULT_TXINDEX = false;
 static const unsigned int DEFAULT_BANSCORE_THRESHOLD = 100;
 /** Default for -persistmempool */
 static const bool DEFAULT_PERSIST_MEMPOOL = true;
@@ -178,6 +177,9 @@ extern uint256 hashAssumeValid;
 
 /** Minimum work we will assume exists on some valid chain. */
 extern arith_uint256 nMinimumCumulativeDiff;
+
+/** Ticket slot we will assume exists on some valid chain **/
+extern uint64_t nTicketSlot;
 
 /** Best header we've seen so far (used for getheaders queries' starting points). */
 extern CBlockIndex *pindexBestHeader;
@@ -352,6 +354,8 @@ bool TestLockPointValidity(const LockPoints* lp) EXCLUSIVE_LOCKS_REQUIRED(cs_mai
  */
 bool CheckSequenceLocks(const CTxMemPool& pool, const CTransaction& tx, int flags, LockPoints* lp = nullptr, bool useExistingLockPoints = false) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
+bool LoadTicketView();
+bool LoadRelationView();
 /**
  * Closure representing one script verification
  * Note that this stores references to the spending transaction
@@ -457,6 +461,9 @@ void ResetBlockFailureFlags(CBlockIndex* pindex) EXCLUSIVE_LOCKS_REQUIRED(cs_mai
 /** The currently-connected chain of blocks (protected by cs_main). */
 extern CChain& chainActive;
 
+/** The currently ticket price (protected by cs_main). */
+extern uint64_t ticketPriceActive;
+
 /** The assember of poc blocks (protected by cs_main). */
 extern CPOCBlockAssember& blockAssember;
 
@@ -465,6 +472,12 @@ extern std::unique_ptr<CCoinsViewDB> pcoinsdbview;
 
 /** Global variable that points to the active CCoinsView (protected by cs_main) */
 extern std::unique_ptr<CCoinsViewCache> pcoinsTip;
+
+/** Global variable that points to the active CTicketView (protected by cs_main) */
+extern std::unique_ptr<CTicketView> pticketview;
+
+/** Global variable that points to the active CRelationView (protected by cs_main) */
+extern std::unique_ptr<CRelationView> prelationview;
 
 /** Global variable that points to the active block tree (protected by cs_main) */
 extern std::unique_ptr<CBlockTreeDB> pblocktree;
@@ -475,6 +488,8 @@ extern std::unique_ptr<CBlockTreeDB> pblocktree;
  * This is also true for mempool checks.
  */
 int GetSpendHeight(const CCoinsViewCache& inputs);
+
+bool TestTicket(const int height, const CTicketRef ticket);
 
 extern VersionBitsCache versionbitscache;
 

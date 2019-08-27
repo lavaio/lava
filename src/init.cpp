@@ -50,6 +50,7 @@
 #include <validationinterface.h>
 #include <warnings.h>
 #include <walletinitinterface.h>
+#include <blockcache.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -404,7 +405,6 @@ void SetupServerArgs()
 #else
     hidden_args.emplace_back("-sysperms");
 #endif
-    gArgs.AddArg("-txindex", strprintf("Maintain a full transaction index, used by the getrawtransaction rpc call (default: %u)", DEFAULT_TXINDEX), false, OptionsCategory::OPTIONS);
 
     gArgs.AddArg("-addnode=<ip>", "Add a node to connect to and attempt to keep the connection open (see the `addnode` RPC command help for more info). This option can be specified multiple times to add multiple nodes.", false, OptionsCategory::CONNECTION);
     gArgs.AddArg("-banscore=<n>", strprintf("Threshold for disconnecting misbehaving peers (default: %u)", DEFAULT_BANSCORE_THRESHOLD), false, OptionsCategory::CONNECTION);
@@ -957,8 +957,7 @@ bool AppInitParameterInteraction()
 
     // if using block pruning, then disallow txindex
     if (gArgs.GetArg("-prune", 0)) {
-        if (gArgs.GetBoolArg("-txindex", DEFAULT_TXINDEX))
-            return InitError(_("Prune mode is incompatible with -txindex."));
+        return InitError(_("Prune mode is incompatible with -txindex."));
     }
 
     // -bind and -whitebind can't be set when not listening
@@ -1447,7 +1446,7 @@ bool AppInitMain(InitInterfaces& interfaces)
     nTotalCache = std::min(nTotalCache, nMaxDbCache << 20); // total cache cannot be greater than nMaxDbcache
     int64_t nBlockTreeDBCache = std::min(nTotalCache / 8, nMaxBlockDBCache << 20);
     nTotalCache -= nBlockTreeDBCache;
-    int64_t nTxIndexCache = std::min(nTotalCache / 8, gArgs.GetBoolArg("-txindex", DEFAULT_TXINDEX) ? nMaxTxIndexCache << 20 : 0);
+    int64_t nTxIndexCache = std::min(nTotalCache / 8, nMaxTxIndexCache << 20);
     nTotalCache -= nTxIndexCache;
     int64_t nCoinDBCache = std::min(nTotalCache / 2, (nTotalCache / 4) + (1 << 23)); // use 25%-50% of the remainder for disk cache
     nCoinDBCache = std::min(nCoinDBCache, nMaxCoinsDBCache << 20); // cap total coins db cache
@@ -1456,13 +1455,13 @@ bool AppInitMain(InitInterfaces& interfaces)
     int64_t nMempoolSizeMax = gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000;
     LogPrintf("Cache configuration:\n");
     LogPrintf("* Using %.1f MiB for block index database\n", nBlockTreeDBCache * (1.0 / 1024 / 1024));
-    if (gArgs.GetBoolArg("-txindex", DEFAULT_TXINDEX)) {
-        LogPrintf("* Using %.1f MiB for transaction index database\n", nTxIndexCache * (1.0 / 1024 / 1024));
-    }
+    LogPrintf("* Using %.1f MiB for transaction index database\n", nTxIndexCache * (1.0 / 1024 / 1024));
     LogPrintf("* Using %.1f MiB for chain state database\n", nCoinDBCache * (1.0 / 1024 / 1024));
     LogPrintf("* Using %.1f MiB for in-memory UTXO set (plus up to %.1f MiB of unused mempool space)\n", nCoinCacheUsage * (1.0 / 1024 / 1024), nMempoolSizeMax * (1.0 / 1024 / 1024));
 
-    g_relationdb.reset(new CRelationDB(0));
+    prelationview.reset(new CRelationView(0));
+    pticketview.reset(new CTicketView(0));
+    g_blockCache.reset(new CBlockCache());
 
     bool fLoaded = false;
     while (!fLoaded && !ShutdownRequested()) {
@@ -1546,7 +1545,11 @@ bool AppInitMain(InitInterfaces& interfaces)
 
                 // The on-disk coinsdb is now in a good state, create the cache
                 pcoinsTip.reset(new CCoinsViewCache(pcoinscatcher.get()));
-
+                COutPoint outpoint(chainparams.GenesisBlock().vtx[0]->GetHash(), 0);
+                if (!pcoinsTip->HaveCoin(outpoint)) {
+                    auto txout = chainparams.GenesisBlock().vtx[0]->vout[0];
+                    pcoinsTip->AddCoin(outpoint, Coin(txout, 0, true), true);
+                }
                 is_coinsview_empty = fReset || fReindexChainState || pcoinsTip->GetBestBlock().IsNull();
                 if (!is_coinsview_empty) {
                     // LoadChainTip sets chainActive based on pcoinsTip's best block
@@ -1555,6 +1558,17 @@ bool AppInitMain(InitInterfaces& interfaces)
                         break;
                     }
                     assert(chainActive.Tip() != nullptr);
+                }
+                // Load ticket from disk
+                if (!LoadTicketView()) {
+                    strLoadError = _("Error opening ticket database");
+                    break;
+                }
+
+                // Load relation from disk
+                if (!LoadRelationView()) {
+                    strLoadError = _("Error opening relation database");
+                    break;
                 }
             } catch (const std::exception& e) {
                 LogPrintf("%s\n", e.what());
@@ -1584,7 +1598,7 @@ bool AppInitMain(InitInterfaces& interfaces)
 
                     CBlockIndex* tip = chainActive.Tip();
                     RPCNotifyBlockChange(true, tip);
-                    if (tip && tip->nTime > GetAdjustedTime() + 2 * 60 * 60) {
+                    if (tip && tip->nTime > GetAdjustedTime() + 30) {
                         strLoadError = _("The block database contains a block which appears to be from the future. "
                                 "This may be due to your computer's date and time being set incorrectly. "
                                 "Only rebuild the block database if you are sure that your computer's date and time are correct");
@@ -1644,8 +1658,7 @@ bool AppInitMain(InitInterfaces& interfaces)
 
     // ********************************************************* Step 8: start indexers
     g_txindex = MakeUnique<TxIndex>(nTxIndexCache, false, fReindex);
-	g_txindex->Start();
-
+    g_txindex->Start();
 
     // ********************************************************* Step 9: load wallet
     for (const auto& client : interfaces.chain_clients) {
@@ -1815,5 +1828,6 @@ bool AppInitMain(InitInterfaces& interfaces)
     }, DUMP_BANS_INTERVAL * 1000);
 
     scheduler.scheduleEvery([] {blockAssember.CheckDeadline(); }, 200);
+    scheduler.scheduleEvery([] {g_blockCache->PushBlock(); }, 200);
     return true;
 }

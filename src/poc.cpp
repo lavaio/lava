@@ -5,7 +5,7 @@
 
 using namespace std;
 
-#ifdef WIN32
+#if defined(WIN32) && !defined(WHITOUT_ASM)
 #include <immintrin.h>
 #include <shabal/shabal.h>
 #define CONTEXT               shabal_context
@@ -145,7 +145,7 @@ uint64_t AdjustBaseTarget(const CBlockIndex* prevBlock, const uint32_t nTime)
     if (prevBlock == nullptr) 
         return INITIAL_BASE_TARGET;
     auto height = prevBlock->nHeight + 1;
-    if (height < 4) {
+    if (height < 5) {
         return INITIAL_BASE_TARGET;
     }
     if (height < 2700) {
@@ -175,9 +175,7 @@ uint64_t AdjustBaseTarget(const CBlockIndex* prevBlock, const uint32_t nTime)
         // Adjust range should at [0.9, 1.1]
         if (newBaseTarget < (curBaseTarget * 9 / 10)) {
             newBaseTarget = curBaseTarget * 9 / 10;
-        }
-
-        if (newBaseTarget > (curBaseTarget * 11 / 10)) {
+        } else if (newBaseTarget > (curBaseTarget * 11 / 10)) {
             newBaseTarget = curBaseTarget * 11 / 10;
         }
 
@@ -199,9 +197,7 @@ uint64_t AdjustBaseTarget(const CBlockIndex* prevBlock, const uint32_t nTime)
 
     if (difTime < targetTimespan / 2) {
         difTime = targetTimespan / 2;
-    }
-
-    if (difTime > targetTimespan * 2) {
+    } else if (difTime > targetTimespan * 2) {
         difTime = targetTimespan * 2;
     }
 
@@ -218,9 +214,7 @@ uint64_t AdjustBaseTarget(const CBlockIndex* prevBlock, const uint32_t nTime)
 
     if (newBaseTarget < (curBaseTarget * 8 / 10)) {
         newBaseTarget = curBaseTarget * 8 / 10;
-    }
-
-    if (newBaseTarget > (curBaseTarget * 12 / 10)) {
+    } else if (newBaseTarget > (curBaseTarget * 12 / 10)) {
         newBaseTarget = curBaseTarget * 12 / 10;
     }
 
@@ -268,9 +262,7 @@ void AdjustBaseTarget(const CBlockIndex* prevBlock, CBlock* block)
         // Adjust range should at [0.9, 1.1]
         if (newBaseTarget < (curBaseTarget * 9 / 10)) {
             newBaseTarget = curBaseTarget * 9 / 10;
-        }
-
-        if (newBaseTarget > (curBaseTarget * 11 / 10)) {
+        } else if (newBaseTarget > (curBaseTarget * 11 / 10)) {
             newBaseTarget = curBaseTarget * 11 / 10;
         }
 
@@ -311,9 +303,7 @@ void AdjustBaseTarget(const CBlockIndex* prevBlock, CBlock* block)
 
         if (newBaseTarget < (curBaseTarget * 8 / 10)) {
             newBaseTarget = curBaseTarget * 8 / 10;
-        }
-
-        if (newBaseTarget > (curBaseTarget * 12 / 10)) {
+        } else if (newBaseTarget > (curBaseTarget * 12 / 10)) {
             newBaseTarget = curBaseTarget * 12 / 10;
         }
 
