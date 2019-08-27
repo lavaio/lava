@@ -113,13 +113,15 @@ public:
         m_assumed_blockchain_size = 240;
         m_assumed_chain_state_size = 3;
 
-        std::vector<unsigned char> scriptData(ParseHex("76a9141171f22512e85af9f6adbe69b562d32619693df888ac"));
+        std::vector<unsigned char> scriptData(ParseHex("76a91400f3ce606cf8a5fdebdcff65c6b059d66cd6cc1e88ac"));
         const CScript genesisOutputScript = CScript(scriptData.begin(), scriptData.end());
         auto genesisReward = 23296000 * COIN;
         genesis = CreateGenesisBlock(1565259498, 2083236893, 18325193796L, 1, genesisOutputScript, genesisReward);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x6ec182dbcdbca112346e5aba6cac760d271f874eceae7cb4efe1bbab8df68509"));
-        assert(genesis.hashMerkleRoot == uint256S("0x3adb98d48ff23bf6f75972faca104652538b38b8c343159aa88a223fa9e79029"));
+        std::cout << consensus.hashGenesisBlock.ToString() << std::endl;
+        std::cout << genesis.hashMerkleRoot.ToString() << std::endl;
+        assert(consensus.hashGenesisBlock == uint256S("0x00458fa24a2fa7642de3d5b5cad6c28e7d3be0027c1b00628bb61ea0d0f2849d"));
+        assert(genesis.hashMerkleRoot == uint256S("0x0ba34c8de9be42563ebe6fb10bc687e4f19f19f6cb565cc75536afdc91e43d0b"));
 
         // Note that of those which support the service bits prefix, most only support a subset of
         // possible options.
