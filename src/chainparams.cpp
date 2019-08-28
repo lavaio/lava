@@ -113,13 +113,22 @@ public:
         m_assumed_blockchain_size = 240;
         m_assumed_chain_state_size = 3;
 
-        std::vector<unsigned char> scriptData(ParseHex("76a9141171f22512e85af9f6adbe69b562d32619693df888ac"));
+        std::vector<unsigned char> scriptData(ParseHex("76a91400f3ce606cf8a5fdebdcff65c6b059d66cd6cc1e88ac"));
         const CScript genesisOutputScript = CScript(scriptData.begin(), scriptData.end());
         auto genesisReward = 23296000 * COIN;
-        genesis = CreateGenesisBlock(1565259498, 2083236893, 18325193796L, 1, genesisOutputScript, genesisReward);
+        genesis = CreateGenesisBlock(1566964800, 2083236893, 18325193796L, 1, genesisOutputScript, genesisReward);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x6ec182dbcdbca112346e5aba6cac760d271f874eceae7cb4efe1bbab8df68509"));
-        assert(genesis.hashMerkleRoot == uint256S("0x3adb98d48ff23bf6f75972faca104652538b38b8c343159aa88a223fa9e79029"));
+        auto str = consensus.hashGenesisBlock.ToString();
+        assert(consensus.hashGenesisBlock == uint256S("0xdfc8e3d348da67cf64fef22c927e593860465ada0546fa1719556958b95c7cf6"));
+        assert(genesis.hashMerkleRoot == uint256S("0x0ba34c8de9be42563ebe6fb10bc687e4f19f19f6cb565cc75536afdc91e43d0b"));
+
+        vFixedSeeds.clear();
+        vSeeds.clear();
+        // nodes with support for servicebits filtering should be at the top
+        vSeeds.emplace_back("seed1.lavatech.org");
+        vSeeds.emplace_back("seed2.lavatech.org");
+        vSeeds.emplace_back("seed1.lavaspv.org");
+        vSeeds.emplace_back("seed2.lavaspv.org");
 
         // Note that of those which support the service bits prefix, most only support a subset of
         // possible options.
@@ -305,6 +314,7 @@ public:
         auto genesisReward = 23296000 * COIN;
         genesis = CreateGenesisBlock(1565259498, 2, 18325193796L, 1, genesisOutputScript, genesisReward);
         consensus.hashGenesisBlock = genesis.GetHash();
+        auto str = consensus.hashGenesisBlock.ToString();
         assert(consensus.hashGenesisBlock == uint256S("0x3b5660a9a053ba17e410fdbcde7944ea0705445c08d22fce1b061c1cf75730bc"));
         assert(genesis.hashMerkleRoot == uint256S("0x3adb98d48ff23bf6f75972faca104652538b38b8c343159aa88a223fa9e79029"));
 

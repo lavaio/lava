@@ -202,7 +202,7 @@ bool CTicket::Invalid() const
 	return true;
 }
 
-CAmount CTicketView::BaseTicketPrice = 160 * COIN;
+CAmount CTicketView::BaseTicketPrice = 3000 * COIN;
 static const char DB_TICKET_SYNCED_KEY = 'S';
 static const char DB_TICKET_SLOT_KEY = 'L';
 static const char DB_TICKET_ADDR_KEY = 'A';
