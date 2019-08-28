@@ -116,9 +116,10 @@ public:
         std::vector<unsigned char> scriptData(ParseHex("76a91400f3ce606cf8a5fdebdcff65c6b059d66cd6cc1e88ac"));
         const CScript genesisOutputScript = CScript(scriptData.begin(), scriptData.end());
         auto genesisReward = 23296000 * COIN;
-        genesis = CreateGenesisBlock(1566957600, 2083236893, 18325193796L, 1, genesisOutputScript, genesisReward);
+        genesis = CreateGenesisBlock(1566964800, 2083236893, 18325193796L, 1, genesisOutputScript, genesisReward);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x1366fbfaf649d34aab31a1674dc2afe414f50e719ad839ee98bbbcd4345cb10f"));
+        auto str = consensus.hashGenesisBlock.ToString();
+        assert(consensus.hashGenesisBlock == uint256S("0xdfc8e3d348da67cf64fef22c927e593860465ada0546fa1719556958b95c7cf6"));
         assert(genesis.hashMerkleRoot == uint256S("0x0ba34c8de9be42563ebe6fb10bc687e4f19f19f6cb565cc75536afdc91e43d0b"));
 
         vFixedSeeds.clear();

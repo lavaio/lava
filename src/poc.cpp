@@ -145,7 +145,7 @@ uint64_t AdjustBaseTarget(const CBlockIndex* prevBlock, const uint32_t nTime)
     if (prevBlock == nullptr) 
         return INITIAL_BASE_TARGET;
     auto height = prevBlock->nHeight + 1;
-    if (height < 5) {
+    if (height < 4) {
         return INITIAL_BASE_TARGET;
     }
     if (height < 2700) {
