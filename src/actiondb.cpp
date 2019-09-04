@@ -84,7 +84,7 @@ CAction DecodeAction(const CTransactionRef tx, std::vector<unsigned char>& vchSi
         }
         auto outValue = tx->GetValueOut();
         if (nAmount - outValue != Params().GetConsensus().nActionFee) {
-            LogPrintf("Action error fees, fee=%u\n", nAmount - outValue);
+            LogPrintf("Action warning fees, fee=%u\n", nAmount - outValue);
             continue;
         }
         for (auto vout : tx->vout) {
@@ -145,7 +145,6 @@ bool CRelationView::AcceptAction(const int height, const uint256& txid, const CA
         auto ba = boost::get<CBindAction>(action);
         auto from = ba.first;
         auto to = ba.second;
-        //auto active = std::make_pair(txid,action);
         auto active = std::make_pair(txid, std::make_pair(from, to));
         relations.push_back(active);
         // write plotID and CKeyID into disk.
