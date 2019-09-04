@@ -1551,10 +1551,8 @@ bool AppInitMain(InitInterfaces& interfaces)
                     // record the genesis outpoint in coins DB on disk.
                     // In older version above, genesis outpoint is recorded in coins DB on-disk.
                     COutPoint outpoint(chainparams.GenesisBlock().vtx[0]->GetHash(), 0);
-                    if (!pcoinsTip->HaveCoin(outpoint)) {
-                        auto txout = chainparams.GenesisBlock().vtx[0]->vout[0];
-                        pcoinsTip->AddCoin(outpoint, Coin(txout, 0, true), true);
-                    }
+                    auto txout = chainparams.GenesisBlock().vtx[0]->vout[0];
+                    pcoinsTip->AddCoin(outpoint, Coin(txout, 0, true), true);
                 }
 
                 if (!is_coinsview_empty) {
