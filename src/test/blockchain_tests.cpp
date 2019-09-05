@@ -32,9 +32,9 @@ static void RejectDifficultyMismatch(double difficulty, double expected_difficul
 /* Given a BlockIndex with the provided nbits,
  * verify that the expected difficulty results.
  */
-static void TestDifficulty(uint32_t nbits, double expected_difficulty)
+static void TestDifficulty(uint64_t baseTarget, double expected_difficulty)
 {
-    CBlockIndex* block_index = CreateBlockIndexWithNbits(nbits);
+    CBlockIndex* block_index = CreateBlockIndexWithNBaseTarget(baseTarget);
     double difficulty = GetDifficulty(block_index);
     delete block_index;
 

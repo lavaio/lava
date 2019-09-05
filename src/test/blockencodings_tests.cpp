@@ -6,6 +6,7 @@
 #include <consensus/merkle.h>
 #include <chainparams.h>
 #include <pow.h>
+#include <poc.h>
 #include <random.h>
 
 #include <test/test_bitcoin.h>
@@ -32,7 +33,19 @@ static CBlock BuildBlockTestCase() {
     block.vtx[0] = MakeTransactionRef(tx);
     block.nVersion = 42;
     block.hashPrevBlock = InsecureRand256();
-    block.nBits = 0x207fffff;
+
+    // Use the main net block, the hash of this block is 0x5e073ce8a7754152c0b2144521fc785f04a0f3ce95c.
+    std::string gensig = "99466d8ea6fba32897893434161c841b1341f5307bdcba71e208b3bca922e9cb";
+    std::vector<unsigned char> vcBuf;
+    vcBuf.resize(gensig.size());
+    vcBuf.assign(gensig.begin(), gensig.end());
+    block.genSign = uint256(vcBuf);
+
+    block.nPlotID = 17198236084242158338;
+    auto height = 1;
+    block.nNonce = 5356951956265808924;
+    block.nBaseTarget = 18325193796;
+    block.nDeadline = 24 * block.nBaseTarget;
 
     tx.vin[0].prevout.hash = InsecureRand256();
     tx.vin[0].prevout.n = 0;
@@ -48,7 +61,8 @@ static CBlock BuildBlockTestCase() {
     bool mutated;
     block.hashMerkleRoot = BlockMerkleRoot(block, &mutated);
     assert(!mutated);
-    while (!CheckProofOfWork(block.GetHash(), block.nBits, Params().GetConsensus())) ++block.nNonce;
+    auto params = Params();
+    CheckProofOfCapacity(block.genSign, height, block.nPlotID, block.nNonce, block.nBaseTarget, block.nDeadline, params.TargetDeadline());
     return block;
 }
 
@@ -291,12 +305,25 @@ BOOST_AUTO_TEST_CASE(EmptyBlockRoundTripTest)
     block.vtx[0] = MakeTransactionRef(std::move(coinbase));
     block.nVersion = 42;
     block.hashPrevBlock = InsecureRand256();
-    block.nBits = 0x207fffff;
 
     bool mutated;
     block.hashMerkleRoot = BlockMerkleRoot(block, &mutated);
     assert(!mutated);
-    while (!CheckProofOfWork(block.GetHash(), block.nBits, Params().GetConsensus())) ++block.nNonce;
+
+    // Use the main net block, the hash of this block is 0x5e073ce8a7754152c0b2144521fc785f04a0f3ce95c.
+    std::string gensig = "99466d8ea6fba32897893434161c841b1341f5307bdcba71e208b3bca922e9cb";
+    std::vector<unsigned char> vcBuf;
+    vcBuf.resize(gensig.size());
+    vcBuf.assign(gensig.begin(), gensig.end());
+    block.genSign = uint256(vcBuf);
+
+    block.nPlotID = 17198236084242158338;
+    auto height = 1;
+    block.nNonce = 5356951956265808924;
+    block.nBaseTarget = 18325193796;
+    block.nDeadline = 24 * block.nBaseTarget;
+    auto params = Params();
+    CheckProofOfCapacity(block.genSign, height, block.nPlotID, block.nNonce, block.nBaseTarget, block.nDeadline, params.TargetDeadline());
 
     // Test simple header round-trip with only coinbase
     {
