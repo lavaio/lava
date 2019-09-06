@@ -170,7 +170,6 @@ int CTicket::LockTime() const
 	return 0;
 }
 
-
 CKeyID CTicket::KeyID() const
 {
     CKeyID keyID;
