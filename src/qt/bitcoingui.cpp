@@ -273,6 +273,13 @@ void BitcoinGUI::createActions()
     historyAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_4));
     tabGroup->addAction(historyAction);
 
+    minerAction = new QAction(platformStyle->SingleColorIcon(":/icons/tx_mined"), tr("&Miner"), this);
+    minerAction->setStatusTip(tr("Miner block"));
+    minerAction->setToolTip(minerAction->statusTip());
+    minerAction->setCheckable(true);
+    minerAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_5));
+    tabGroup->addAction(minerAction);
+
 #ifdef ENABLE_WALLET
     // These showNormalIfMinimized are needed because Send Coins and Receive Coins
     // can be triggered from the tray menu, and need to show the GUI to be useful.
@@ -288,6 +295,8 @@ void BitcoinGUI::createActions()
     connect(receiveCoinsMenuAction, &QAction::triggered, this, &BitcoinGUI::gotoReceiveCoinsPage);
     connect(historyAction, &QAction::triggered, [this]{ showNormalIfMinimized(); });
     connect(historyAction, &QAction::triggered, this, &BitcoinGUI::gotoHistoryPage);
+    connect(minerAction, &QAction::triggered, [this]{ showNormalIfMinimized(); });
+    connect(minerAction, &QAction::triggered, this, &BitcoinGUI::gotoMinerPage);
 #endif // ENABLE_WALLET
 
     quitAction = new QAction(platformStyle->TextColorIcon(":/icons/quit"), tr("E&xit"), this);
@@ -522,6 +531,7 @@ void BitcoinGUI::createToolBars()
         toolbar->addAction(sendCoinsAction);
         toolbar->addAction(receiveCoinsAction);
         toolbar->addAction(historyAction);
+        toolbar->addAction(minerAction);
         overviewAction->setChecked(true);
 
 #ifdef ENABLE_WALLET
@@ -836,6 +846,12 @@ void BitcoinGUI::gotoSendCoinsPage(QString addr)
 {
     sendCoinsAction->setChecked(true);
     if (walletFrame) walletFrame->gotoSendCoinsPage(addr);
+}
+
+void BitcoinGUI::gotoMinerPage()
+{
+    minerAction->setChecked(true);
+    if (walletFrame) walletFrame->gotoMinerPage();
 }
 
 void BitcoinGUI::gotoSignMessageTab(QString addr)
