@@ -138,6 +138,13 @@ void WalletFrame::gotoHistoryPage()
         i.value()->gotoHistoryPage();
 }
 
+void WalletFrame::gotoMinerPage()
+{
+    QMap<WalletModel*, WalletView*>::const_iterator i;
+    for (i = mapWalletViews.constBegin(); i != mapWalletViews.constEnd(); ++i)
+        i.value()->gotoMinerviewPage();
+}
+
 void WalletFrame::gotoReceiveCoinsPage()
 {
     QMap<WalletModel*, WalletView*>::const_iterator i;

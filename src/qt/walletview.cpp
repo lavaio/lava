@@ -11,6 +11,7 @@
 #include <qt/guiutil.h>
 #include <qt/optionsmodel.h>
 #include <qt/overviewpage.h>
+#include <qt/minerviewpage.h>
 #include <qt/platformstyle.h>
 #include <qt/receivecoinsdialog.h>
 #include <qt/sendcoinsdialog.h>
@@ -178,6 +179,11 @@ void WalletView::processNewTransaction(const QModelIndex& parent, int start, int
 void WalletView::gotoOverviewPage()
 {
     setCurrentWidget(overviewPage);
+}
+
+void WalletView::gotoMinerviewPage()
+{
+    setCurrentWidget(minerviewPage);
 }
 
 void WalletView::gotoHistoryPage()
