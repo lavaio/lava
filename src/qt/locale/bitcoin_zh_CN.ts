@@ -378,6 +378,10 @@
         <translation>接收(&amp;R)</translation>
     </message>
     <message>
+        <source>&amp;MinerInfo</source>
+        <translation>矿工信息(&amp;M)</translation>
+    </message>
+    <message>
         <source>&amp;Show / Hide</source>
         <translation>显示 / 隐藏(&amp;S)</translation>
     </message>
@@ -3711,6 +3715,41 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
     <message>
         <source>Error</source>
         <translation>错误</translation>
+    </message>
+</context>
+<context>
+    <name>PlotInfoPage</name>
+    <message>
+        <source>MinerInfo</source>
+        <translation>挖矿信息</translation>
+    </message>
+    <message>
+        <source>Current Mining Info:</source>
+        <translation>默认挖矿信息</translation>
+    </message>
+    <message>
+        <source>Miner Address:</source>
+        <translation>收益地址</translation>
+    </message>
+    <message>
+        <source>PlotId:</source>
+        <translation>PlotId:</translation>
+    </message>
+    <message>
+        <source>New Plot ID</source>
+        <translation>生成新PlotID</translation>
+    </message>
+    <message>
+        <source>New Mining Address</source>
+        <translation>新挖矿地址</translation>
+    </message>
+    <message>
+        <source>Failed to Generate New Plot Id</source>
+        <translation>无法生成PlotId</translation>
+    </message>
+    <message>
+        <source>Please check the address pool</source>
+        <translation>请检查地址池</translation>
     </message>
 </context>
 </TS>

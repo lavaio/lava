@@ -7,6 +7,7 @@
 
 #include <qt/bitcoingui.h>
 #include <qt/walletview.h>
+#include <QDebug>
 
 #include <cassert>
 #include <cstdio>
@@ -144,6 +145,15 @@ void WalletFrame::gotoMinerPage()
     for (i = mapWalletViews.constBegin(); i != mapWalletViews.constEnd(); ++i)
         i.value()->gotoMinerviewPage();
 }
+
+void WalletFrame::gotoMinerInfoPage()
+{
+  qInfo() << " miner info page" << endl;
+  QMap<WalletModel*, WalletView*>::const_iterator i;
+  for (i = mapWalletViews.constBegin(); i != mapWalletViews.constEnd(); ++i)
+    i.value()->gotoMinerInfoviewPage();
+}
+
 
 void WalletFrame::gotoReceiveCoinsPage()
 {

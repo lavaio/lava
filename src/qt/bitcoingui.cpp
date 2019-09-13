@@ -4,6 +4,7 @@
 
 #include <qt/bitcoingui.h>
 
+#include <QDebug>
 #include <qt/bitcoinunits.h>
 #include <qt/clientmodel.h>
 #include <qt/guiconstants.h>
@@ -277,8 +278,15 @@ void BitcoinGUI::createActions()
     minerAction->setStatusTip(tr("Miner block"));
     minerAction->setToolTip(minerAction->statusTip());
     minerAction->setCheckable(true);
-    minerAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_5));
-    tabGroup->addAction(minerAction);
+//    minerAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_5));
+//    tabGroup->addAction(minerAction);
+
+    plotInfoAction = new QAction(platformStyle->SingleColorIcon(":/icons/tx_mined"), tr("&MinerInfo"), this);
+    plotInfoAction->setStatusTip(tr("Miner Information"));
+    plotInfoAction->setToolTip(plotInfoAction->statusTip());
+    plotInfoAction->setCheckable(true);
+    plotInfoAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_5));
+    tabGroup->addAction(plotInfoAction);
 
 #ifdef ENABLE_WALLET
     // These showNormalIfMinimized are needed because Send Coins and Receive Coins
@@ -297,6 +305,8 @@ void BitcoinGUI::createActions()
     connect(historyAction, &QAction::triggered, this, &BitcoinGUI::gotoHistoryPage);
     connect(minerAction, &QAction::triggered, [this]{ showNormalIfMinimized(); });
     connect(minerAction, &QAction::triggered, this, &BitcoinGUI::gotoMinerPage);
+    connect(plotInfoAction, &QAction::triggered, [this]{ gotoMinerInfoPage(); });
+    connect(plotInfoAction, &QAction::triggered, this, &BitcoinGUI::gotoMinerInfoPage);
 #endif // ENABLE_WALLET
 
     quitAction = new QAction(platformStyle->TextColorIcon(":/icons/quit"), tr("E&xit"), this);
@@ -531,7 +541,8 @@ void BitcoinGUI::createToolBars()
         toolbar->addAction(sendCoinsAction);
         toolbar->addAction(receiveCoinsAction);
         toolbar->addAction(historyAction);
-        toolbar->addAction(minerAction);
+        // toolbar->addAction(minerAction);
+        toolbar->addAction(plotInfoAction);
         overviewAction->setChecked(true);
 
 #ifdef ENABLE_WALLET
@@ -704,6 +715,7 @@ void BitcoinGUI::setWalletActionsEnabled(bool enabled)
     receiveCoinsAction->setEnabled(enabled);
     receiveCoinsMenuAction->setEnabled(enabled);
     historyAction->setEnabled(enabled);
+    plotInfoAction->setEnabled(enabled);
     encryptWalletAction->setEnabled(enabled);
     backupWalletAction->setEnabled(enabled);
     changePassphraseAction->setEnabled(enabled);
@@ -852,6 +864,13 @@ void BitcoinGUI::gotoMinerPage()
 {
     minerAction->setChecked(true);
     if (walletFrame) walletFrame->gotoMinerPage();
+}
+
+void BitcoinGUI::gotoMinerInfoPage()
+{
+  qInfo() << "goto miner info" << endl;
+  plotInfoAction->setChecked(true);
+  if (walletFrame) walletFrame->gotoMinerInfoPage();
 }
 
 void BitcoinGUI::gotoSignMessageTab(QString addr)

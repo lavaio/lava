@@ -74,6 +74,8 @@ public Q_SLOTS:
     void gotoSendCoinsPage(QString addr = "");
     /** Switch to miner page */
     void gotoMinerPage();
+    /** Switch to miner Info page */
+    void gotoMinerInfoPage();
 
     /** Show Sign/Verify Message dialog and switch to sign message tab */
     void gotoSignMessageTab(QString addr = "");

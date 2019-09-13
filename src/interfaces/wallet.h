@@ -281,6 +281,9 @@ public:
     //! Register handler for keypool changed messages.
     using CanGetAddressesChangedFn = std::function<void()>;
     virtual std::unique_ptr<Handler> handleCanGetAddressesChanged(CanGetAddressesChangedFn fn) = 0;
+
+    virtual std::map<CTxDestination, int64_t> GetKeyBirthTimes() = 0;
+    virtual bool hasAddress(const CTxDestination& dest) = 0;
 };
 
 //! Tracking object returned by CreateTransaction and passed to CommitTransaction.
