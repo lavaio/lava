@@ -504,6 +504,20 @@ public:
         return MakeHandler(m_wallet->NotifyCanGetAddressesChanged.connect(fn));
     }
 
+    std::map<CTxDestination, int64_t> GetKeyBirthTimes() override {
+      LOCK(m_wallet->cs_wallet);
+      auto locked_chain = m_wallet->chain().lock();
+      std::map<CTxDestination, int64_t> mapKeyBirth;
+      m_wallet->GetKeyBirthTimes(*locked_chain, mapKeyBirth);
+      return mapKeyBirth;
+    }
+
+    virtual bool hasAddress(const CTxDestination& dest) override {
+      LOCK(m_wallet->cs_wallet);
+      auto locked_chain = m_wallet->chain().lock();
+      return m_wallet->mapAddressBook.count(dest) > 0;
+    }
+
     std::shared_ptr<CWallet> m_wallet;
 };
 
