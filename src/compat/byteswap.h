@@ -39,6 +39,10 @@
    #define bswap_16(x) _byteswap_ushort(x)
    #define bswap_32(x) _byteswap_ulong(x)
    #define bswap_64(x) _byteswap_uint64(x)
+#elif defined(__APPLE__)
+#define bswap_16(x) _OSSwapInt16(x)
+#define bswap_32(x) _OSSwapInt32(x)
+#define bswap_64(x) _OSSwapInt64(x)
 #else
 #if HAVE_DECL_BSWAP_16 == 0
 inline uint16_t bswap_16(uint16_t x)

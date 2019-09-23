@@ -127,3 +127,7 @@ db4/
 *.plist
 src/build-lava-qt-qt_static-Debug/
 src/build-lava-qt-qt_static-Release/
+
+src/build-lava-qt-Desktop_Qt_5_13_0_clang_64bit-Debug/
+src/build-lava-qt-Desktop_Qt_5_13_0_clang_64bit-Release/
+./build-bitcoin*
