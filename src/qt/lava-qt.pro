@@ -2,13 +2,13 @@ QT       += core gui network
 
 QT += widgets
 
-CONFIG += c++11 c++14
+CONFIG += c++11 c++14 static
 
 # The following define makes your compiler emit warnings if you use
 # any Qt feature that has been marked deprecated (the exact warnings
 # depend on your compiler). Please consult the documentation of the
 # deprecated API in order to know how to port your code away from it.
-DEFINES += ZMQ_STATIC NOMINMAX _CONSOLE SCL_SECURE_NO_WARNINGS WIN32 QT_DEPRECATED_WARNINGS ENABLE_WALLET HAVE_CONFIG_H _AMD64_ "HAVE_DECL_BSWAP_16=1" "HAVE_DECL_BSWAP_64=1"
+DEFINES += NOMINMAX _CONSOLE SCL_SECURE_NO_WARNINGS QT_DEPRECATED_WARNINGS ENABLE_WALLET HAVE_CONFIG_H _AMD64_
 
 # You can also make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -16,6 +16,7 @@ DEFINES += ZMQ_STATIC NOMINMAX _CONSOLE SCL_SECURE_NO_WARNINGS WIN32 QT_DEPRECAT
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 RC_ICONS = res/icons/bitcoin.ico
+ICON = res/icons/bitcoin.icns
 
 SOURCES += \
     addressbookpage.cpp \
@@ -78,6 +79,7 @@ SOURCES += \
     walletmodeltransaction.cpp \
     walletview.cpp \
     winshutdownmonitor.cpp
+
 HEADERS += \ \
     addressbookpage.h \
     addresstablemodel.h \
@@ -139,19 +141,46 @@ HEADERS += \ \
     walletview.h \
     winshutdownmonitor.h
 
-
 INCLUDEPATH += $$PWD/../ \
              $$PWD/../leveldb/include \
              $$PWD/../univalue/include
 
-
-
 windows {
+  DEFINES += WIN32 "HAVE_DECL_BSWAP_16=1" "HAVE_DECL_BSWAP_64=1" ZMQ_STATIC
   LIBS +=  -lboost_thread-vc140-mt -lboost_filesystem-vc140-mt -lboost_chrono-vc140-mt
 
-  LIBS += -L$$PWD/../../build_msvc/x64/Release -llibleveldb -llibbitcoin_wallet -llibbitcoin_common -llibbitcoin_wallet -llibbitcoin_util -llibleveldb
+  LIBS += -L$$PWD/../../build_msvc/x64/Release -llibleveldb -llibbitcoin_wallet -llibbitcoin_common -llibbitcoin_util -llibleveldb
   LIBS += -llibunivalue -llibbitcoin_cli -llibbitcoin_consensus -llibbitcoin_crypto -llibshabal -llibsecp256k1 -llibbitcoin_server
   LIBS += -llibprotobuf -levent -llibdb48 -llibzmq-mt-s-4_3_3 -llibbitcoin_zmq
+}
+
+darwin {
+  INCLUDEPATH += /usr/local/include /usr/local/opt/berkeley-db@4/include
+
+
+  LIBS += -L$$PWD/..
+  LIBS += -L/usr/local/lib -L/usr/local/Cellar/openssl/1.0.2r/lib -lcrypto
+  LIBS += -lbitcoin_wallet -lbitcoin_common -lbitcoin_wallet -lbitcoin_util -lleveldb
+  LIBS += -L$$PWD/../univalue/.libs/ -lunivalue
+  LIBS += -L$$PWD/../secp256k1/.libs/ -lsecp256k1
+  LIBS += -L$$PWD/../crypto -lbitcoin_crypto_shani -lbitcoin_crypto_avx2 -lbitcoin_crypto_base -lbitcoin_crypto_sse41
+  LIBS += -lbitcoin_cli -lbitcoin_consensus -lbitcoin_server
+  LIBS += -L/usr/local/Cellar/miniupnpc/2.1/lib -lminiupnpc -lqrencode
+
+  LIBS += -lboost_thread-mt -lboost_filesystem-mt -lboost_chrono-mt
+
+  LIBS += -lprotobuf -levent -levent_pthreads
+  LIBS += -L$$PWD/../../db4/lib -ldb_cxx-4.8
+  LIBS += -framework Cocoa -framework Foundation
+
+  SOURCES += macos_appnap.mm \
+         macdockiconhandler.mm \
+         macnotificationhandler.mm
+
+  HEADERS +=  macos_appnap.h \
+         macdockiconhandler.h \
+         macnotificationhandler.h
+
 }
 
 
