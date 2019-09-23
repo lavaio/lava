@@ -2,10 +2,14 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#if defined(HAVE_CONFIG_H)
+#include <config/bitcoin-config.h>
+#endif
+
 #include <wallet/wallet.h>
 
 #include <qt/receivecoinsdialog.h>
-#include <qt/forms/ui_receivecoinsdialog.h>
+#include <ui_receivecoinsdialog.h>
 
 #include <qt/addressbookpage.h>
 #include <qt/addresstablemodel.h>
