@@ -7,7 +7,7 @@
 #endif
 
 #include <qt/sendcoinsentry.h>
-#include <qt/forms/ui_sendcoinsentry.h>
+#include <ui_sendcoinsentry.h>
 
 #include <qt/addressbookpage.h>
 #include <qt/addresstablemodel.h>

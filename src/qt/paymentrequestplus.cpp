@@ -6,6 +6,9 @@
 // Wraps dumb protocol buffer paymentRequest
 // with some extra methods
 //
+#if defined(HAVE_CONFIG_H)
+#include <config/bitcoin-config.h>
+#endif
 
 #include <qt/paymentrequestplus.h>
 

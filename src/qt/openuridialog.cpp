@@ -2,8 +2,12 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#if defined(HAVE_CONFIG_H)
+#include <config/bitcoin-config.h>
+#endif
+
 #include <qt/openuridialog.h>
-#include <qt/forms/ui_openuridialog.h>
+#include <ui_openuridialog.h>
 
 #include <qt/guiutil.h>
 #include <qt/walletmodel.h>

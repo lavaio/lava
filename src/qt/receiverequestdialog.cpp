@@ -2,8 +2,12 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#if defined(HAVE_CONFIG_H)
+#include <config/bitcoin-config.h>
+#endif
+
 #include <qt/receiverequestdialog.h>
-#include <qt/forms/ui_receiverequestdialog.h>
+#include <ui_receiverequestdialog.h>
 
 #include <qt/bitcoinunits.h>
 #include <qt/guiconstants.h>

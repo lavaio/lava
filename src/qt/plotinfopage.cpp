@@ -2,8 +2,12 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#if defined(HAVE_CONFIG_H)
+#include <config/bitcoin-config.h>
+#endif
+
 #include <qt/plotinfopage.h>
-#include <qt/forms/ui_plotinfopage.h>
+#include <ui_plotinfopage.h>
 
 #include <qt/bitcoinunits.h>
 #include <qt/clientmodel.h>
@@ -14,7 +18,7 @@
 #include <qt/transactionfilterproxy.h>
 #include <qt/transactiontablemodel.h>
 #include <qt/walletmodel.h>
-#include <qt/forms/ui_plotinfopage.h>
+#include <ui_plotinfopage.h>
 #include <QLineEdit>
 #include <QMessageBox>
 
@@ -23,8 +27,6 @@
 #include <outputtype.h>
 
 Q_DECLARE_METATYPE(interfaces::WalletBalances)
-
-#include <qt/plotinfopage.moc>
 
 PlotInfoPage::PlotInfoPage(const PlatformStyle *platformStyle, QWidget *parent) :
     QWidget(parent),
