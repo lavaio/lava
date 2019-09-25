@@ -155,8 +155,9 @@ windows {
 }
 
 darwin {
-  INCLUDEPATH += /usr/local/include /usr/local/opt/berkeley-db@4/include
+  QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.12
 
+  INCLUDEPATH += /usr/local/include /usr/local/opt/berkeley-db@4/include
 
   LIBS += -L$$PWD/..
   LIBS += -L/usr/local/lib -L/usr/local/Cellar/openssl/1.0.2r/lib -lcrypto
@@ -181,6 +182,7 @@ darwin {
          macdockiconhandler.h \
          macnotificationhandler.h
 
+  TR_EXCLUDE += /usr/local/include/boost/*
 }
 
 
