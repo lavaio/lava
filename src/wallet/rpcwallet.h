@@ -6,6 +6,7 @@
 #define BITCOIN_WALLET_RPCWALLET_H
 
 #include <string>
+#include <actiondb.h>
 
 class CRPCTable;
 class CWallet;
@@ -30,4 +31,7 @@ bool EnsureWalletIsAvailable(CWallet *, bool avoidException);
 
 UniValue getaddressinfo(const JSONRPCRequest& request);
 UniValue signrawtransactionwithwallet(const JSONRPCRequest& request);
+
+uint256 SendAction(CWallet *const pwallet, const CAction& action, const CKey &key, const CTxDestination& destChange);
+
 #endif //BITCOIN_WALLET_RPCWALLET_H

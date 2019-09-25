@@ -518,6 +518,23 @@ public:
       return m_wallet->mapAddressBook.count(dest) > 0;
     }
 
+
+    virtual CKeyID getKeyForDestination(const CTxDestination& dest) {
+      return ::GetKeyForDestination(*m_wallet, dest);
+    }
+
+    virtual uint256 sendAction(const CAction& action, const CKey& key, CTxDestination destChange) {
+      return ::SendAction(m_wallet.get(), action, key, destChange);
+    }
+
+    virtual CFeeRate getPayTxFee() const {
+      return m_wallet->m_pay_tx_fee;
+    }
+
+    virtual void setPayTxFee(const CFeeRate& fee) {
+      m_wallet->m_pay_tx_fee = fee;
+    }
+
     std::shared_ptr<CWallet> m_wallet;
 };
 

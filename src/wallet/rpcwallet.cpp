@@ -5035,7 +5035,7 @@ UniValue freefirestone(const JSONRPCRequest& request){
 	return results;
 }
 
-uint256 SendAction(CWallet *const pwallet, const CAction& action, const CKey &key, CTxDestination destChange)
+uint256 SendAction(CWallet *const pwallet, const CAction& action, const CKey &key, const CTxDestination& destChange)
 {
     auto locked_chain = pwallet->chain().lock();
     CAmount curBalance = pwallet->GetBalance();

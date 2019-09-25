@@ -110,8 +110,8 @@ public:
         pchMessageStart[3] = 0xf9;
         nDefaultPort = 6868;
         nPruneAfterHeight = 100000;
-        m_assumed_blockchain_size = 240;
-        m_assumed_chain_state_size = 3;
+        m_assumed_blockchain_size = 1;
+        m_assumed_chain_state_size = 1;
 
         std::vector<unsigned char> scriptData(ParseHex("76a91400f3ce606cf8a5fdebdcff65c6b059d66cd6cc1e88ac"));
         const CScript genesisOutputScript = CScript(scriptData.begin(), scriptData.end());

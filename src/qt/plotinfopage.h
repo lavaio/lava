@@ -36,12 +36,20 @@ public:
 
     void setWalletModel(WalletModel *walletModel);
 
+    struct AddressInfo {
+      std::string address;
+      uint64_t plotId;
+    };
+
+
 private:
     void updateData();
     Optional<CPubKey> getDefaultMinerAddress();
     Optional<CPubKey> getNewMinerAddress();
 
     std::vector<std::pair<int64_t, CKeyID>> getWalletKeys();
+
+    QString getBindingInfoStr(const QPair<AddressInfo, AddressInfo>& data);
 
 public Q_SLOTS:
     void onNewPlotIdClicked();
@@ -52,6 +60,12 @@ private:
     Ui::PlotInfoPage *ui;
 
 private Q_SLOTS:
+
+    void on_btnQuery_clicked();
+
+    void on_btnBind_clicked();
+
+    void on_btnUnbind_clicked();
 
 private:
     WalletModel* _walletModel;
