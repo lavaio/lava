@@ -160,7 +160,7 @@ darwin {
   INCLUDEPATH += /usr/local/include /usr/local/opt/berkeley-db@4/include
 
   LIBS += -L$$PWD/..
-  LIBS += -L/usr/local/lib -L/usr/local/Cellar/openssl/1.0.2r/lib -lcrypto
+  LIBS += -L/usr/local/lib -L/usr/local/Cellar/openssl/1.0.2t/lib -lcrypto
   LIBS += -lbitcoin_wallet -lbitcoin_common -lbitcoin_wallet -lbitcoin_util -lleveldb
   LIBS += -L$$PWD/../univalue/.libs/ -lunivalue
   LIBS += -L$$PWD/../secp256k1/.libs/ -lsecp256k1
