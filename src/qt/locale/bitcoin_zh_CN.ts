@@ -1665,6 +1665,14 @@
         <source>Transaction &quot;%1&quot; was created for plot id unbinding</source>
         <translation>成功为解绑算力创建了交易: %1 </translation>
     </message>
+    <message>
+        <source>Failed to create plot id binding transaction, please make sure there is enough balance in your wallet</source>
+        <translation>创建绑定算力交易失败, 请确保钱包中有充足的余额.</translation>
+    </message>
+    <message>
+        <source>Failed to create unbind transaction, please make sure there is enough balance in your wallet</source>
+        <translation type="unfinished">创建解绑算力交易失败, 请确保钱包中有充足的余额</translation>
+    </message>
 </context>
 <context>
     <name>QObject</name>

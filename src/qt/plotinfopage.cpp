@@ -297,7 +297,7 @@ void PlotInfoPage::on_btnBind_clicked()
         auto message = QString("got error code: %1, message: %2").arg(code).arg(QString::fromStdString(msg));
         QMessageBox::critical(this, windowTitle(), message, QMessageBox::Ok, QMessageBox::Ok);
     }catch(...) {
-        QMessageBox::critical(this, windowTitle(), "Failed to create plot id binding transaction, please make sure there is enough balance in your wallet", QMessageBox::Ok, QMessageBox::Ok);
+        QMessageBox::critical(this, windowTitle(), tr("Failed to create plot id binding transaction, please make sure there is enough balance in your wallet"), QMessageBox::Ok, QMessageBox::Ok);
     }
 }
 
@@ -360,6 +360,6 @@ void PlotInfoPage::on_btnUnbind_clicked()
         auto message = QString("got error code: %1, message: %2").arg(code).arg(QString::fromStdString(msg));
         QMessageBox::critical(this, windowTitle(), message, QMessageBox::Ok, QMessageBox::Ok);
     }catch(...) {
-        QMessageBox::critical(this, windowTitle(), "Failed to create unbind transaction, please make sure there is enough balance in your wallet", QMessageBox::Ok, QMessageBox::Ok);
+        QMessageBox::critical(this, windowTitle(), tr("Failed to create unbind transaction, please make sure there is enough balance in your wallet"), QMessageBox::Ok, QMessageBox::Ok);
     }
 }
