@@ -628,19 +628,27 @@
     </message>
     <message>
         <source>&amp;Miner</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <source>Miner block</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <source>Miner Information</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <source>Bitcoin</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Fire&amp;stone</source>
+        <translation type="unfinished">火石(&amp;S)</translation>
+    </message>
+    <message>
+        <source>Firestone Information</source>
+        <translation>火石信息</translation>
     </message>
 </context>
 <context>
@@ -847,6 +855,169 @@
     <message>
         <source>New key generation failed.</source>
         <translation>生成新密钥失败。</translation>
+    </message>
+</context>
+<context>
+    <name>FirestoneInfoPage</name>
+    <message>
+        <source>Form</source>
+        <translation>表单</translation>
+    </message>
+    <message>
+        <source>Slot Info:</source>
+        <translation>周期信息:</translation>
+    </message>
+    <message>
+        <source>Slot Index</source>
+        <translation>周期编号:</translation>
+    </message>
+    <message>
+        <source>Firestone Price</source>
+        <translation>火石价格</translation>
+    </message>
+    <message>
+        <source>Lock Time</source>
+        <translation>锁定高度</translation>
+    </message>
+    <message>
+        <source>Count</source>
+        <translation>火石数:</translation>
+    </message>
+    <message>
+        <source>Buy:</source>
+        <translation>购买:</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>地址</translation>
+    </message>
+    <message>
+        <source>Target address</source>
+        <translation>目标地址:</translation>
+    </message>
+    <message>
+        <source>Change Address</source>
+        <translation>找零地址</translation>
+    </message>
+    <message>
+        <source>Change address</source>
+        <translation>找零地址</translation>
+    </message>
+    <message>
+        <source>Buy Firestone</source>
+        <translation>购买火石</translation>
+    </message>
+    <message>
+        <source>Query:</source>
+        <translation>查询:</translation>
+    </message>
+    <message>
+        <source>The address to query</source>
+        <translation>要查询火石的地址</translation>
+    </message>
+    <message>
+        <source>Query Firestone</source>
+        <translation>查询火石</translation>
+    </message>
+    <message>
+        <source>Release:</source>
+        <translation>释放火石:</translation>
+    </message>
+    <message>
+        <source>Release expired firestones for an address</source>
+        <translation>释放指定地址中的已过期火石</translation>
+    </message>
+    <message>
+        <source>Receive Address</source>
+        <translation>接收地址</translation>
+    </message>
+    <message>
+        <source>Receive address</source>
+        <translation>接收地址</translation>
+    </message>
+    <message>
+        <source>Release Firestone</source>
+        <translation>释放火石</translation>
+    </message>
+    <message>
+        <source>Invalid address</source>
+        <translation>非法地址</translation>
+    </message>
+    <message>
+        <source>Address &quot;%1&quot; has %2 firestones</source>
+        <translation>地址&quot;%1&quot;拥有&quot;%2&quot;个火石</translation>
+    </message>
+    <message>
+        <source>%1 firestone(s) in current slot</source>
+        <translation>在当前周期有%1个火石</translation>
+    </message>
+    <message>
+        <source>%1 immature firestone(s)</source>
+        <translation>%1个已成熟的火石</translation>
+    </message>
+    <message>
+        <source>%1 overdue firestone(s)</source>
+        <translation>%1过期火石</translation>
+    </message>
+    <message>
+        <source>Firestone Information</source>
+        <translation>火石信息</translation>
+    </message>
+    <message>
+        <source>Please unlock wallet to continue</source>
+        <translation>此操作需要先解锁钱包</translation>
+    </message>
+    <message>
+        <source>Invalid target address</source>
+        <translation>非法的目标地址</translation>
+    </message>
+    <message>
+        <source>Invalid change address</source>
+        <translation>非法的找零地址</translation>
+    </message>
+    <message>
+        <source>Can&apos;t buy firestone on slot&apos;s last block</source>
+        <translation>不能在火石周期的最后一块购买火石</translation>
+    </message>
+    <message>
+        <source>Buy firestone success!</source>
+        <translation>成功购买火石!</translation>
+    </message>
+    <message>
+        <source>Failed to buy firestone, please make sure there is enough balance in your wallet</source>
+        <translation>购买火石失败, 请确保钱包中有足够火石.</translation>
+    </message>
+    <message>
+        <source>Invalid refund address</source>
+        <translation>非法的资金回放地址</translation>
+    </message>
+    <message>
+        <source>This address isn&apos;t your address, you can&apos;t release firestone for it</source>
+        <translation>此地址不属于你, 无法为它释放火石.</translation>
+    </message>
+    <message>
+        <source>No firestones in this address</source>
+        <translation>此地址中没有火石.</translation>
+    </message>
+    <message>
+        <source>Failed to free firestone, something unexpected happened...</source>
+        <translation>释放火石失败, 发生了一些错误...</translation>
+    </message>
+    <message>
+        <source>Failed to broadcast transation!</source>
+        <translation>广播交易失败.</translation>
+    </message>
+    <message>
+        <source>Released %1 firestone(s)</source>
+        <translation>释放了%1个火石</translation>
+    </message>
+    <message>
+        <source>Target address isn&apos;t an address in your wallet, are you sure?</source>
+        <translation>目标地址不属于你, 确定要为它购买火石吗?</translation>
+    </message>
+    <message>
+        <source>Change address isn&apos;t an address in your wallet, are you sure?</source>
+        <translation>找零地址不属于你, 确定要继续吗?</translation>
     </message>
 </context>
 <context>

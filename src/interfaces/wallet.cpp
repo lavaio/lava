@@ -527,12 +527,28 @@ public:
       return ::SendAction(m_wallet.get(), action, key, destChange);
     }
 
-    virtual CFeeRate getPayTxFee() const {
+    virtual CFeeRate getPayTxFee() const override {
       return m_wallet->m_pay_tx_fee;
     }
 
-    virtual void setPayTxFee(const CFeeRate& fee) {
+    virtual void setPayTxFee(const CFeeRate& fee) override {
       m_wallet->m_pay_tx_fee = fee;
+    }
+
+    virtual std::unique_ptr<Chain::Lock> chain_lock() override {
+      return m_wallet->chain().lock(true);
+    }
+
+    virtual void doWithChainAndWalletLock(std::function<void (std::unique_ptr<Chain::Lock>&, CWallet&)> cb) override {
+      auto locked_chain = m_wallet->chain().lock(true);
+      LOCK(m_wallet->cs_wallet);
+      cb(locked_chain, *m_wallet);
+    }
+
+    virtual CTransactionRef createTicketAllSpendTx(
+        std::map<uint256,std::pair<int,CScript>> txScriptInputs,
+        std::vector<CTxOut> outs, CTxDestination& dest, CKey& key) override {
+      return ::CreateTicketAllSpendTx(m_wallet.get(), txScriptInputs, outs, dest, key);
     }
 
     std::shared_ptr<CWallet> m_wallet;
