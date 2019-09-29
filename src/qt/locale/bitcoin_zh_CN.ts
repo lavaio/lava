@@ -636,7 +636,7 @@
     </message>
     <message>
         <source>Miner Information</source>
-        <translation></translation>
+        <translation type="unfinished">挖矿信息</translation>
     </message>
     <message>
         <source>Bitcoin</source>
@@ -644,7 +644,7 @@
     </message>
     <message>
         <source>Fire&amp;stone</source>
-        <translation type="unfinished">火石(&amp;S)</translation>
+        <translation>火石(&amp;S)</translation>
     </message>
     <message>
         <source>Firestone Information</source>
@@ -953,7 +953,7 @@
     </message>
     <message>
         <source>%1 immature firestone(s)</source>
-        <translation>%1个已成熟的火石</translation>
+        <translation type="unfinished">%1个未成熟的火石</translation>
     </message>
     <message>
         <source>%1 overdue firestone(s)</source>
