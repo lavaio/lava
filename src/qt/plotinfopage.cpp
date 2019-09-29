@@ -32,6 +32,7 @@
 #include <univalue.h>
 #include <actiondb.h>
 #include <rpc/protocol.h>
+#include <wallet/wallet.h>
 
 Q_DECLARE_METATYPE(interfaces::WalletBalances)
 
@@ -307,12 +308,14 @@ void PlotInfoPage::on_btnUnbind_clicked()
         QMessageBox::warning(this, windowTitle(), tr("Please unlock wallet to continue"), QMessageBox::Ok, QMessageBox::Ok);
         return;
     }
+
     auto fromAddr = ui->ebAddressFrom->text().trimmed();
     CTxDestination fromDest = DecodeDestination(fromAddr.toStdString());
     if (!IsValidDestination(fromDest) || fromDest.type() != typeid(CKeyID)) {
       QMessageBox::warning(this, windowTitle(), tr("Invalid from address"), QMessageBox::Ok, QMessageBox::Ok);
       return;
     }
+
 
     auto lock = _walletModel->requestUnlock();
     if(!lock.isValid()) {

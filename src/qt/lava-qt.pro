@@ -35,9 +35,11 @@ SOURCES += \
     coincontroltreewidget.cpp \
     csvmodelwriter.cpp \
     editaddressdialog.cpp \
+    forms/firestoneinfopage.cpp \
     freesacechecker.cpp \
     guiutil.cpp \
     intro.cpp \
+    lava/slotinfo.cpp \
     main.cpp \
     modaloverlay.cpp \
     networkstyle.cpp \
@@ -72,6 +74,7 @@ SOURCES += \
     transactiontablemodel.cpp \
     transactionview.cpp \
     txviewdelegate.cpp \
+    uiexception.cpp \
     utilitydialog.cpp \
     walletcontroller.cpp \
     walletframe.cpp \
@@ -96,10 +99,12 @@ HEADERS += \ \
     coincontroltreewidget.h \
     csvmodelwriter.h \
     editaddressdialog.h \
+    forms/firestoneinfopage.h \
     freesacechecker.h \
     guiconstants.h \
     guiutil.h \
     intro.h \
+    lava/slotinfo.h \
     modaloverlay.h \
     networkstyle.h \
     notificator.h \
@@ -133,6 +138,7 @@ HEADERS += \ \
     transactiontablemodel.h \
     transactionview.h \
     txviewdelegate.h \
+    uiexception.h \
     utilitydialog.h \
     walletcontroller.h \
     walletframe.h \
@@ -197,6 +203,7 @@ FORMS += \
     forms/coincontroldialog.ui \
     forms/debugwindow.ui \
     forms/editaddressdialog.ui \
+    forms/firestoneinfopage.ui \
     forms/helpmessagedialog.ui \
     forms/intro.ui \
     forms/minerviewpage.ui \
