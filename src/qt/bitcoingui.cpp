@@ -292,7 +292,7 @@ void BitcoinGUI::createActions()
     plotInfoAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_5));
     tabGroup->addAction(plotInfoAction);
 
-    firestoneAction = new QAction(platformStyle->SingleColorIcon(":/icons/tx_mined"), tr("Fire&stone"), this);
+    firestoneAction = new QAction(platformStyle->SingleColorIcon(":/icons/firestone"), tr("Fire&stone"), this);
     firestoneAction->setStatusTip(tr("Firestone Information"));
     firestoneAction->setToolTip(firestoneAction->statusTip());
     firestoneAction->setCheckable(true);
