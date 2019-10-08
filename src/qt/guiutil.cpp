@@ -360,8 +360,8 @@ void bringToFront(QWidget* w)
 #ifdef Q_OS_MAC
     // Force application activation on macOS. With Qt 5.4 this is required when
     // an action in the dock menu is triggered.
-    id app = objc_msgSend((id) objc_getClass("NSApplication"), sel_registerName("sharedApplication"));
-    objc_msgSend(app, sel_registerName("activateIgnoringOtherApps:"), YES);
+    id app = ((id (*)(id, SEL))objc_msgSend)((id) objc_getClass("NSApplication"), sel_registerName("sharedApplication"));
+    ((id (*)(id, SEL, BOOL))objc_msgSend)(app, sel_registerName("activateIgnoringOtherApps:"), YES);
 #endif
 
     if (w) {

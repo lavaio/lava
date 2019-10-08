@@ -132,7 +132,7 @@ void TestAddAddressesToSendBook()
 
     // Submit a new address which should add successfully - we expect the
     // warning message to be blank.
-    EditAddressAndSubmit(
+        EditAddressAndSubmit(
         &editAddressDialog, QString("new"), new_address, QString(""));
 
     check_addbook_size(3);
