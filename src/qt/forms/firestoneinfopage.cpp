@@ -13,6 +13,7 @@
 #include <univalue.h>
 #include <node/transaction.h>
 #include <txmempool.h>
+#include "txfeemodifier.h"
 
 FirestoneInfoPage::FirestoneInfoPage(const PlatformStyle* style, QWidget *parent) :
     QWidget(parent),
@@ -70,7 +71,6 @@ void FirestoneInfoPage::on_btnQuery_clicked()
 
 FirestoneInfoPage::FirestoneInfo FirestoneInfoPage::getFirestoneInfo(const CKeyID &key)
 {
-    qInfo() << "here" << endl;
     std::vector<CTicketRef> alltickets;
     {
       //
@@ -157,6 +157,8 @@ void FirestoneInfoPage::on_btnBuy_clicked()
   try {
       _walletModel->wallet().doWithChainAndWalletLock([&](auto& lockedChain, auto& wallet) {
         LOCK(cs_main);
+
+        TxFeeModifer feeUpdater(_walletModel->wallet());
         auto locktime = pticketview->LockTime();
         if (locktime == chainActive.Height()) {
           QMessageBox::warning(this, windowTitle(), tr("Can't buy firestone on slot's last block"), QMessageBox::Ok, QMessageBox::Ok);
@@ -231,6 +233,8 @@ void FirestoneInfoPage::on_btnRelease_clicked()
       QMessageBox::information(this, windowTitle(), tr("No firestones in this address"), QMessageBox::Ok, QMessageBox::Ok);
       return;
     }
+
+    TxFeeModifer feeUpdater(_walletModel->wallet());
 
     UniValue results(UniValue::VOBJ);
     std::map<uint256,std::pair<int,CScript>> txScriptInputs;

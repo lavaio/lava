@@ -639,7 +639,7 @@
         <translation type="unfinished">挖矿信息</translation>
     </message>
     <message>
-        <source>Bitcoin</source>
+        <source>Lava</source>
         <translation></translation>
     </message>
     <message>
@@ -985,7 +985,7 @@
     </message>
     <message>
         <source>Failed to buy firestone, please make sure there is enough balance in your wallet</source>
-        <translation>购买火石失败, 请确保钱包中有足够火石.</translation>
+        <translation>购买火石失败, 请确保钱包中有足够余额.</translation>
     </message>
     <message>
         <source>Invalid refund address</source>
@@ -3637,8 +3637,8 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
         <translation>无法启动HTTP服务，查看日志获取更多信息</translation>
     </message>
     <message>
-        <source>Bitcoin Core</source>
-        <translation type="vanished">Bitcoin Core</translation>
+        <source>Lava Core</source>
+        <translation type="vanished">Lava Core</translation>
     </message>
     <message>
         <source>The %s developers</source>
