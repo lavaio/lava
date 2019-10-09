@@ -33,6 +33,7 @@
 #include <actiondb.h>
 #include <rpc/protocol.h>
 #include <wallet/wallet.h>
+#include "txfeemodifier.h"
 
 Q_DECLARE_METATYPE(interfaces::WalletBalances)
 
@@ -202,27 +203,6 @@ void PlotInfoPage::on_btnQuery_clicked()
    auto message = getBindingInfoStr(data);
    QMessageBox::information(this, windowTitle(), message, QMessageBox::Ok, QMessageBox::Ok);
 }
-
-//
-// create transaction fails if there is no min-tx fee set
-// we use a small tx fee to make sure the binding transaction success
-class TxFeeModifer {
-    interfaces::Wallet& _wallet;
-    CFeeRate _walletFee;
-
-public:
-    TxFeeModifer (interfaces::Wallet& wallet): _wallet(wallet) {
-        _walletFee = wallet.getPayTxFee();
-        if(_walletFee <= CFeeRate()) {
-            CAmount nAmount(1);
-            wallet.setPayTxFee(CFeeRate(nAmount, 1000));
-        }
-    }
-
-   ~TxFeeModifer() {
-        _wallet.setPayTxFee(_walletFee);
-    }
-};
 
 void PlotInfoPage::on_btnBind_clicked()
 {

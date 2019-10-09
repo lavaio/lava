@@ -73,6 +73,7 @@ SOURCES += \
     transactionrecord.cpp \
     transactiontablemodel.cpp \
     transactionview.cpp \
+    txfeemodifier.cpp \
     txviewdelegate.cpp \
     uiexception.cpp \
     utilitydialog.cpp \
@@ -137,6 +138,7 @@ HEADERS += \ \
     transactionrecord.h \
     transactiontablemodel.h \
     transactionview.h \
+    txfeemodifier.h \
     txviewdelegate.h \
     uiexception.h \
     utilitydialog.h \
