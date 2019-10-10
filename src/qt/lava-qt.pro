@@ -35,9 +35,11 @@ SOURCES += \
     coincontroltreewidget.cpp \
     csvmodelwriter.cpp \
     editaddressdialog.cpp \
+    forms/firestoneinfopage.cpp \
     freesacechecker.cpp \
     guiutil.cpp \
     intro.cpp \
+    lava/slotinfo.cpp \
     main.cpp \
     modaloverlay.cpp \
     networkstyle.cpp \
@@ -71,7 +73,9 @@ SOURCES += \
     transactionrecord.cpp \
     transactiontablemodel.cpp \
     transactionview.cpp \
+    txfeemodifier.cpp \
     txviewdelegate.cpp \
+    uiexception.cpp \
     utilitydialog.cpp \
     walletcontroller.cpp \
     walletframe.cpp \
@@ -96,10 +100,12 @@ HEADERS += \ \
     coincontroltreewidget.h \
     csvmodelwriter.h \
     editaddressdialog.h \
+    forms/firestoneinfopage.h \
     freesacechecker.h \
     guiconstants.h \
     guiutil.h \
     intro.h \
+    lava/slotinfo.h \
     modaloverlay.h \
     networkstyle.h \
     notificator.h \
@@ -132,7 +138,9 @@ HEADERS += \ \
     transactionrecord.h \
     transactiontablemodel.h \
     transactionview.h \
+    txfeemodifier.h \
     txviewdelegate.h \
+    uiexception.h \
     utilitydialog.h \
     walletcontroller.h \
     walletframe.h \
@@ -155,11 +163,12 @@ windows {
 }
 
 darwin {
+  QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.12
+
   INCLUDEPATH += /usr/local/include /usr/local/opt/berkeley-db@4/include
 
-
   LIBS += -L$$PWD/..
-  LIBS += -L/usr/local/lib -L/usr/local/Cellar/openssl/1.0.2r/lib -lcrypto
+  LIBS += -L/usr/local/lib -L/usr/local/Cellar/openssl/1.0.2t/lib -lcrypto
   LIBS += -lbitcoin_wallet -lbitcoin_common -lbitcoin_wallet -lbitcoin_util -lleveldb
   LIBS += -L$$PWD/../univalue/.libs/ -lunivalue
   LIBS += -L$$PWD/../secp256k1/.libs/ -lsecp256k1
@@ -181,6 +190,7 @@ darwin {
          macdockiconhandler.h \
          macnotificationhandler.h
 
+  TR_EXCLUDE += /usr/local/include/boost/*
 }
 
 
@@ -195,6 +205,7 @@ FORMS += \
     forms/coincontroldialog.ui \
     forms/debugwindow.ui \
     forms/editaddressdialog.ui \
+    forms/firestoneinfopage.ui \
     forms/helpmessagedialog.ui \
     forms/intro.ui \
     forms/minerviewpage.ui \

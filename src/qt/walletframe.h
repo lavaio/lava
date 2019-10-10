@@ -76,6 +76,7 @@ public Q_SLOTS:
     void gotoMinerPage();
     /** Switch to miner Info page */
     void gotoMinerInfoPage();
+    void gotoFirestonePage();
 
     /** Show Sign/Verify Message dialog and switch to sign message tab */
     void gotoSignMessageTab(QString addr = "");

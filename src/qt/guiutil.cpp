@@ -57,6 +57,8 @@
 #include <QTextDocument> // for Qt::mightBeRichText
 #include <QThread>
 #include <QUrlQuery>
+#include <walletmodel.h>
+#include <optionsmodel.h>
 
 #if defined(Q_OS_MAC)
 #pragma GCC diagnostic push
@@ -358,8 +360,8 @@ void bringToFront(QWidget* w)
 #ifdef Q_OS_MAC
     // Force application activation on macOS. With Qt 5.4 this is required when
     // an action in the dock menu is triggered.
-    id app = objc_msgSend((id) objc_getClass("NSApplication"), sel_registerName("sharedApplication"));
-    objc_msgSend(app, sel_registerName("activateIgnoringOtherApps:"), YES);
+    id app = ((id (*)(id, SEL))objc_msgSend)((id) objc_getClass("NSApplication"), sel_registerName("sharedApplication"));
+    ((id (*)(id, SEL, BOOL))objc_msgSend)(app, sel_registerName("activateIgnoringOtherApps:"), YES);
 #endif
 
     if (w) {
@@ -945,6 +947,12 @@ void PolishProgressDialog(QProgressDialog* dialog)
 #else
     Q_UNUSED(dialog);
 #endif
+}
+
+QString formatPrice(WalletModel& wallet, const CAmount &price)
+{
+    int unit = wallet.getOptionsModel()->getDisplayUnit();
+    return BitcoinUnits::formatWithUnit(unit, price, false, BitcoinUnits::separatorAlways);
 }
 
 } // namespace GUIUtil

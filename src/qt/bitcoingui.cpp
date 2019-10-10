@@ -292,6 +292,14 @@ void BitcoinGUI::createActions()
     plotInfoAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_5));
     tabGroup->addAction(plotInfoAction);
 
+    firestoneAction = new QAction(platformStyle->SingleColorIcon(":/icons/firestone"), tr("Fire&stone"), this);
+    firestoneAction->setStatusTip(tr("Firestone Information"));
+    firestoneAction->setToolTip(firestoneAction->statusTip());
+    firestoneAction->setCheckable(true);
+    firestoneAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_6));
+    tabGroup->addAction(firestoneAction);
+
+
 #ifdef ENABLE_WALLET
     // These showNormalIfMinimized are needed because Send Coins and Receive Coins
     // can be triggered from the tray menu, and need to show the GUI to be useful.
@@ -310,7 +318,7 @@ void BitcoinGUI::createActions()
     connect(minerAction, &QAction::triggered, [this]{ showNormalIfMinimized(); });
     connect(minerAction, &QAction::triggered, this, &BitcoinGUI::gotoMinerPage);
     connect(plotInfoAction, &QAction::triggered, [this]{ gotoMinerInfoPage(); });
-    connect(plotInfoAction, &QAction::triggered, this, &BitcoinGUI::gotoMinerInfoPage);
+    connect(firestoneAction, &QAction::triggered, this, &BitcoinGUI::gotoFirestonePage);
 #endif // ENABLE_WALLET
 
     quitAction = new QAction(platformStyle->TextColorIcon(":/icons/quit"), tr("E&xit"), this);
@@ -547,6 +555,7 @@ void BitcoinGUI::createToolBars()
         toolbar->addAction(historyAction);
         // toolbar->addAction(minerAction);
         toolbar->addAction(plotInfoAction);
+        toolbar->addAction(firestoneAction);
         overviewAction->setChecked(true);
 
 #ifdef ENABLE_WALLET
@@ -720,6 +729,7 @@ void BitcoinGUI::setWalletActionsEnabled(bool enabled)
     receiveCoinsMenuAction->setEnabled(enabled);
     historyAction->setEnabled(enabled);
     plotInfoAction->setEnabled(enabled);
+    firestoneAction->setEnabled(enabled);
     encryptWalletAction->setEnabled(enabled);
     backupWalletAction->setEnabled(enabled);
     changePassphraseAction->setEnabled(enabled);
@@ -875,6 +885,12 @@ void BitcoinGUI::gotoMinerInfoPage()
   qInfo() << "goto miner info" << endl;
   plotInfoAction->setChecked(true);
   if (walletFrame) walletFrame->gotoMinerInfoPage();
+}
+
+void BitcoinGUI::gotoFirestonePage()
+{
+    firestoneAction->setChecked(true);
+    if (walletFrame) walletFrame->gotoFirestonePage();
 }
 
 void BitcoinGUI::gotoSignMessageTab(QString addr)
@@ -1063,7 +1079,7 @@ void BitcoinGUI::setNumBlocks(int count, const QDateTime& blockDate, double nVer
 
 void BitcoinGUI::message(const QString &title, const QString &message, unsigned int style, bool *ret)
 {
-    QString strTitle = tr("Bitcoin"); // default title
+    QString strTitle = tr("Lava"); // default title
     // Default to information icon
     int nMBoxIcon = QMessageBox::Information;
     int nNotifyIcon = Notificator::Information;

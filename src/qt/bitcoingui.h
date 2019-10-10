@@ -130,6 +130,7 @@ private:
     QAction* historyAction = nullptr;
     QAction* minerAction = nullptr;
     QAction* plotInfoAction = nullptr;
+    QAction* firestoneAction = nullptr;
     QAction* quitAction = nullptr;
     QAction* sendCoinsAction = nullptr;
     QAction* sendCoinsMenuAction = nullptr;
@@ -269,6 +270,7 @@ public Q_SLOTS:
     void gotoMinerPage();
 
     void gotoMinerInfoPage();
+    void gotoFirestonePage();
 
     /** Show Sign/Verify Message dialog and switch to sign message tab */
     void gotoSignMessageTab(QString addr = "");

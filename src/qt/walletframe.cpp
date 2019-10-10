@@ -155,9 +155,15 @@ void WalletFrame::gotoMinerInfoPage()
   qInfo() << " miner info page" << endl;
   QMap<WalletModel*, WalletView*>::const_iterator i;
   for (i = mapWalletViews.constBegin(); i != mapWalletViews.constEnd(); ++i)
-    i.value()->gotoMinerInfoviewPage();
+      i.value()->gotoMinerInfoviewPage();
 }
 
+void WalletFrame::gotoFirestonePage()
+{
+  QMap<WalletModel*, WalletView*>::const_iterator i;
+  for (i = mapWalletViews.constBegin(); i != mapWalletViews.constEnd(); ++i)
+    i.value()->gotoFirestonePage();
+}
 
 void WalletFrame::gotoReceiveCoinsPage()
 {

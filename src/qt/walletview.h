@@ -21,6 +21,7 @@ class SendCoinsRecipient;
 class TransactionView;
 class WalletModel;
 class AddressBookPage;
+class FirestoneInfoPage;
 
 QT_BEGIN_NAMESPACE
 class QModelIndex;
@@ -64,6 +65,7 @@ private:
     OverviewPage *overviewPage;
     MinerviewPage *minerviewPage;
     PlotInfoPage *plotInfoPage;
+    FirestoneInfoPage *firestoneInfoPage;
     QWidget *transactionsPage;
     ReceiveCoinsDialog *receiveCoinsPage;
     SendCoinsDialog *sendCoinsPage;
@@ -88,6 +90,9 @@ public Q_SLOTS:
     void gotoMinerviewPage();
     /** Switch to minerInfoview (miner) page */
     void gotoMinerInfoviewPage();
+
+    /** Switch to firestone page */
+    void gotoFirestonePage();
 
     /** Show Sign/Verify Message dialog and switch to sign message tab */
     void gotoSignMessageTab(QString addr = "");

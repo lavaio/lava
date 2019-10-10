@@ -114,7 +114,7 @@ SendCoinsDialog::SendCoinsDialog(const PlatformStyle *_platformStyle, QWidget *p
     if (!settings.contains("nFeeRadio") && settings.contains("nTransactionFee") && settings.value("nTransactionFee").toLongLong() > 0) // compatibility
         settings.setValue("nFeeRadio", 1); // custom
     if (!settings.contains("nFeeRadio"))
-        settings.setValue("nFeeRadio", 0); // recommended
+        settings.setValue("nFeeRadio", 1); // custom
     if (!settings.contains("nSmartFeeSliderPosition"))
         settings.setValue("nSmartFeeSliderPosition", 0);
     if (!settings.contains("nTransactionFee"))

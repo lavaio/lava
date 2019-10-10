@@ -6,6 +6,9 @@
 #define BITCOIN_WALLET_RPCWALLET_H
 
 #include <string>
+#include <actiondb.h>
+#include <wallet/wallet.h>
+#include <interfaces/chain.h>
 
 class CRPCTable;
 class CWallet;
@@ -30,4 +33,9 @@ bool EnsureWalletIsAvailable(CWallet *, bool avoidException);
 
 UniValue getaddressinfo(const JSONRPCRequest& request);
 UniValue signrawtransactionwithwallet(const JSONRPCRequest& request);
+
+uint256 SendAction(CWallet *const pwallet, const CAction& action, const CKey &key, const CTxDestination& destChange);
+CTransactionRef SendMoneyWithOpRet(interfaces::Chain::Lock& locked_chain, CWallet * const pwallet, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CScript optScritp, const CCoinControl& coin_control, mapValue_t mapValue);
+CTransactionRef CreateTicketAllSpendTx(CWallet* const pwallet, std::map<uint256,std::pair<int,CScript>> txScriptInputs, std::vector<CTxOut> outs, CTxDestination& dest, CKey& key);
+
 #endif //BITCOIN_WALLET_RPCWALLET_H

@@ -37,6 +37,8 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
+#include "forms/firestoneinfopage.h"
+
 WalletView::WalletView(const PlatformStyle *_platformStyle, QWidget *parent):
     QStackedWidget(parent),
     clientModel(nullptr),
@@ -46,6 +48,7 @@ WalletView::WalletView(const PlatformStyle *_platformStyle, QWidget *parent):
     // Create tabs
     overviewPage = new OverviewPage(platformStyle);
     plotInfoPage = new PlotInfoPage(platformStyle);
+    firestoneInfoPage = new FirestoneInfoPage(platformStyle);
 
     transactionsPage = new QWidget(this);
     QVBoxLayout *vbox = new QVBoxLayout();
@@ -73,6 +76,7 @@ WalletView::WalletView(const PlatformStyle *_platformStyle, QWidget *parent):
     addWidget(receiveCoinsPage);
     addWidget(sendCoinsPage);
     addWidget(plotInfoPage);
+    addWidget(firestoneInfoPage);
 
     // Clicking on a transaction on the overview pre-selects the transaction on the transaction history page
     connect(overviewPage, &OverviewPage::transactionClicked, transactionView, static_cast<void (TransactionView::*)(const QModelIndex&)>(&TransactionView::focusTransaction));
@@ -137,6 +141,7 @@ void WalletView::setWalletModel(WalletModel *_walletModel)
     transactionView->setModel(_walletModel);
     overviewPage->setWalletModel(_walletModel);
     plotInfoPage->setWalletModel(_walletModel);
+    firestoneInfoPage->setWalletModel(_walletModel);
     receiveCoinsPage->setModel(_walletModel);
     sendCoinsPage->setModel(_walletModel);
     usedReceivingAddressesPage->setModel(_walletModel ? _walletModel->getAddressTableModel() : nullptr);
@@ -195,11 +200,15 @@ void WalletView::gotoMinerviewPage()
     setCurrentWidget(minerviewPage);
 }
 
-
 void WalletView::gotoMinerInfoviewPage()
 {
   qInfo() << "set current widget" << endl;
-    setCurrentWidget(plotInfoPage);
+  setCurrentWidget(plotInfoPage);
+}
+
+void WalletView::gotoFirestonePage()
+{
+  setCurrentWidget(firestoneInfoPage);
 }
 
 void WalletView::gotoHistoryPage()
