@@ -7,7 +7,7 @@
 #endif
 
 #include <qt/transactiondescdialog.h>
-#include <ui_transactiondescdialog.h>
+#include <qt/forms/ui_transactiondescdialog.h>
 
 #include <qt/transactiontablemodel.h>
 

@@ -7,7 +7,7 @@
 #endif
 
 #include <qt/openuridialog.h>
-#include <ui_openuridialog.h>
+#include <qt/forms/ui_openuridialog.h>
 
 #include <qt/guiutil.h>
 #include <qt/walletmodel.h>

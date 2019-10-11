@@ -8,7 +8,7 @@
 
 #include <fs.h>
 #include <qt/intro.h>
-#include <ui_intro.h>
+#include <qt/forms/ui_intro.h>
 
 #include <qt/guiconstants.h>
 #include <qt/guiutil.h>
@@ -19,7 +19,7 @@
 #include <QFileDialog>
 #include <QSettings>
 #include <QMessageBox>
-#include <qt/freesacechecker.h>
+#include <qt/freespacechecker.h>
 
 #include <cmath>
 

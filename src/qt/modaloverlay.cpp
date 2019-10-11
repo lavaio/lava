@@ -7,7 +7,7 @@
 #endif
 
 #include <qt/modaloverlay.h>
-#include <ui_modaloverlay.h>
+#include <qt/forms/ui_modaloverlay.h>
 
 #include <qt/guiutil.h>
 

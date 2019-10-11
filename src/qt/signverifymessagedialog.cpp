@@ -7,7 +7,7 @@
 #endif
 
 #include <qt/signverifymessagedialog.h>
-#include <ui_signverifymessagedialog.h>
+#include <qt/forms/ui_signverifymessagedialog.h>
 
 #include <qt/addressbookpage.h>
 #include <qt/guiutil.h>

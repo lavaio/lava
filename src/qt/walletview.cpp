@@ -25,6 +25,7 @@
 #include <qt/transactiontablemodel.h>
 #include <qt/transactionview.h>
 #include <qt/walletmodel.h>
+#include <qt/firestoneinfopage.h>
 
 #include <interfaces/node.h>
 #include <ui_interface.h>
@@ -37,7 +38,6 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
-#include "forms/firestoneinfopage.h"
 
 WalletView::WalletView(const PlatformStyle *_platformStyle, QWidget *parent):
     QStackedWidget(parent),

@@ -12,6 +12,7 @@
 #include <qt/bitcoinunits.h>
 #include <qt/qvalidatedlineedit.h>
 #include <qt/walletmodel.h>
+#include <qt/optionsmodel.h>
 
 #include <base58.h>
 #include <chainparams.h>
@@ -57,8 +58,6 @@
 #include <QTextDocument> // for Qt::mightBeRichText
 #include <QThread>
 #include <QUrlQuery>
-#include <walletmodel.h>
-#include <optionsmodel.h>
 
 #if defined(Q_OS_MAC)
 #pragma GCC diagnostic push

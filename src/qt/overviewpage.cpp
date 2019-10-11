@@ -7,7 +7,7 @@
 #endif
 
 #include <qt/overviewpage.h>
-#include <ui_overviewpage.h>
+#include <qt/forms/ui_overviewpage.h>
 
 #include <qt/bitcoinunits.h>
 #include <qt/clientmodel.h>

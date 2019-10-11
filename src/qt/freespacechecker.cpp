@@ -6,7 +6,7 @@
 #include <config/bitcoin-config.h>
 #endif
 
-#include "freesacechecker.h"
+#include "freespacechecker.h"
 #include <qt/intro.h>
 
 #include <fs.h>

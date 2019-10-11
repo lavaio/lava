@@ -7,7 +7,7 @@
 #endif
 
 #include <qt/receiverequestdialog.h>
-#include <ui_receiverequestdialog.h>
+#include <qt/forms/ui_receiverequestdialog.h>
 
 #include <qt/bitcoinunits.h>
 #include <qt/guiconstants.h>
