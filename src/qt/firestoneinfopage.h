@@ -29,6 +29,8 @@ public:
         size_t overdueCount;
     };
 
+    void updateData();
+
 private Q_SLOTS:
     void on_btnQuery_clicked();
 
@@ -37,9 +39,6 @@ private Q_SLOTS:
     void on_btnBuy_clicked();
 
     void on_btnRelease_clicked();
-
-private:
-    void updateData();
 
 private:
     Ui::FirestoneInfoPage *ui;

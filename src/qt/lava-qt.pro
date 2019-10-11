@@ -18,6 +18,8 @@ DEFINES += NOMINMAX _CONSOLE SCL_SECURE_NO_WARNINGS QT_DEPRECATED_WARNINGS ENABL
 RC_ICONS = res/icons/bitcoin.ico
 ICON = res/icons/bitcoin.icns
 
+UI_DIR=$$PWD/forms
+
 SOURCES += \
     addressbookpage.cpp \
     addresstablemodel.cpp \
@@ -35,11 +37,11 @@ SOURCES += \
     coincontroltreewidget.cpp \
     csvmodelwriter.cpp \
     editaddressdialog.cpp \
-    forms/firestoneinfopage.cpp \
-    freesacechecker.cpp \
+    firestoneinfopage.cpp \
+    freespacechecker.cpp \
     guiutil.cpp \
     intro.cpp \
-    lava/slotinfo.cpp \
+    slotinfo.cpp \
     main.cpp \
     modaloverlay.cpp \
     networkstyle.cpp \
@@ -100,12 +102,12 @@ HEADERS += \ \
     coincontroltreewidget.h \
     csvmodelwriter.h \
     editaddressdialog.h \
-    forms/firestoneinfopage.h \
-    freesacechecker.h \
+    firestoneinfopage.h \
+    freespacechecker.h \
     guiconstants.h \
     guiutil.h \
     intro.h \
-    lava/slotinfo.h \
+    slotinfo.h \
     modaloverlay.h \
     networkstyle.h \
     notificator.h \
