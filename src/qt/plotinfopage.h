@@ -41,9 +41,9 @@ public:
       uint64_t plotId;
     };
 
+    void updateData();
 
 private:
-    void updateData();
     Optional<CPubKey> getDefaultMinerAddress();
     Optional<CPubKey> getNewMinerAddress();
 

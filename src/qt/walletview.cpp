@@ -203,11 +203,13 @@ void WalletView::gotoMinerviewPage()
 void WalletView::gotoMinerInfoviewPage()
 {
   qInfo() << "set current widget" << endl;
+  plotInfoPage->updateData();
   setCurrentWidget(plotInfoPage);
 }
 
 void WalletView::gotoFirestonePage()
 {
+  firestoneInfoPage->updateData();
   setCurrentWidget(firestoneInfoPage);
 }
 

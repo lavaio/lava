@@ -66,6 +66,8 @@ void PlotInfoPage::updateData() {
       return;
   }
 
+  LOCK(cs_main);
+
   auto defaultAddress = getDefaultMinerAddress();
   if(defaultAddress) {
     CTxDestination dest = GetDestinationForKey(defaultAddress.get(), OutputType::LEGACY);
