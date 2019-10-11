@@ -1,11 +1,11 @@
-#include "firestoneinfopage.h"
-#include "ui_firestoneinfopage.h"
+#include <qt/firestoneinfopage.h>
+#include <qt/forms/ui_firestoneinfopage.h>
 
 #include <QList>
 #include <QDebug>
 #include <qt/walletmodel.h>
-#include "lava/slotinfo.h"
-#include "guiutil.h"
+#include <qt/slotinfo.h>
+#include <qt/guiutil.h>
 #include <key_io.h>
 #include <validation.h>
 #include <wallet/coincontrol.h>
@@ -155,7 +155,7 @@ void FirestoneInfoPage::on_btnBuy_clicked()
   }
 
   try {
-      _walletModel->wallet().doWithChainAndWalletLock([&](auto& lockedChain, auto& wallet) {
+      _walletModel->wallet().doWithChainAndWalletLock([&](std::unique_ptr<interfaces::Chain::Lock>& lockedChain, CWallet& wallet) {
         LOCK(cs_main);
 
         TxFeeModifer feeUpdater(_walletModel->wallet());

@@ -29,8 +29,9 @@ public:
         size_t overdueCount;
     };
 
-private slots:
+private Q_SLOTS:
     void on_btnQuery_clicked();
+
     FirestoneInfo getFirestoneInfo(const CKeyID& key);
 
     void on_btnBuy_clicked();

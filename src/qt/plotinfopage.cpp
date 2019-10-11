@@ -7,7 +7,7 @@
 #endif
 
 #include <qt/plotinfopage.h>
-#include <ui_plotinfopage.h>
+#include <qt/forms/ui_plotinfopage.h>
 
 #include <qt/bitcoinunits.h>
 #include <qt/clientmodel.h>
@@ -18,7 +18,7 @@
 #include <qt/transactionfilterproxy.h>
 #include <qt/transactiontablemodel.h>
 #include <qt/walletmodel.h>
-#include <ui_plotinfopage.h>
+#include <qt/forms/ui_plotinfopage.h>
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPair>
