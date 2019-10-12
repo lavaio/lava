@@ -54,7 +54,7 @@ std::shared_ptr<CBlock> Block(const uint256& prev_hash)
     CScript pubKey;
     pubKey << i++ << OP_TRUE;
 
-    auto ptemplate = BlockAssembler(Params()).CreateNewBlock(pubKey,0,0,0);
+    auto ptemplate = BlockAssembler(Params()).CreateNewBlock(pubKey,0,0,0,CTransactionRef());
     auto pblock = std::make_shared<CBlock>(ptemplate->block);
     pblock->hashPrevBlock = prev_hash;
     pblock->nTime = ++time;
@@ -70,10 +70,6 @@ std::shared_ptr<CBlock> Block(const uint256& prev_hash)
 std::shared_ptr<CBlock> FinalizeBlock(std::shared_ptr<CBlock> pblock)
 {
     pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
-
-    while (!CheckProofOfWork(pblock->GetHash(), pblock->nBits, Params().GetConsensus())) {
-        ++(pblock->nNonce);
-    }
 
     return pblock;
 }
@@ -117,71 +113,6 @@ void BuildChain(const uint256& root, int height, const unsigned int invalid_rate
         blocks.push_back(GoodBlock(root));
         BuildChain(blocks.back()->GetHash(), height - 1, invalid_rate, branch_rate, max_size, blocks);
     }
-}
-
-BOOST_AUTO_TEST_CASE(processnewblock_signals_ordering)
-{
-    // build a large-ish chain that's likely to have some forks
-    std::vector<std::shared_ptr<const CBlock>> blocks;
-    while (blocks.size() < 50) {
-        blocks.clear();
-        BuildChain(Params().GenesisBlock().GetHash(), 100, 15, 10, 500, blocks);
-    }
-
-    bool ignored;
-    CValidationState state;
-    std::vector<CBlockHeader> headers;
-    std::transform(blocks.begin(), blocks.end(), std::back_inserter(headers), [](std::shared_ptr<const CBlock> b) { return b->GetBlockHeader(); });
-
-    // Process all the headers so we understand the toplogy of the chain
-    BOOST_CHECK(ProcessNewBlockHeaders(headers, state, Params()));
-
-    // Connect the genesis block and drain any outstanding events
-    BOOST_CHECK(ProcessNewBlock(Params(), std::make_shared<CBlock>(Params().GenesisBlock()), true, &ignored));
-    SyncWithValidationInterfaceQueue();
-
-    // subscribe to events (this subscriber will validate event ordering)
-    const CBlockIndex* initial_tip = nullptr;
-    {
-        LOCK(cs_main);
-        initial_tip = chainActive.Tip();
-    }
-    TestSubscriber sub(initial_tip->GetBlockHash());
-    RegisterValidationInterface(&sub);
-
-    // create a bunch of threads that repeatedly process a block generated above at random
-    // this will create parallelism and randomness inside validation - the ValidationInterface
-    // will subscribe to events generated during block validation and assert on ordering invariance
-    std::vector<std::thread> threads;
-    for (int i = 0; i < 10; i++) {
-        threads.emplace_back([&blocks]() {
-            bool ignored;
-            FastRandomContext insecure;
-            for (int i = 0; i < 1000; i++) {
-                auto block = blocks[insecure.randrange(blocks.size() - 1)];
-                ProcessNewBlock(Params(), block, true, &ignored);
-            }
-
-            // to make sure that eventually we process the full chain - do it here
-            for (auto block : blocks) {
-                if (block->vtx.size() == 1) {
-                    bool processed = ProcessNewBlock(Params(), block, true, &ignored);
-                    assert(processed);
-                }
-            }
-        });
-    }
-
-    for (auto& t : threads) {
-        t.join();
-    }
-    while (GetMainSignals().CallbacksPending() > 0) {
-        MilliSleep(100);
-    }
-
-    UnregisterValidationInterface(&sub);
-
-    BOOST_CHECK_EQUAL(sub.m_expected_tip, chainActive.Tip()->GetBlockHash());
 }
 
 BOOST_AUTO_TEST_SUITE_END()
