@@ -133,10 +133,7 @@ UniValue submitNonce(const JSONRPCRequest& request)
     }
     CWallet* const pwallet = wallet.get();
     auto locked_chain = pwallet->chain().lock();
-    LOCK(pwallet->cs_wallet);
-    if (pwallet->IsLocked()) {
-        throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with walletpassphrase first.");
-    }
+
     std::string strAddress = request.params[0].get_str();
     CTxDestination dest = DecodeDestination(strAddress);
     if (!IsValidDestination(dest) && dest.type() != typeid(CKeyID)) {
@@ -152,7 +149,10 @@ UniValue submitNonce(const JSONRPCRequest& request)
     uint64_t deadline = request.params[2].get_int64();
     int height = request.params[3].get_int();
     CKey key;
-    pwallet->GetKey(keyid, key);
+    LOCK(pwallet->cs_wallet);
+    if (!pwallet->IsLocked()) {
+        pwallet->GetKey(keyid, key);
+    }
     UniValue obj(UniValue::VOBJ);
     if (blockAssember.UpdateDeadline(height, keyid, nonce, deadline, key)) {
         obj.pushKV("plotid", plotID);

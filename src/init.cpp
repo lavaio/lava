@@ -1545,12 +1545,16 @@ bool AppInitMain(InitInterfaces& interfaces)
 
                 // The on-disk coinsdb is now in a good state, create the cache
                 pcoinsTip.reset(new CCoinsViewCache(pcoinscatcher.get()));
-                COutPoint outpoint(chainparams.GenesisBlock().vtx[0]->GetHash(), 0);
-                if (!pcoinsTip->HaveCoin(outpoint)) {
+
+                is_coinsview_empty = fReset || fReindexChainState || pcoinsTip->GetBestBlock().IsNull();
+                if (is_coinsview_empty) {
+                    // record the genesis outpoint in coins DB on disk.
+                    // In older version above, genesis outpoint is recorded in coins DB on-disk.
+                    COutPoint outpoint(chainparams.GenesisBlock().vtx[0]->GetHash(), 0);
                     auto txout = chainparams.GenesisBlock().vtx[0]->vout[0];
                     pcoinsTip->AddCoin(outpoint, Coin(txout, 0, true), true);
                 }
-                is_coinsview_empty = fReset || fReindexChainState || pcoinsTip->GetBestBlock().IsNull();
+
                 if (!is_coinsview_empty) {
                     // LoadChainTip sets chainActive based on pcoinsTip's best block
                     if (!LoadChainTip(chainparams)) {
