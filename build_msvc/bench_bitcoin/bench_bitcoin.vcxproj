@@ -58,6 +58,9 @@
     <ProjectReference Include="..\libbitcoin_zmq\libbitcoin_zmq.vcxproj">
       <Project>{792d487f-f14c-49fc-a9de-3fc150f31c3f}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\libshabal\libshabal.vcxproj">
+      <Project>{c72a7fab-1109-4af0-a9ab-7a32d3a8c5c7}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\libunivalue\libunivalue.vcxproj">
       <Project>{5724ba7d-a09a-4ba8-800b-c4c1561b3d69}</Project>
     </ProjectReference>
