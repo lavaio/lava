@@ -18,8 +18,8 @@ AC_CONFIG_MACRO_DIR([build-aux/m4])
 BITCOIN_DAEMON_NAME=lavad
 BITCOIN_GUI_NAME=bitcoin-qt
 BITCOIN_CLI_NAME=lava-cli
-BITCOIN_TX_NAME=bitcoin-tx
-BITCOIN_WALLET_TOOL_NAME=bitcoin-wallet
+BITCOIN_TX_NAME=lava-tx
+BITCOIN_WALLET_TOOL_NAME=lava-wallet
 
 dnl Unless the user specified ARFLAGS, force it to be cr
 AC_ARG_VAR(ARFLAGS, [Flags for the archiver, defaults to <cr> if not set])
