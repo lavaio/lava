@@ -42,6 +42,12 @@
     <ClCompile Include="..\..\src\script\interpreter.cpp" />
     <ClCompile Include="..\..\src\script\script.cpp" />
     <ClCompile Include="..\..\src\script\script_error.cpp" />
+    <ClCompile Include="..\..\src\ticket.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)ticket.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)ticket.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)ticket.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)ticket.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\..\src\uint256.cpp" />
     <ClCompile Include="..\..\src\util\strencodings.cpp" />
   </ItemGroup>

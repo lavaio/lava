@@ -150,6 +150,12 @@ public:
         fRequireStandard = true;
         fMineBlocksOnDemand = false;
 
+        checkpointData = {
+            {
+                {15000, uint256S("fe69381fef372e387dbe3d3df67829eac6646d7af739d7b518a558f4123db81f")}, // 15000
+            }
+        };
+
         chainTxData = ChainTxData{
             // Data from rpc: getchaintxstats 4096 0000000000000000000f1c54590ee18d15ec70e68c8cd4cfbadb1b4f11697eee
             /* nTime    */ 1550374134,

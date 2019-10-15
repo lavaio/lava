@@ -286,7 +286,6 @@ libbitcoin_server_a_SOURCES = \
   validation.cpp \
   validationinterface.cpp \
   versionbits.cpp \
-  ticket.cpp \
   assember.cpp \
   actiondb.cpp \
   blockcache.cpp \
@@ -401,6 +400,7 @@ libbitcoin_consensus_a_SOURCES = \
   primitives/block.h \
   primitives/transaction.cpp \
   primitives/transaction.h \
+  ticket.cpp \
   pubkey.cpp \
   pubkey.h \
   script/bitcoinconsensus.cpp \
