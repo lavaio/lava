@@ -153,6 +153,7 @@ BITCOIN_QT_H = \
   qt/receiverequestdialog.h \
   qt/recentrequeststablemodel.h \
   qt/rpcconsole.h \
+  qt/rpcexecutor.cpp \
   qt/sendcoinsdialog.h \
   qt/sendcoinsentry.h \
   qt/signverifymessagedialog.h \
@@ -297,7 +298,6 @@ BITCOIN_QT_WALLET_CPP = \
   qt/txfeemodifier.cpp \
   qt/amountspinbox.cpp \
   qt/freespacechecker.cpp \
-  qt/rpcexecutor.cpp \
   qt/firestoneinfopage.cpp \
   qt/qtrpctimerbase.cpp
 

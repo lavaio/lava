@@ -369,7 +369,7 @@
     </message>
     <message>
         <source>Lava</source>
-        <translation type="vanished">Lava</translation>
+        <translation>Lava</translation>
     </message>
     <message>
         <source>&amp;Send</source>
@@ -636,11 +636,7 @@
     </message>
     <message>
         <source>Miner Information</source>
-        <translation type="unfinished">挖矿信息</translation>
-    </message>
-    <message>
-        <source>Lava</source>
-        <translation></translation>
+        <translation>挖矿信息</translation>
     </message>
     <message>
         <source>Fire&amp;stone</source>
@@ -1570,6 +1566,14 @@
     <message>
         <source>Current total balance in watch-only addresses</source>
         <translation>观察地址(watch-only address)中的当前总余额 </translation>
+    </message>
+    <message>
+        <source>Show Watchonly Address</source>
+        <translation type="unfinished">显示仅观察地址的交易</translation>
+    </message>
+    <message>
+        <source>WatchOnly</source>
+        <translation type="unfinished">观察地址</translation>
     </message>
 </context>
 <context>
@@ -3638,7 +3642,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
     </message>
     <message>
         <source>Lava Core</source>
-        <translation type="vanished">Lava Core</translation>
+        <translation>Lava Core</translation>
     </message>
     <message>
         <source>The %s developers</source>
@@ -4109,10 +4113,6 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satos
     <message>
         <source>Error</source>
         <translation>错误</translation>
-    </message>
-    <message>
-        <source>Lava Core</source>
-        <translation></translation>
     </message>
     <message>
         <source>Initialization sanity check failed. %s is shutting down.</source>

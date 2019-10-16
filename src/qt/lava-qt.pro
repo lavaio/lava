@@ -167,22 +167,24 @@ windows {
 darwin {
   QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.12
 
-  INCLUDEPATH += /usr/local/include /usr/local/opt/berkeley-db@4/include
+  INCLUDEPATH += $$PWD/../../depends/x86_64-apple-darwin19.0.0/include
 
   LIBS += -L$$PWD/..
-  LIBS += -L/usr/local/lib -L/usr/local/Cellar/openssl/1.0.2t/lib -lcrypto
-  LIBS += -lbitcoin_wallet -lbitcoin_common -lbitcoin_wallet -lbitcoin_util -lleveldb
+  LIBS += -L$$PWD/../../depends/x86_64-apple-darwin19.0.0/lib -lcrypto
+  LIBS += -L$$PWD/../leveldb -lleveldb -lleveldb_sse42 -lmemenv
+  LIBS += -lbitcoin_wallet -lbitcoin_common -lbitcoin_wallet -lbitcoin_util
   LIBS += -L$$PWD/../univalue/.libs/ -lunivalue
   LIBS += -L$$PWD/../secp256k1/.libs/ -lsecp256k1
   LIBS += -L$$PWD/../crypto -lbitcoin_crypto_shani -lbitcoin_crypto_avx2 -lbitcoin_crypto_base -lbitcoin_crypto_sse41
-  LIBS += -lbitcoin_cli -lbitcoin_consensus -lbitcoin_server
-  LIBS += -L/usr/local/Cellar/miniupnpc/2.1/lib -lminiupnpc -lqrencode
+  LIBS += -lbitcoin_cli -lbitcoin_consensus -lbitcoin_server -lbitcoin_zmq
+  LIBS += -lminiupnpc -lqrencode -lzmq
 
-  LIBS += -lboost_thread-mt -lboost_filesystem-mt -lboost_chrono-mt
+  LIBS += -lboost_thread-mt -lboost_filesystem-mt -lboost_chrono-mt -lboost_system-mt
 
   LIBS += -lprotobuf -levent -levent_pthreads
   LIBS += -L$$PWD/../../db4/lib -ldb_cxx-4.8
   LIBS += -framework Cocoa -framework Foundation
+
 
   SOURCES += macos_appnap.mm \
          macdockiconhandler.mm \
@@ -192,7 +194,7 @@ darwin {
          macdockiconhandler.h \
          macnotificationhandler.h
 
-  TR_EXCLUDE += /usr/local/include/boost/*
+  TR_EXCLUDE += $$PWD/../../depends//x86_64-apple-darwin19.0.0/include/boost/*
 }
 
 

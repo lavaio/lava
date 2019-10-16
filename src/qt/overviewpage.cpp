@@ -19,12 +19,14 @@
 #include <qt/transactiontablemodel.h>
 #include <qt/walletmodel.h>
 #include <qt/txviewdelegate.h>
+#include <QSettings>
 
 #include <QAbstractItemDelegate>
 #include <QPainter>
 
 Q_DECLARE_METATYPE(interfaces::WalletBalances)
 
+static const auto KEY_SETTINGS_WATCH_ONLY = "includeWatchOnly";
 
 OverviewPage::OverviewPage(const PlatformStyle *platformStyle, QWidget *parent) :
     QWidget(parent),
@@ -55,6 +57,13 @@ OverviewPage::OverviewPage(const PlatformStyle *platformStyle, QWidget *parent) 
     showOutOfSyncWarning(true);
     connect(ui->labelWalletStatus, &QPushButton::clicked, this, &OverviewPage::handleOutOfSyncWarningClicks);
     connect(ui->labelTransactionsStatus, &QPushButton::clicked, this, &OverviewPage::handleOutOfSyncWarningClicks);
+
+    QSettings settings;
+    if (!settings.contains(KEY_SETTINGS_WATCH_ONLY)) {
+      settings.setValue(KEY_SETTINGS_WATCH_ONLY, true);
+    }
+    auto state = settings.value(KEY_SETTINGS_WATCH_ONLY, true).toBool() ? Qt::CheckState::Checked : Qt::CheckState::Unchecked;
+    ui->btnShowWatchOnly->setChecked(state);
 }
 
 void OverviewPage::handleTransactionClicked(const QModelIndex &index)
@@ -106,6 +115,9 @@ void OverviewPage::setBalance(const interfaces::WalletBalances& balances)
 // show/hide watch-only labels
 void OverviewPage::updateWatchOnlyLabels(bool showWatchOnly)
 {
+    ui->btnShowWatchOnly->setEnabled(showWatchOnly);
+    showWatchOnly = showWatchOnly && ui->btnShowWatchOnly->isChecked();
+
     ui->labelSpendable->setVisible(showWatchOnly);      // show spendable label (only when watch-only is active)
     ui->labelWatchonly->setVisible(showWatchOnly);      // show watch-only label
     ui->lineWatchBalance->setVisible(showWatchOnly);    // show watch-only balance separator line
@@ -140,6 +152,8 @@ void OverviewPage::setWalletModel(WalletModel *model)
         filter->setDynamicSortFilter(true);
         filter->setSortRole(Qt::EditRole);
         filter->setShowInactive(false);
+        auto watchOnly = ui->btnShowWatchOnly->isChecked() ? TransactionFilterProxy::WatchOnlyFilter_All : TransactionFilterProxy::WatchOnlyFilter_No;
+        filter->setWatchOnlyFilter(watchOnly);
         filter->sort(TransactionTableModel::Date, Qt::DescendingOrder);
 
         ui->listTransactions->setModel(filter.get());
@@ -155,7 +169,7 @@ void OverviewPage::setWalletModel(WalletModel *model)
 
         updateWatchOnlyLabels(wallet.haveWatchOnly() && !model->privateKeysDisabled());
         connect(model, &WalletModel::notifyWatchonlyChanged, [this](bool showWatchOnly) {
-            updateWatchOnlyLabels(showWatchOnly && !walletModel->privateKeysDisabled());
+          updateWatchOnlyLabels(showWatchOnly && !walletModel->privateKeysDisabled());
         });
     }
 
@@ -188,4 +202,23 @@ void OverviewPage::showOutOfSyncWarning(bool fShow)
 {
     ui->labelWalletStatus->setVisible(fShow);
     ui->labelTransactionsStatus->setVisible(fShow);
+}
+
+void OverviewPage::on_btnShowWatchOnly_stateChanged(int arg1)
+{
+    if (!this->walletModel) {
+        return;
+    }
+    {
+      QSettings settings;
+      settings.setValue(KEY_SETTINGS_WATCH_ONLY, ui->btnShowWatchOnly->isChecked());
+    }
+
+    if(filter) {
+      auto watchOnly = ui->btnShowWatchOnly->isChecked() ? TransactionFilterProxy::WatchOnlyFilter_All : TransactionFilterProxy::WatchOnlyFilter_No;
+      filter->setWatchOnlyFilter(watchOnly);
+    }
+
+    interfaces::Wallet& wallet = this->walletModel->wallet();
+    updateWatchOnlyLabels(wallet.haveWatchOnly() && !this->walletModel->privateKeysDisabled());
 }
