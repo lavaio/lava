@@ -289,6 +289,7 @@ libbitcoin_server_a_SOURCES = \
   assember.cpp \
   actiondb.cpp \
   blockcache.cpp \
+  fspool.cpp \
   $(BITCOIN_CORE_H)
 
 if !ENABLE_WALLET

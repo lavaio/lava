@@ -81,9 +81,17 @@ void CPOCBlockAssember::CreateNewBlock()
     auto to = prelationview->To(from);
     auto target = to.IsNull() ? from : to;
     auto fstx = MakeTransactionRef();
+    CMutableTransaction tx;
 
-    //find firestone for coinbase
-    {
+    auto usableIndex = (height / pticketview->SlotLength());
+    auto isinfspool = pfspool->ReadFreshFs(tx, usableIndex);
+
+    if (isinfspool){
+        // get a fstx from fspool
+        CTransaction ctx(tx);
+        fstx = MakeTransactionRef(ctx);
+    }else{
+        // use the wallet to sign a fstx
         LOCK(cs_main);
         CTicketRef fs;
         auto fskey = firestoneKey.IsValid() ? firestoneKey : key;
@@ -98,7 +106,7 @@ void CPOCBlockAssember::CreateNewBlock()
             }
         }
 
-        if (fs && fs->Invalid() && fskey.IsValid()) { //find firestone
+        if (fs && fskey.IsValid()) { //find firestone
             auto makeSpentTicketTx = [](const CTicketRef& ticket, const int height, const CTxDestination& dest, const CKey& key)->CTransactionRef {
                 CMutableTransaction mtx;
                 auto redeemScript = ticket->redeemScript;

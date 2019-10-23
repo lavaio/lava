@@ -30,7 +30,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-
+#include <fspool.h>
 #include <atomic>
 
 class CBlockIndex;
@@ -481,6 +481,9 @@ extern std::unique_ptr<CRelationView> prelationview;
 
 /** Global variable that points to the active block tree (protected by cs_main) */
 extern std::unique_ptr<CBlockTreeDB> pblocktree;
+
+/** Global variable that points to the fspool (protected by cs_main) */
+extern std::unique_ptr<CFSPool> pfspool;
 
 /**
  * Return the spend height, which is one more than the inputs.GetBestBlock().

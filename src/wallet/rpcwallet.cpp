@@ -5289,6 +5289,167 @@ static UniValue listbindings(const JSONRPCRequest& request)
     return results;
 }
 
+UniValue signfirestone(const JSONRPCRequest& request){
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() > 2)
+        throw std::runtime_error(
+        RPCHelpMan{
+            "signfirestone",
+            "\nSign the tx within firestone outpoint, and return the raw transaction.\n",
+        {
+            {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The address who owns fs(only keyid)."},
+            {"slotindex", RPCArg::Type::NUM, RPCArg::Optional::NO, "Get the firestone, which is USEABLE in this slotindex, "
+            "if txid is given, slotindex could be any number and it is useless."},
+            {"txid", RPCArg::Type::STR, RPCArg::Optional::NO, 
+            "The txid created by buyfirestone, we will use this txid's outpoint to make the raw tx," 
+            "if not defined, randomly choose a firestone in this address."},
+        },
+        RPCResult{
+            "\"data\"      (string) The serialized, hex-encoded data for the new transaction.\n"},
+            RPCExamples{
+            HelpExampleCli("signfirestone", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" \"1\" \"0xe8cab9d565077cb40e30621bc43edcfbef389e23ad5c28000c0b8365a4576cd7\"")},
+        }
+    .ToString());
+    if (IsInitialBlockDownload()) {
+        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Block chain downloading...");
+    }
+    pwallet->BlockUntilSyncedToCurrentChain();
+
+    auto locked_chain = pwallet->chain().lock();
+    LOCK(pwallet->cs_wallet);
+    if (pwallet->IsLocked()) {
+        throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with walletpassphrase first.");
+    }
+
+    CTxDestination dest = DecodeDestination(request.params[0].get_str());
+    if (!IsValidDestination(dest)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid buyer address");
+    }
+    if (dest.type() != typeid(CKeyID)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Only support PUBKEYHASH");
+    }
+
+    int useableIndex; 
+    {
+        LOCK(cs_main);
+        auto tip = chainActive.Tip();
+        // if slotindex is not set, it will assume the current slotindex is the USABLE slot.
+        useableIndex = tip->nHeight / pticketview->SlotLength();
+        if (!request.params[1].isNull()) {
+            useableIndex = request.params[1].get_int();
+        }
+    }
+    uint256 hash;
+    if (!request.params[2].isNull()) {
+        hash = ParseHashV(request.params[1], "txid");
+    }
+    auto keyID = boost::get<CKeyID>(dest);
+    
+    // get privkey
+    CKey Key;
+    pwallet->GetKey(keyID, Key);
+    if (!Key.IsValid()){
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "YOU HAVE NO PRIVATEKEY");
+    }
+
+    //LOCK(cs_main);
+    CTransactionRef tx;
+    CTicketRef fs;
+    uint256 hash_block;
+    if (!hash.IsNull()){
+        // get the firestone with hash
+        if (!GetTransaction(hash, tx, Params().GetConsensus(), hash_block, nullptr) || !tx->IsTicketTx()){
+            throw JSONRPCError(RPC_MISC_ERROR, "This firestone hash is not existed.");
+        } 
+        fs = tx->Ticket();
+    }else{
+        // randomly get a firestone in the slot before useableIndex
+        auto index = useableIndex - 1;
+        for (auto ticket : pticketview->GetTicketsBySlotIndex(index)) {
+            if (Key.GetPubKey().GetID() == ticket->KeyID() && !pcoinsTip->AccessCoin(*(ticket->out)).IsSpent()) {
+                fs = ticket;
+                break;
+            }
+        }
+    }
+    
+    // use the fs to create the fstx
+    auto fstx = MakeTransactionRef();
+    if (fs) {
+        // make fstx with the firestone above
+        auto makeSpentTicketTx = [](const CTicketRef& ticket, const int height, const CTxDestination& dest, const CKey& key)->CTransactionRef {
+            CMutableTransaction mtx;
+            auto redeemScript = ticket->redeemScript;
+            mtx.vin.push_back(CTxIn(ticket->out->hash, ticket->out->n, redeemScript, 0));
+            mtx.vout.push_back(CTxOut(ticket->nValue, GetScriptForDestination(dest)));
+            mtx.nLockTime = height - 1;
+
+            CMutableTransaction txcopy(mtx);
+            txcopy.vin[0] = CTxIn(txcopy.vin[0].prevout, redeemScript, 0);
+            CHashWriter ss(SER_GETHASH, 0);
+            ss << txcopy << 1;
+            auto hash = ss.GetHash();
+            std::vector<unsigned char> vchSig;
+            if (!key.Sign(hash, vchSig)) {
+                LogPrint(BCLog::FIRESTONE, "%s: sign firestone tx failure, key:%d, %s:%d, keyid:%s\n", __func__, key.GetPubKey().GetID().ToString());
+                return MakeTransactionRef();
+            }
+            vchSig.push_back((unsigned char)SIGHASH_ALL);
+            mtx.vin[0].scriptSig = CScript() << vchSig << ToByteVector(key.GetPubKey()) << ToByteVector(redeemScript);
+            CTransaction tx(mtx);
+            return MakeTransactionRef(tx);
+        };
+        fstx = makeSpentTicketTx(fs, useableIndex * pticketview->SlotLength() - 1, CTxDestination(Key.GetPubKey().GetID()), Key);
+    }else{
+        throw JSONRPCError(RPC_MISC_ERROR, "the address has no firestone.");
+    }
+
+    // decode the fstx into hexstring
+    return EncodeHexTx(*fstx, RPCSerializationFlags());
+}
+
+UniValue importfirestone(const JSONRPCRequest& request){
+    if (request.fHelp || request.params.size() != 2)
+        throw std::runtime_error(
+        RPCHelpMan{
+            "importfirestone",
+            "\ndecode the hexstring to a mutabletransaction, and import that tx into the fspool, so that the miner could use those tx to create block.\n",
+        {
+            {"hexstring", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The transaction hex string"},
+            {"slotindex", RPCArg::Type::NUM, RPCArg::Optional::NO, "A key in fspool, fspool will mark the transaction useable at this slotindex." 
+            "when create new block in slot N, fspool reads fstx with key(slotindex = N)."},
+        },
+        RPCResult{
+            "\"true|false\"      true if the hexstring is imported into fspool.\n"},
+            RPCExamples{
+            HelpExampleCli("importfirestone", "\"hexstring\" \"1\"")},
+        }
+    .ToString());
+
+    if (request.params[0].isNull()){
+        throw JSONRPCError(RPC_PARSE_ERROR, "invalid hexstring");
+    }
+    auto hexStr = request.params[0].get_str();
+
+    if (request.params[1].isNull()){
+        throw JSONRPCError(RPC_PARSE_ERROR, "invalid slotindex");
+    }
+    auto slotIndex = request.params[1].get_int();
+
+    CMutableTransaction mtx;
+    if (!DecodeHexTx(mtx, hexStr, true, true)) {
+        throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
+    }
+    auto isOK = pfspool->WriteFs(mtx, slotIndex, mtx.GetHash());
+    return isOK;
+}
+
 UniValue wallethaskey(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
@@ -5419,6 +5580,8 @@ static const CRPCCommand commands[] =
     { "poc",                "unbindplotid",                     &unbindplotid,                  {"address"} },
     { "poc",                "listbindings",                     &listbindings,                  {""} },
     { "poc",                "getbindinginfo",                   &getbindinginfo,                {"address"} },
+    { "poc",                "signfirestone",                    &signfirestone,                 {"address","slotindex","txid"} },
+    { "poc",                "importfirestone",                  &importfirestone,               {"hexstring","slotindex"} },
     { "wallet",             "wallethaskey",                     &wallethaskey,                  {"address"} },
     //{ "wallet",             "spendticket",                      &spendticket,                   {"txid", "vout", "redeem", "address"} },
 	{ "wallet",             "freefirestone",					&freefirestone,				    {"address", "receiver"} },

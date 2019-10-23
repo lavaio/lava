@@ -313,6 +313,7 @@ std::unique_ptr<CCoinsViewCache> pcoinsTip;
 std::unique_ptr<CTicketView> pticketview;
 std::unique_ptr<CRelationView> prelationview;
 std::unique_ptr<CBlockTreeDB> pblocktree;
+std::unique_ptr<CFSPool> pfspool;
 
 enum class FlushStateMode {
     NONE,

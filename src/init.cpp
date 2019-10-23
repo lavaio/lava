@@ -1462,6 +1462,7 @@ bool AppInitMain(InitInterfaces& interfaces)
     prelationview.reset(new CRelationView(0));
     pticketview.reset(new CTicketView(0));
     g_blockCache.reset(new CBlockCache());
+    pfspool.reset(new CFSPool(0));
 
     bool fLoaded = false;
     while (!fLoaded && !ShutdownRequested()) {
