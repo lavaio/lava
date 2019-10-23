@@ -5450,6 +5450,30 @@ UniValue importfirestone(const JSONRPCRequest& request){
     return isOK;
 }
 
+UniValue cleanfirestone(const JSONRPCRequest& request){
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+        RPCHelpMan{
+            "cleanfspool",
+            "\nerase all the fstx in this slot from fspool.\n",
+        {
+            {"slotindex", RPCArg::Type::NUM, RPCArg::Optional::NO, "The slot, in which those fstx will be removed."},
+        },
+        RPCResult{
+            "\"true|false\"      true if the cleaning work is done.\n"},
+            RPCExamples{
+            HelpExampleCli("signfirestone", "\"1\"")},
+        }
+    .ToString());
+    
+    if (request.params[0].isNull()){
+        throw JSONRPCError(RPC_PARSE_ERROR, "invalid slotindex");
+    }
+
+    int slotindex = request.params[0].get_int();
+    return pfspool->RemoveSlot(slotindex);
+}
+
 UniValue wallethaskey(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
@@ -5582,6 +5606,7 @@ static const CRPCCommand commands[] =
     { "poc",                "getbindinginfo",                   &getbindinginfo,                {"address"} },
     { "poc",                "signfirestone",                    &signfirestone,                 {"address","slotindex","txid"} },
     { "poc",                "importfirestone",                  &importfirestone,               {"hexstring","slotindex"} },
+    { "poc",                "cleanfirestone",                   &cleanfirestone,                {"slotindex"} },
     { "wallet",             "wallethaskey",                     &wallethaskey,                  {"address"} },
     //{ "wallet",             "spendticket",                      &spendticket,                   {"txid", "vout", "redeem", "address"} },
 	{ "wallet",             "freefirestone",					&freefirestone,				    {"address", "receiver"} },
