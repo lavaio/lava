@@ -5297,15 +5297,13 @@ UniValue signfirestone(const JSONRPCRequest& request){
         return NullUniValue;
     }
 
-    if (request.fHelp || request.params.size() > 2)
+    if (request.fHelp || request.params.size() != 2)
         throw std::runtime_error(
         RPCHelpMan{
             "signfirestone",
             "\nSign the tx within firestone outpoint, and return the raw transaction.\n",
         {
             {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The address who owns fs(only keyid)."},
-            {"slotindex", RPCArg::Type::NUM, RPCArg::Optional::NO, "Get the firestone, which is USEABLE in this slotindex, "
-            "if txid is given, slotindex could be any number and it is useless."},
             {"txid", RPCArg::Type::STR, RPCArg::Optional::NO, 
             "The txid created by buyfirestone, we will use this txid's outpoint to make the raw tx," 
             "if not defined, randomly choose a firestone in this address."},
@@ -5313,7 +5311,7 @@ UniValue signfirestone(const JSONRPCRequest& request){
         RPCResult{
             "\"data\"      (string) The serialized, hex-encoded data for the new transaction.\n"},
             RPCExamples{
-            HelpExampleCli("signfirestone", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" \"1\" \"0xe8cab9d565077cb40e30621bc43edcfbef389e23ad5c28000c0b8365a4576cd7\"")},
+            HelpExampleCli("signfirestone", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" \"0xe8cab9d565077cb40e30621bc43edcfbef389e23ad5c28000c0b8365a4576cd7\"")},
         }
     .ToString());
     if (IsInitialBlockDownload()) {
@@ -5329,26 +5327,13 @@ UniValue signfirestone(const JSONRPCRequest& request){
 
     CTxDestination dest = DecodeDestination(request.params[0].get_str());
     if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid buyer address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid signer address");
     }
     if (dest.type() != typeid(CKeyID)) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Only support PUBKEYHASH");
     }
 
-    int useableIndex; 
-    {
-        LOCK(cs_main);
-        auto tip = chainActive.Tip();
-        // if slotindex is not set, it will assume the current slotindex is the USABLE slot.
-        useableIndex = tip->nHeight / pticketview->SlotLength();
-        if (!request.params[1].isNull()) {
-            useableIndex = request.params[1].get_int();
-        }
-    }
-    uint256 hash;
-    if (!request.params[2].isNull()) {
-        hash = ParseHashV(request.params[1], "txid");
-    }
+    uint256 hash = ParseHashV(request.params[1], "txid");
     auto keyID = boost::get<CKeyID>(dest);
     
     // get privkey
@@ -5358,27 +5343,15 @@ UniValue signfirestone(const JSONRPCRequest& request){
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "YOU HAVE NO PRIVATEKEY");
     }
 
-    //LOCK(cs_main);
     CTransactionRef tx;
     CTicketRef fs;
     uint256 hash_block;
-    if (!hash.IsNull()){
-        // get the firestone with hash
-        if (!GetTransaction(hash, tx, Params().GetConsensus(), hash_block, nullptr) || !tx->IsTicketTx()){
-            throw JSONRPCError(RPC_MISC_ERROR, "This firestone hash is not existed.");
-        } 
-        fs = tx->Ticket();
-    }else{
-        // randomly get a firestone in the slot before useableIndex
-        auto index = useableIndex - 1;
-        for (auto ticket : pticketview->GetTicketsBySlotIndex(index)) {
-            if (Key.GetPubKey().GetID() == ticket->KeyID() && !pcoinsTip->AccessCoin(*(ticket->out)).IsSpent()) {
-                fs = ticket;
-                break;
-            }
-        }
-    }
-    
+    // get the firestone with hash
+    if (!GetTransaction(hash, tx, Params().GetConsensus(), hash_block, nullptr) || !tx->IsTicketTx()){
+        throw JSONRPCError(RPC_MISC_ERROR, "This firestone hash is not existed.");
+    } 
+    fs = tx->Ticket();
+
     // use the fs to create the fstx
     auto fstx = MakeTransactionRef();
     if (fs) {
@@ -5388,7 +5361,7 @@ UniValue signfirestone(const JSONRPCRequest& request){
             auto redeemScript = ticket->redeemScript;
             mtx.vin.push_back(CTxIn(ticket->out->hash, ticket->out->n, redeemScript, 0));
             mtx.vout.push_back(CTxOut(ticket->nValue, GetScriptForDestination(dest)));
-            mtx.nLockTime = height - 1;
+            mtx.nLockTime = height;
 
             CMutableTransaction txcopy(mtx);
             txcopy.vin[0] = CTxIn(txcopy.vin[0].prevout, redeemScript, 0);
@@ -5405,7 +5378,7 @@ UniValue signfirestone(const JSONRPCRequest& request){
             CTransaction tx(mtx);
             return MakeTransactionRef(tx);
         };
-        fstx = makeSpentTicketTx(fs, useableIndex * pticketview->SlotLength() - 1, CTxDestination(Key.GetPubKey().GetID()), Key);
+        fstx = makeSpentTicketTx(fs, fs->LockTime(), CTxDestination(Key.GetPubKey().GetID()), Key);
     }else{
         throw JSONRPCError(RPC_MISC_ERROR, "the address has no firestone.");
     }

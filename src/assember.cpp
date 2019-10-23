@@ -88,6 +88,7 @@ void CPOCBlockAssember::CreateNewBlock()
 
     if (isinfspool){
         // get a fstx from fspool
+        LogPrint(BCLog::FIRESTONE, "%s: get fstx:%s from fspool.\n", __func__,tx.GetHash().ToString());
         CTransaction ctx(tx);
         fstx = MakeTransactionRef(ctx);
     }else{
