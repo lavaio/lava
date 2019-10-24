@@ -5501,7 +5501,7 @@ UniValue listfstx(const JSONRPCRequest& request){
     if (!request.params[0].isNull()){
         slotIndex = request.params[0].get_int();
     }
-    if (slotIndex < 0 || slotIndex > pticketview->SlotIndex()) {
+    if (slotIndex < 0) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid slot index");
     }
 
