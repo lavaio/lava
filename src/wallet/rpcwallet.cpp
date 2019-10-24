@@ -5289,7 +5289,7 @@ static UniValue listbindings(const JSONRPCRequest& request)
     return results;
 }
 
-UniValue signfirestone(const JSONRPCRequest& request){
+UniValue createfstxwithwallet(const JSONRPCRequest& request){
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     CWallet* const pwallet = wallet.get();
 
@@ -5300,18 +5300,18 @@ UniValue signfirestone(const JSONRPCRequest& request){
     if (request.fHelp || request.params.size() != 2)
         throw std::runtime_error(
         RPCHelpMan{
-            "signfirestone",
+            "createfstxwithwallet",
             "\nSign the tx within firestone outpoint, and return the raw transaction.\n",
         {
-            {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The address who owns fs(only keyid)."},
             {"txid", RPCArg::Type::STR, RPCArg::Optional::NO, 
             "The txid created by buyfirestone, we will use this txid's outpoint to make the raw tx," 
             "if not defined, randomly choose a firestone in this address."},
+            {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The address who receives the firestone withdraw(only keyid)."},
         },
         RPCResult{
             "\"data\"      (string) The serialized, hex-encoded data for the new transaction.\n"},
             RPCExamples{
-            HelpExampleCli("signfirestone", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" \"0xe8cab9d565077cb40e30621bc43edcfbef389e23ad5c28000c0b8365a4576cd7\"")},
+            HelpExampleCli("createfstxwithwallet", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" \"0xe8cab9d565077cb40e30621bc43edcfbef389e23ad5c28000c0b8365a4576cd7\"")},
         }
     .ToString());
     if (IsInitialBlockDownload()) {
@@ -5325,17 +5325,16 @@ UniValue signfirestone(const JSONRPCRequest& request){
         throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with walletpassphrase first.");
     }
 
-    CTxDestination dest = DecodeDestination(request.params[0].get_str());
-    if (!IsValidDestination(dest)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid signer address");
-    }
-    if (dest.type() != typeid(CKeyID)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Only support PUBKEYHASH");
-    }
+    uint256 hash = ParseHashV(request.params[0], "txid");
+    CTransactionRef tx;
+    uint256 hash_block;
+    // get the firestone with hash
+    if (!GetTransaction(hash, tx, Params().GetConsensus(), hash_block, nullptr) || !tx->IsTicketTx()){
+        throw JSONRPCError(RPC_MISC_ERROR, "This firestone hash is not existed.");
+    } 
+    CTicketRef fs = tx->Ticket();
+    auto keyID = fs->KeyID();
 
-    uint256 hash = ParseHashV(request.params[1], "txid");
-    auto keyID = boost::get<CKeyID>(dest);
-    
     // get privkey
     CKey Key;
     pwallet->GetKey(keyID, Key);
@@ -5343,14 +5342,15 @@ UniValue signfirestone(const JSONRPCRequest& request){
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "YOU HAVE NO PRIVATEKEY");
     }
 
-    CTransactionRef tx;
-    CTicketRef fs;
-    uint256 hash_block;
-    // get the firestone with hash
-    if (!GetTransaction(hash, tx, Params().GetConsensus(), hash_block, nullptr) || !tx->IsTicketTx()){
-        throw JSONRPCError(RPC_MISC_ERROR, "This firestone hash is not existed.");
-    } 
-    fs = tx->Ticket();
+    // decode receiver keyid.
+    CTxDestination dest = DecodeDestination(request.params[1].get_str());
+    if (!IsValidDestination(dest)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid receiver address");
+    }
+    if (dest.type() != typeid(CKeyID)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Only support PUBKEYHASH");
+    }
+    auto receiverKeyID = boost::get<CKeyID>(dest);
 
     // use the fs to create the fstx
     auto fstx = MakeTransactionRef();
@@ -5378,7 +5378,7 @@ UniValue signfirestone(const JSONRPCRequest& request){
             CTransaction tx(mtx);
             return MakeTransactionRef(tx);
         };
-        fstx = makeSpentTicketTx(fs, fs->LockTime(), CTxDestination(Key.GetPubKey().GetID()), Key);
+        fstx = makeSpentTicketTx(fs, fs->LockTime(), CTxDestination(receiverKeyID), Key);
     }else{
         throw JSONRPCError(RPC_MISC_ERROR, "the address has no firestone.");
     }
@@ -5577,7 +5577,7 @@ static const CRPCCommand commands[] =
     { "poc",                "unbindplotid",                     &unbindplotid,                  {"address"} },
     { "poc",                "listbindings",                     &listbindings,                  {""} },
     { "poc",                "getbindinginfo",                   &getbindinginfo,                {"address"} },
-    { "poc",                "signfirestone",                    &signfirestone,                 {"address","slotindex","txid"} },
+    { "poc",                "createfstxwithwallet",             &createfstxwithwallet,          {"txid","address"} },
     { "poc",                "importfirestone",                  &importfirestone,               {"hexstring","slotindex"} },
     { "poc",                "cleanfirestone",                   &cleanfirestone,                {"slotindex"} },
     { "wallet",             "wallethaskey",                     &wallethaskey,                  {"address"} },
