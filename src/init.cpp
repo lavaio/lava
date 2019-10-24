@@ -1575,6 +1575,13 @@ bool AppInitMain(InitInterfaces& interfaces)
                     strLoadError = _("Error opening relation database");
                     break;
                 }
+
+                // Load Fstx from disk
+                if (!LoadFstx()) {
+                    strLoadError = _("Error read fstx from fspool");
+                    break;
+                }
+
             } catch (const std::exception& e) {
                 LogPrintf("%s\n", e.what());
                 strLoadError = _("Error opening block database");

@@ -81,18 +81,21 @@ void CPOCBlockAssember::CreateNewBlock()
     auto to = prelationview->To(from);
     auto target = to.IsNull() ? from : to;
     auto fstx = MakeTransactionRef();
-    CMutableTransaction tx;
 
+    // get a fstx from fspool
     auto usableIndex = (height / pticketview->SlotLength());
-    auto isinfspool = pfspool->ReadFreshFs(tx, usableIndex);
+    auto FstxRefSet = pfspool->GetFstxBySlotIndex(usableIndex);
+    for (auto fstxRef:FstxRefSet){
+        if (!pcoinsTip->AccessCoin(fstxRef->vin[0].prevout).IsSpent()){
+            fstx = fstxRef;
+            LogPrint(BCLog::FIRESTONE, "%s: get fstx:%s from fspool.\n", __func__,fstx->GetHash().ToString());
+            break;
+        }
+    }
 
-    if (isinfspool){
-        // get a fstx from fspool
-        LogPrint(BCLog::FIRESTONE, "%s: get fstx:%s from fspool.\n", __func__,tx.GetHash().ToString());
-        CTransaction ctx(tx);
-        fstx = MakeTransactionRef(ctx);
-    }else{
-        // use the wallet to sign a fstx
+    if (fstx->IsNull()){
+        // there is no fstx in fspool.
+        // so, we use the wallet to sign a fstx.
         LOCK(cs_main);
         CTicketRef fs;
         auto fskey = firestoneKey.IsValid() ? firestoneKey : key;

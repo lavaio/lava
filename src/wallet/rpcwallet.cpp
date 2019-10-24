@@ -5397,7 +5397,13 @@ UniValue importfstx(const JSONRPCRequest& request){
             {"hexstring", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The transaction hex string"},
         },
         RPCResult{
-            "\"true|false\"      true if the hexstring is imported into fspool.\n"},
+        "  {\n"
+        "    \"firestone\" : \"txid\", (string)firestone txid.\n"
+        "    \"fstxid\" : \"txid\",	(string)fstx txid.\n"
+        "    \"usableslotindex\" : \"slotindex\", (int) the slotindex at which the fstx could be used.\n"
+        "    \"isDone\" : \"true|false\", (bool) wether the fstx is writen in the fspool or not.\n"
+        "  }\n"
+        },
             RPCExamples{
             HelpExampleCli("importfstx", "\"hexstring\"")},
         }
@@ -5431,10 +5437,11 @@ UniValue importfstx(const JSONRPCRequest& request){
     int lockheight = fs->LockTime();
     int usableslotIndex = (lockheight / pticketview->SlotLength()) + 1;
 
-    auto isOK = pfspool->WriteFs(mtx, usableslotIndex, mtx.GetHash());
+    auto isOK = pfspool->WriteFstx(mtx, usableslotIndex, mtx.GetHash());
     UniValue obj(UniValue::VOBJ);
+    obj.pushKV("firestone", fshash.ToString());
     obj.pushKV("fstxid", mtx.GetHash().ToString());
-    obj.pushKV("usableindex", usableslotIndex);
+    obj.pushKV("usableslotindex", usableslotIndex);
     obj.pushKV("isDone", isOK);
     return obj;
 }
@@ -5461,6 +5468,59 @@ UniValue cleanfstx(const JSONRPCRequest& request){
 
     int slotindex = request.params[0].get_int();
     return pfspool->RemoveSlot(slotindex);
+}
+
+UniValue listfstx(const JSONRPCRequest& request){
+    if (request.fHelp || request.params.size() > 1)
+        throw std::runtime_error(
+        RPCHelpMan{
+            "listfstx",
+            "\nReturns array of fstx in fspool.\n"
+            "includes every slot index fstx until now.\n",
+        {
+            {"slotindex", RPCArg::Type::NUM, RPCArg::Optional::OMITTED, "slot index."},
+        },
+        RPCResult{
+            "[                   (array of json object)\n"
+            "  {\n"
+            "    \"firestone\" : \"txid\", (string)firestone txid.\n"
+            "    \"fstxid\" : \"txid\",	(string)fstx txid.\n"
+            "    \"usableslotindex\" : \"slotindex\", (int) the slotindex at which the fstx could be used.\n"
+            "    \"isSpent\" : \"true|false\", (bool) wether the fstx is used or not.\n"
+            "  }\n"
+            "  ,...\n"
+            "]\n"
+        },
+            RPCExamples{
+            HelpExampleCli("listfstx", "\"1\"")},
+        }
+    .ToString());
+
+    LOCK(cs_main);
+    int slotIndex = pticketview->SlotIndex();
+    if (!request.params[0].isNull()){
+        slotIndex = request.params[0].get_int();
+    }
+    if (slotIndex < 0 || slotIndex > pticketview->SlotIndex()) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid slot index");
+    }
+
+    UniValue results(UniValue::VARR);
+    std::vector<CTransactionRef> allfstxs = pfspool->GetFstxBySlotIndex(slotIndex);
+    for (auto iter = allfstxs.begin();iter!=allfstxs.end();iter++){
+        UniValue entry(UniValue::VOBJ);
+        
+        auto out = (*iter)->vin[0].prevout;
+        auto hash = out.hash;
+        auto n = out.n;
+        
+        entry.pushKV("firestone", hash.ToString() + ":" + itostr(n));
+        entry.pushKV("fstxid", (*iter)->GetHash().ToString());
+        entry.pushKV("usableslotindex", slotIndex);
+        entry.pushKV("isSpent", pcoinsTip->AccessCoin(out).IsSpent());
+        results.push_back(entry);
+    }
+    return results;
 }
 
 UniValue wallethaskey(const JSONRPCRequest& request)
@@ -5596,6 +5656,7 @@ static const CRPCCommand commands[] =
     { "poc",                "createfstxwithwallet",             &createfstxwithwallet,          {"txid","address"} },
     { "poc",                "importfstx",                       &importfstx,                    {"hexstring","slotindex"} },
     { "poc",                "cleanfstx",                        &cleanfstx,                     {"slotindex"} },
+    { "poc",                "listfstx",                         &listfstx,                      {""} },
     { "wallet",             "wallethaskey",                     &wallethaskey,                  {"address"} },
     //{ "wallet",             "spendticket",                      &spendticket,                   {"txid", "vout", "redeem", "address"} },
 	{ "wallet",             "freefirestone",					&freefirestone,				    {"address", "receiver"} },

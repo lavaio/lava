@@ -356,6 +356,7 @@ bool CheckSequenceLocks(const CTxMemPool& pool, const CTransaction& tx, int flag
 
 bool LoadTicketView();
 bool LoadRelationView();
+bool LoadFstx();
 /**
  * Closure representing one script verification
  * Note that this stores references to the spending transaction
