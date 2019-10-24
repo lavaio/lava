@@ -5387,47 +5387,63 @@ UniValue createfstxwithwallet(const JSONRPCRequest& request){
     return EncodeHexTx(*fstx, RPCSerializationFlags());
 }
 
-UniValue importfirestone(const JSONRPCRequest& request){
-    if (request.fHelp || request.params.size() != 2)
+UniValue importfstx(const JSONRPCRequest& request){
+    if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
         RPCHelpMan{
-            "importfirestone",
+            "importfstx",
             "\ndecode the hexstring to a mutabletransaction, and import that tx into the fspool, so that the miner could use those tx to create block.\n",
         {
             {"hexstring", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The transaction hex string"},
-            {"slotindex", RPCArg::Type::NUM, RPCArg::Optional::NO, "A key in fspool, fspool will mark the transaction useable at this slotindex." 
-            "when create new block in slot N, fspool reads fstx with key(slotindex = N)."},
         },
         RPCResult{
             "\"true|false\"      true if the hexstring is imported into fspool.\n"},
             RPCExamples{
-            HelpExampleCli("importfirestone", "\"hexstring\" \"1\"")},
+            HelpExampleCli("importfstx", "\"hexstring\"")},
         }
     .ToString());
+
+    if (IsInitialBlockDownload()) {
+        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Block chain downloading...");
+    }
 
     if (request.params[0].isNull()){
         throw JSONRPCError(RPC_PARSE_ERROR, "invalid hexstring");
     }
     auto hexStr = request.params[0].get_str();
 
-    if (request.params[1].isNull()){
-        throw JSONRPCError(RPC_PARSE_ERROR, "invalid slotindex");
-    }
-    auto slotIndex = request.params[1].get_int();
-
     CMutableTransaction mtx;
     if (!DecodeHexTx(mtx, hexStr, true, true)) {
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
     }
-    auto isOK = pfspool->WriteFs(mtx, slotIndex, mtx.GetHash());
-    return isOK;
+
+    // validate the firestone
+    // get the firestone with hash
+    auto fshash = mtx.vin[0].prevout.hash;
+    CTransactionRef tx;
+    uint256 hash_block;
+    if (!GetTransaction(fshash, tx, Params().GetConsensus(), hash_block, nullptr) || !tx->IsTicketTx()){
+        throw JSONRPCError(RPC_MISC_ERROR, "This fstx prevout is not a firestone.");
+    } 
+
+    // decode the firestone lockheight
+    auto fs = tx->Ticket();
+    int lockheight = fs->LockTime();
+    int usableslotIndex = (lockheight / pticketview->SlotLength()) + 1;
+
+    auto isOK = pfspool->WriteFs(mtx, usableslotIndex, mtx.GetHash());
+    UniValue obj(UniValue::VOBJ);
+    obj.pushKV("fstxid", mtx.GetHash().ToString());
+    obj.pushKV("usableindex", usableslotIndex);
+    obj.pushKV("isDone", isOK);
+    return obj;
 }
 
-UniValue cleanfirestone(const JSONRPCRequest& request){
+UniValue cleanfstx(const JSONRPCRequest& request){
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
         RPCHelpMan{
-            "cleanfspool",
+            "cleanfstx",
             "\nerase all the fstx in this slot from fspool.\n",
         {
             {"slotindex", RPCArg::Type::NUM, RPCArg::Optional::NO, "The slot, in which those fstx will be removed."},
@@ -5435,7 +5451,7 @@ UniValue cleanfirestone(const JSONRPCRequest& request){
         RPCResult{
             "\"true|false\"      true if the cleaning work is done.\n"},
             RPCExamples{
-            HelpExampleCli("signfirestone", "\"1\"")},
+            HelpExampleCli("cleanfstx", "\"1\"")},
         }
     .ToString());
     
@@ -5578,8 +5594,8 @@ static const CRPCCommand commands[] =
     { "poc",                "listbindings",                     &listbindings,                  {""} },
     { "poc",                "getbindinginfo",                   &getbindinginfo,                {"address"} },
     { "poc",                "createfstxwithwallet",             &createfstxwithwallet,          {"txid","address"} },
-    { "poc",                "importfirestone",                  &importfirestone,               {"hexstring","slotindex"} },
-    { "poc",                "cleanfirestone",                   &cleanfirestone,                {"slotindex"} },
+    { "poc",                "importfstx",                       &importfstx,                    {"hexstring","slotindex"} },
+    { "poc",                "cleanfstx",                        &cleanfstx,                     {"slotindex"} },
     { "wallet",             "wallethaskey",                     &wallethaskey,                  {"address"} },
     //{ "wallet",             "spendticket",                      &spendticket,                   {"txid", "vout", "redeem", "address"} },
 	{ "wallet",             "freefirestone",					&freefirestone,				    {"address", "receiver"} },
