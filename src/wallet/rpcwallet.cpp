@@ -5314,9 +5314,6 @@ UniValue createfstxwithwallet(const JSONRPCRequest& request){
             HelpExampleCli("createfstxwithwallet", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" \"0xe8cab9d565077cb40e30621bc43edcfbef389e23ad5c28000c0b8365a4576cd7\"")},
         }
     .ToString());
-    if (IsInitialBlockDownload()) {
-        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Block chain downloading...");
-    }
     pwallet->BlockUntilSyncedToCurrentChain();
 
     auto locked_chain = pwallet->chain().lock();
@@ -5409,9 +5406,6 @@ UniValue importfstx(const JSONRPCRequest& request){
         }
     .ToString());
 
-    if (IsInitialBlockDownload()) {
-        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Block chain downloading...");
-    }
 
     if (request.params[0].isNull()){
         throw JSONRPCError(RPC_PARSE_ERROR, "invalid hexstring");
