@@ -10,9 +10,6 @@
 #endif
 
 #include <stdint.h>
-#ifdef _MSC_VER
-#include <stdlib.h>
-#endif
 
 #if defined(HAVE_BYTESWAP_H)
 #include <byteswap.h>
@@ -35,15 +32,6 @@
 #else
 // Non-Mac OS X / non-Darwin
 
-#ifdef _MSC_VER
-   #define bswap_16(x) _byteswap_ushort(x)
-   #define bswap_32(x) _byteswap_ulong(x)
-   #define bswap_64(x) _byteswap_uint64(x)
-#elif defined(__APPLE__)
-#define bswap_16(x) _OSSwapInt16(x)
-#define bswap_32(x) _OSSwapInt32(x)
-#define bswap_64(x) _OSSwapInt64(x)
-#else
 #if HAVE_DECL_BSWAP_16 == 0
 inline uint16_t bswap_16(uint16_t x)
 {
@@ -72,8 +60,6 @@ inline uint64_t bswap_64(uint64_t x)
           | ((x & 0x00000000000000ffull) << 56));
 }
 #endif // HAVE_DECL_BSWAP64 == 0
-
-#endif
 
 #endif // defined(MAC_OSX)
 
