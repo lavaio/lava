@@ -356,7 +356,6 @@ bool CheckSequenceLocks(const CTxMemPool& pool, const CTransaction& tx, int flag
 
 bool LoadTicketView();
 bool LoadRelationView();
-bool LoadFstx();
 /**
  * Closure representing one script verification
  * Note that this stores references to the spending transaction
@@ -482,9 +481,6 @@ extern std::unique_ptr<CRelationView> prelationview;
 
 /** Global variable that points to the active block tree (protected by cs_main) */
 extern std::unique_ptr<CBlockTreeDB> pblocktree;
-
-/** Global variable that points to the fspool (protected by cs_main) */
-extern std::unique_ptr<CFSPool> pfspool;
 
 /**
  * Return the spend height, which is one more than the inputs.GetBestBlock().

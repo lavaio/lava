@@ -313,7 +313,6 @@ std::unique_ptr<CCoinsViewCache> pcoinsTip;
 std::unique_ptr<CTicketView> pticketview;
 std::unique_ptr<CRelationView> prelationview;
 std::unique_ptr<CBlockTreeDB> pblocktree;
-std::unique_ptr<CFSPool> pfspool;
 
 enum class FlushStateMode {
     NONE,
@@ -5028,27 +5027,6 @@ bool LoadRelationView()
             try {
                 if (!prelationview->LoadRelationFromDisk(i))
                     return error("%s: failed to read relation from disk, height: %s", __func__, i);
-            } catch (const std::runtime_error& e) {
-                return error("%s: failure: %s", __func__, e.what());
-            }
-        }
-        return true;
-    }
-}
-
-bool LoadFstx()
-{
-    LogPrintf("%s: Load Fstx from block database...\n", __func__);
-    if (chainActive.Tip()==nullptr){
-        // new chain
-        return true;
-    }else{
-        // get slot index one by one
-        auto slotTip = chainActive.Height() / Params().SlotLength() + 1;
-        for (auto i = 0; i <= slotTip; i++) {
-            try {
-                if (!pfspool->LoadFstxFromDisk(i))
-                    return error("%s: failed to read Fstx from disk, slot: %s", __func__, i);
             } catch (const std::runtime_error& e) {
                 return error("%s: failure: %s", __func__, e.what());
             }

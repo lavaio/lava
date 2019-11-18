@@ -41,7 +41,7 @@
 #include <actiondb.h>
 #include <wallet/fees.h>
 #include <stdint.h>
-
+#include <fspool.h>
 #include <univalue.h>
 
 #include <functional>
@@ -5285,6 +5285,30 @@ static UniValue listbindings(const JSONRPCRequest& request)
     return results;
 }
 
+CTransactionRef makeSpentTicketTx(const CTicketRef& ticket, const int height, const CTxDestination& dest, const CKey& key)
+{
+    CMutableTransaction mtx;
+    auto redeemScript = ticket->redeemScript;
+    mtx.vin.push_back(CTxIn(ticket->out->hash, ticket->out->n, redeemScript, 0));
+    mtx.vout.push_back(CTxOut(ticket->nValue, GetScriptForDestination(dest)));
+    mtx.nLockTime = height;
+
+    CMutableTransaction txcopy(mtx);
+    txcopy.vin[0] = CTxIn(txcopy.vin[0].prevout, redeemScript, 0);
+    CHashWriter ss(SER_GETHASH, 0);
+    ss << txcopy << 1;
+    auto hash = ss.GetHash();
+    std::vector<unsigned char> vchSig;
+    if (!key.Sign(hash, vchSig)) {
+        LogPrint(BCLog::FIRESTONE, "%s: sign firestone tx failure, key:%d, %s:%d, keyid:%s\n", __func__, key.GetPubKey().GetID().ToString());
+        return MakeTransactionRef();
+    }
+    vchSig.push_back((unsigned char)SIGHASH_ALL);
+    mtx.vin[0].scriptSig = CScript() << vchSig << ToByteVector(key.GetPubKey()) << ToByteVector(redeemScript);
+    CTransaction tx(mtx);
+    return MakeTransactionRef(tx);
+}
+
 UniValue createfstxwithwallet(const JSONRPCRequest& request){
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     CWallet* const pwallet = wallet.get();
@@ -5349,28 +5373,6 @@ UniValue createfstxwithwallet(const JSONRPCRequest& request){
     auto fstx = MakeTransactionRef();
     if (fs) {
         // make fstx with the firestone above
-        auto makeSpentTicketTx = [](const CTicketRef& ticket, const int height, const CTxDestination& dest, const CKey& key)->CTransactionRef {
-            CMutableTransaction mtx;
-            auto redeemScript = ticket->redeemScript;
-            mtx.vin.push_back(CTxIn(ticket->out->hash, ticket->out->n, redeemScript, 0));
-            mtx.vout.push_back(CTxOut(ticket->nValue, GetScriptForDestination(dest)));
-            mtx.nLockTime = height;
-
-            CMutableTransaction txcopy(mtx);
-            txcopy.vin[0] = CTxIn(txcopy.vin[0].prevout, redeemScript, 0);
-            CHashWriter ss(SER_GETHASH, 0);
-            ss << txcopy << 1;
-            auto hash = ss.GetHash();
-            std::vector<unsigned char> vchSig;
-            if (!key.Sign(hash, vchSig)) {
-                LogPrint(BCLog::FIRESTONE, "%s: sign firestone tx failure, key:%d, %s:%d, keyid:%s\n", __func__, key.GetPubKey().GetID().ToString());
-                return MakeTransactionRef();
-            }
-            vchSig.push_back((unsigned char)SIGHASH_ALL);
-            mtx.vin[0].scriptSig = CScript() << vchSig << ToByteVector(key.GetPubKey()) << ToByteVector(redeemScript);
-            CTransaction tx(mtx);
-            return MakeTransactionRef(tx);
-        };
         fstx = makeSpentTicketTx(fs, fs->LockTime(), CTxDestination(receiverKeyID), Key);
     }else{
         throw JSONRPCError(RPC_MISC_ERROR, "the address has no firestone.");
@@ -5427,7 +5429,8 @@ UniValue importfstx(const JSONRPCRequest& request){
     int lockheight = fs->LockTime();
     int usableslotIndex = (lockheight / pticketview->SlotLength()) + 1;
 
-    auto isOK = pfspool->WriteFstx(mtx, usableslotIndex, mtx.GetHash());
+    CTransaction Tx(mtx);
+    auto isOK = pfspool->WriteFstx(Tx, usableslotIndex, mtx.GetHash());
     UniValue obj(UniValue::VOBJ);
     obj.pushKV("firestone", fshash.ToString());
     obj.pushKV("fstxid", mtx.GetHash().ToString());

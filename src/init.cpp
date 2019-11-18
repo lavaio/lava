@@ -53,6 +53,7 @@
 #include <blockcache.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <fspool.h>
 
 #ifndef WIN32
 #include <attributes.h>
@@ -1577,7 +1578,7 @@ bool AppInitMain(InitInterfaces& interfaces)
                 }
 
                 // Load Fstx from disk
-                if (!LoadFstx()) {
+                if (!LoadFstx(Params().SlotLength())) {
                     strLoadError = _("Error read fstx from fspool");
                     break;
                 }

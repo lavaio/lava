@@ -3,12 +3,14 @@
 
 static const char FSPOOL_KEY = 'F';
 
+std::unique_ptr<CFSPool> pfspool;
+
 CFSPool::CFSPool(size_t nCacheSize, bool fMemory, bool fWipe)
     : CDBWrapper(GetDataDir() / "fspool", nCacheSize, fMemory, fWipe) 
 {
 }
 
-bool CFSPool::ReadFreshFstx(std::vector<CMutableTransaction>& txs, int slotindex){
+bool CFSPool::ReadFreshFstx(std::vector<CTransaction>& txs, int slotindex){
     std::unique_ptr<CDBIterator> pcursor(NewIterator());
     pcursor->Seek(std::make_pair(FSPOOL_KEY,std::make_pair(slotindex, uint256())));
 
@@ -21,7 +23,7 @@ bool CFSPool::ReadFreshFstx(std::vector<CMutableTransaction>& txs, int slotindex
                 if (pcursor->GetValue(transaction)) {
                     // check the firestone is not used.
                     //if (!pcoinsTip->AccessCoin(transaction.vin[0].prevout).IsSpent()){}
-                    txs.emplace_back(transaction);
+                    txs.emplace_back(CTransaction(transaction));
                 }
             }
             pcursor->Next();
@@ -32,12 +34,11 @@ bool CFSPool::ReadFreshFstx(std::vector<CMutableTransaction>& txs, int slotindex
     return true;
 }
 
-bool CFSPool::WriteFstx(CMutableTransaction tx, int slotindex, uint256 txid){
+bool CFSPool::WriteFstx(CTransaction tx, int slotindex, uint256 txid){
     auto key = std::make_pair(FSPOOL_KEY, std::make_pair(slotindex, txid));
     if (!Exists(key)) {
         // add tx into cache
-        CTransaction Tx(tx);
-        FstxInSlot[slotindex].emplace_back(MakeTransactionRef(Tx));
+        FstxInSlot[slotindex].emplace_back(MakeTransactionRef(tx));
     
         // add tx into disk
         return Write(std::make_pair(FSPOOL_KEY, std::make_pair(slotindex, txid)), tx);
@@ -73,17 +74,37 @@ std::vector<CTransactionRef> CFSPool::GetFstxBySlotIndex(const int slotIndex){
 
 bool CFSPool::LoadFstxFromDisk(const int slotindex){
     // txs is the fstx set in slotindex
-    std::vector<CMutableTransaction> txs;
+    std::vector<CTransaction> txs;
     if (!ReadFreshFstx(txs, slotindex)){
         return false;
     }
     
     if (!txs.empty()){
         for (auto fstx:txs){
-            CTransaction Tx(fstx);
-            FstxInSlot[slotindex].emplace_back(MakeTransactionRef(Tx));
+            FstxInSlot[slotindex].emplace_back(MakeTransactionRef(fstx));
         }
     }
 
     return true;
+}
+
+bool LoadFstx(const uint32_t slotlength)
+{
+    LogPrintf("%s: Load Fstx from block database...\n", __func__);
+    if (chainActive.Tip()==nullptr){
+        // new chain
+        return true;
+    }else{
+        // get slot index one by one
+        auto slotTip = chainActive.Height() / slotlength + 1;
+        for (auto i = 0; i <= slotTip; i++) {
+            try {
+                if (!pfspool->LoadFstxFromDisk(i))
+                    return error("%s: failed to read Fstx from disk, slot: %s", __func__, i);
+            } catch (const std::runtime_error& e) {
+                return error("%s: failure: %s", __func__, e.what());
+            }
+        }
+        return true;
+    }
 }

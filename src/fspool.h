@@ -21,7 +21,7 @@ public:
     * @param[in]   slotindex       read the tx using the firestone, and the firestone is USABLE at this slot.
     * @return      true if read.
     */
-    bool ReadFreshFstx(std::vector<CMutableTransaction>& txs, int slotindex);
+    bool ReadFreshFstx(std::vector<CTransaction>& txs, int slotindex);
 
     /** 
     * write a firestone used transaction into the fspool.
@@ -29,7 +29,7 @@ public:
     * @param[in]   slotindex       the firestone is USABLE at this slot.
     * @return      true if written.
     */
-    bool WriteFstx(CMutableTransaction tx, int slotindex, uint256 txid);
+    bool WriteFstx(CTransaction tx, int slotindex, uint256 txid);
     
     /** 
     * remove the firestone used txs in the fspool, at a slotindex.
@@ -50,5 +50,10 @@ private:
     /** This map records fstx in each slot, one slot is 2048 blocks.*/
     std::map<int, std::vector<CTransactionRef>> FstxInSlot;  
 };
+
+/** Global variable that points to the fspool (protected by cs_main) */
+extern std::unique_ptr<CFSPool> pfspool;
+
+bool LoadFstx(const uint32_t slotlength);
 
 #endif
