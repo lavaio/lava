@@ -3579,6 +3579,243 @@ UniValue signrawtransactionwithwallet(const JSONRPCRequest& request)
     return SignTransaction(pwallet->chain(), mtx, request.params[1], pwallet, false, request.params[2]);
 }
 
+CTransactionRef CreateHTLCSpendTx(CWallet* const pwallet, uint256 htlctxid, std::vector<unsigned char> preimage, uint32_t nout, CScript redeemScript, CAmount nvalue, CTxDestination& dest, CKey& key, bool isrefund)
+{
+    CMutableTransaction mtx;
+    mtx.nLockTime = chainActive.Height();
+    unsigned int pubKeySizeSum = 0;
+
+    mtx.vin.push_back(CTxIn(htlctxid, nout, redeemScript, 0)); 
+    pubKeySizeSum += CPubKey::SIGNATURE_SIZE + CPubKey::PUBLIC_KEY_SIZE;
+    CAmount value = nvalue;
+    mtx.vout.push_back(CTxOut(value, GetScriptForDestination(dest)));
+
+    {
+        CMutableTransaction txcopyforfee(mtx);
+        auto nBytes = GetVirtualTransactionSize(CTransaction(txcopyforfee));
+        if (nBytes < 0) {
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Signing transaction failed");
+        }
+        nBytes += pubKeySizeSum;
+
+        FeeCalculation feeCalc;
+        CCoinControl coin_control;
+         
+        // how to get btc minimumfee?
+        CAmount nFeeNeeded = GetMinimumFee(*pwallet, nBytes, coin_control, ::mempool, ::feeEstimator, &feeCalc);
+        if (feeCalc.reason == FeeReason::FALLBACK && !pwallet->m_allow_fallback_fee) {
+            // eventually allow a fallback fee
+            throw JSONRPCError(RPC_INVALID_PARAMETER,"Fee estimation failed. Fallbackfee is disabled. Wait a few blocks or enable -fallbackfee.");
+        }
+
+        // If we made it here and we aren't even able to meet the relay fee on the next pass, give up
+        // because we must be at the maximum allowed fee.
+        if (nFeeNeeded < ::minRelayTxFee.GetFee(nBytes))
+        {
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Transaction too large for fee policy");
+        }
+        mtx.vout[0].nValue -= nFeeNeeded;
+    }
+
+    {
+        CMutableTransaction txcopy(mtx); 
+        CHashWriter ss(SER_GETHASH, 0);
+
+        // Serialize nVersion
+        ::Serialize(ss, txcopy.nVersion);
+        // Serialize vin
+        ::WriteCompactSize(ss, txcopy.vin.size());
+        for (unsigned int nInput = 0; nInput < txcopy.vin.size(); nInput++){
+            ::Serialize(ss, txcopy.vin[nInput].prevout);
+            // Serialize the script
+            if (nInput != 0){
+                ::Serialize(ss, CScript());
+            }else{
+                CScript::const_iterator it = redeemScript.begin();
+                CScript::const_iterator itBegin = it;
+                opcodetype opcode;
+                unsigned int nCodeSeparators = 0;
+                while (redeemScript.GetOp(it, opcode)) {
+                    if (opcode == OP_CODESEPARATOR)
+                        nCodeSeparators++;
+                }
+                ::WriteCompactSize(ss, redeemScript.size() - nCodeSeparators);
+                it = itBegin;
+                while (redeemScript.GetOp(it, opcode)) {
+                    if (opcode == OP_CODESEPARATOR) {
+                        ss.write((char*)&itBegin[0], it-itBegin-1);
+                        itBegin = it;
+                    }
+                }
+                if (itBegin != redeemScript.end())
+                    ss.write((char*)&itBegin[0], it-itBegin);
+            }
+            ::Serialize(ss, txcopy.vin[nInput].nSequence);
+        }
+
+        // Serialize vout
+        unsigned int nOutputs = txcopy.vout.size();
+        ::WriteCompactSize(ss, nOutputs);
+        for (unsigned int nOutput = 0; nOutput < nOutputs; nOutput++){
+            ::Serialize(ss, txcopy.vout[nOutput]);
+        }
+
+        // Serialize nLockTime
+        ::Serialize(ss, txcopy.nLockTime);
+        ss << 1;
+
+        // Hash the serialization to be signed.
+        auto hash = ss.GetHash();
+        std::vector<unsigned char> vchSig;
+        if (!key.Sign(hash, vchSig)) {
+            //TODO: error catch 
+            return MakeTransactionRef();
+        }
+        vchSig.push_back((unsigned char)SIGHASH_ALL);
+        if (isrefund){
+            mtx.vin[0].scriptSig = CScript() << vchSig << ToByteVector(key.GetPubKey()) << OP_0 << ToByteVector(redeemScript);
+        }else{
+            mtx.vin[0].scriptSig = CScript() << vchSig << ToByteVector(key.GetPubKey()) << preimage << OP_TRUE << ToByteVector(redeemScript);
+        }
+    }
+    CTransaction tx(mtx);
+    return std::move(MakeTransactionRef(tx));
+}
+
+UniValue spendhtlcwithwallet(const JSONRPCRequest& request){
+
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() != 10)
+        throw std::runtime_error(
+        RPCHelpMan{
+            "spendhtlcwithwallet",
+            "Make a tx to spend htlc utxo and transfer the coins to a receiver pubkey, so that after timeout, the buyer can not refund the coins.\n"
+            "\nThis tx would be signed by your privkey, so make sure the wallet is at work.\n"
+            "It returns raw transaction data, and you can use sendtoaddress rpc broadcast it to mainnet.\n",
+        {
+            {"htlctxid", RPCArg::Type::STR, RPCArg::Optional::NO, "The txid in which the funds is sendto htlc address."},
+            {"out", RPCArg::Type::NUM, RPCArg::Optional::NO, "The output index of htlc tx."},
+            {"amount", RPCArg::Type::NUM, RPCArg::Optional::NO, "The funds will be spent."},
+            {"receiverpubkey", RPCArg::Type::STR, RPCArg::Optional::NO, "(string, required) The public key of the recipient of the funds."},
+            {"Preimage", RPCArg::Type::STR, RPCArg::Optional::NO, "(string, required) Just the preimage of the hash in htlc."},
+            {"imagehash", RPCArg::Type::STR, RPCArg::Optional::NO, "SHA256 or RIPEMD160 hash of the preimage."},
+            {"seller_key", RPCArg::Type::STR, RPCArg::Optional::NO, "(string, required) The public key of the possessor of seller."},
+            {"refund_key", RPCArg::Type::STR, RPCArg::Optional::NO, "The public key of the recipient of the refund."},
+            {"lockheight", RPCArg::Type::NUM, RPCArg::Optional::NO, "Block height of the contract (denominated in blocks) relative to its placement in the blockchain"},
+            {"isrefund", RPCArg::Type::BOOL, RPCArg::Optional::NO, "Wether it is a refund tx."},
+        },
+        RPCResult{
+            "\"data\"      (string) The serialized, hex-encoded data for 'txid'\n"},
+            RPCExamples{
+            HelpExampleCli("spendhtlcwithwallet", "\"b9e956d586758649d461a56b2560b9976160ff050895040e512b0d02512afa13\" \"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" \"preimage\"")},
+        }
+    .ToString());
+
+    uint256 htlctxid = ParseHashV(request.params[0], "htlc txid");
+
+    int out = request.params[1].get_int();
+
+    // Amount
+    CAmount nAmount = AmountFromValue(request.params[2]);
+    if (nAmount <= 0)
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount for send");
+
+    CTxDestination dest = DecodeDestination(request.params[3].get_str());
+    if (!IsValidDestination(dest)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid receiverpubkey address");
+    }
+    if (dest.type() != typeid(CKeyID)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Only support PUBKEYHASH");
+    }
+
+    std::vector<unsigned char> preimage = ParseHexV(request.params[4], "preimage");
+    // SHA256
+    std::vector<unsigned char> vch_256(32);
+    {
+        std::vector<unsigned char> vch(32);
+        CSHA256 hash;
+        hash.Write(preimage.data(), preimage.size());
+        hash.Finalize(vch.data());
+        vch_256 = vch;
+    }
+    // RIPEMD160
+    std::vector<unsigned char> vch_160(20);
+    {
+        std::vector<unsigned char> vch(20);
+        CRIPEMD160 hash;
+        hash.Write(preimage.data(), preimage.size());
+        hash.Finalize(vch.data());
+        vch_160 = vch;
+    }
+
+    std::string hs = request.params[5].get_str();
+    std::vector<unsigned char> image;
+    opcodetype hasher;
+    if (IsHex(hs)) {
+        image = ParseHex(hs);
+
+        if (image.size() == 32) {
+            if (image != vch_256)
+                throw JSONRPCError(RPC_TYPE_ERROR, "the preimage not match SHA256 imagehash.");
+            hasher = OP_SHA256;
+        } else if (image.size() == 20) {
+            if (image != vch_160)
+                throw JSONRPCError(RPC_TYPE_ERROR, "the preimage not match RIPEMD160 imagehash.");
+            hasher = OP_RIPEMD160;
+        } else {
+            throw JSONRPCError(RPC_TYPE_ERROR, "Invalid hash image length, 32 (SHA256) and 20 (RIPEMD160) accepted");
+        }
+    } else {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid hash image");
+    }
+
+    CPubKey seller_key;
+    CPubKey refund_key;
+
+    CTxDestination seller_dest = DecodeDestination(request.params[6].get_str());
+    CTxDestination refund_dest = DecodeDestination(request.params[7].get_str());
+    if (!IsValidDestination(seller_dest)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid seller address");
+    }
+
+    if (!IsValidDestination(refund_dest)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid refund address");
+    }
+
+    if (seller_dest.type() != typeid(CKeyID)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Seller only support PUBKEYHASH");
+    }
+
+    if (refund_dest.type() != typeid(CKeyID)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Refund only support PUBKEYHASH");
+    }
+
+    auto seller_keyID = boost::get<CKeyID>(seller_dest);
+    auto refund_keyID = boost::get<CKeyID>(refund_dest);
+
+    uint32_t blockheight = request.params[8].get_int();
+    CScript htlcscript = GetScriptForHTLC(seller_keyID, refund_keyID, image, blockheight, hasher);
+
+    auto isrefund = request.params[8].getBool();
+
+    CKeyID keyID = boost::get<CKeyID>(dest);	
+    CKey key;
+    if (!pwallet->GetKey(keyID, key)){
+        UniValue results(UniValue::VOBJ);
+        results.pushKV("ATTENTION:","YOUR ADDRESS HAS NO FIRESTONES!");
+        return results;
+    }
+
+    auto tx = CreateHTLCSpendTx(pwallet, htlctxid, preimage, out, htlcscript, nAmount, dest, key, isrefund);
+    return EncodeHexTx(*tx, RPCSerializationFlags());
+}
+
 static UniValue bumpfee(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
@@ -5408,6 +5645,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "settxfee",                         &settxfee,                      {"amount"} },
     { "wallet",             "signmessage",                      &signmessage,                   {"address","message"} },
     { "wallet",             "signrawtransactionwithwallet",     &signrawtransactionwithwallet,  {"hexstring","prevtxs","sighashtype"} },
+    { "wallet",             "spendhtlcwithwallet",              &spendhtlcwithwallet,           {"txid","out","amount","receiver","preimage","Preimage","seller_key","refund_key","lockheight","isrefund"} },
     { "wallet",             "unloadwallet",                     &unloadwallet,                  {"wallet_name"} },
     //{ "wallet",             "walletcreatefundedpsbt",           &walletcreatefundedpsbt,        {"inputs","outputs","locktime","options","bip32derivs"} },
     { "wallet",             "walletlock",                       &walletlock,                    {} },

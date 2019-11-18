@@ -139,6 +139,137 @@ static UniValue createmultisig(const JSONRPCRequest& request)
     return result;
 }
 
+UniValue createhtlcaddress(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 4) {
+        std::string msg = "createhtlcaddress seller_key refund_key hash timeout_type lockheight\n"
+            "\nCreates an address whose funds can be unlocked with a preimage or as a refund\n"
+            "It returns a json object with the address and redeemScript.\n"
+
+            "\nArguments:\n"
+            "1. seller_key    (string, required) The public key of the possessor of seller. \n"
+            "2. refund_key    (string, required) The public key of the recipient of the refund.\n"
+            "3. hash          (string, required) SHA256 or RIPEMD160 hash of the preimage.\n"
+            "4. lockheight       (string, required) Block height of the contract (denominated in blocks) relative to its placement in the blockchain\n"
+
+            "\nResult:"
+            "{\n"
+            "  \"address\":\"htlcaddress\"   (string) The value of the new HTLC address.\n"
+            "  \"redeemScript\":\"script\"   (string) The string value of the hex-encoded redemption script.\n"
+            "}\n"
+
+            "\nExamples:\n"
+            "\nPay someone for the preimage of 254e38932fdb9fc27f82aac2a5cc6d789664832383e3cf3298f8c120812712db\n"
+            + HelpExampleCli("createhtlcaddress", "0333ffc4d18c7b2adbd1df49f5486030b0b70449c421189c2c0f8981d0da9669af 0333ffc4d18c7b2adbd1df49f5486030b0b70449c421189c2c0f8981d0da9669af 254e38932fdb9fc27f82aac2a5cc6d789664832383e3cf3298f8c120812712db 10") +
+            "\nAs a json rpc call\n"
+            + HelpExampleRpc("createhtlcaddress", "0333ffc4d18c7b2adbd1df49f5486030b0b70449c421189c2c0f8981d0da9669af, 0333ffc4d18c7b2adbd1df49f5486030b0b70449c421189c2c0f8981d0da9669af, 254e38932fdb9fc27f82aac2a5cc6d789664832383e3cf3298f8c120812712db, 10")
+            ;
+
+        throw std::runtime_error(msg);
+    }
+
+    CPubKey seller_key;
+    CPubKey refund_key;
+
+    CTxDestination seller_dest = DecodeDestination(request.params[0].get_str());
+    CTxDestination refund_dest = DecodeDestination(request.params[1].get_str());
+    if (!IsValidDestination(seller_dest)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid seller address");
+    }
+
+    if (!IsValidDestination(refund_dest)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid refund address");
+    }
+
+    if (seller_dest.type() != typeid(CKeyID)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Seller only support PUBKEYHASH");
+    }
+
+    if (refund_dest.type() != typeid(CKeyID)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Refund only support PUBKEYHASH");
+    }
+
+
+    auto seller_keyID = boost::get<CKeyID>(seller_dest);
+    auto refund_keyID = boost::get<CKeyID>(refund_dest);
+
+    std::string hs = request.params[2].get_str();
+    std::vector<unsigned char> image;
+    opcodetype hasher;
+    if (IsHex(hs)) {
+        image = ParseHex(hs);
+
+        if (image.size() == 32) {
+            hasher = OP_SHA256;
+        } else if (image.size() == 20) {
+            hasher = OP_RIPEMD160;
+        } else {
+            throw JSONRPCError(RPC_TYPE_ERROR, "Invalid hash image length, 32 (SHA256) and 20 (RIPEMD160) accepted");
+        }
+    } else {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid hash image");
+    }
+
+    uint32_t blockheight = request.params[3].get_int();
+    CScript htlcscript = GetScriptForHTLC(seller_keyID, refund_keyID, image, blockheight, hasher);
+    auto htlcdest = CTxDestination(CScriptID(htlcscript));
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("address", EncodeDestination(htlcdest));
+    result.pushKV("redeemScript", HexStr(htlcscript.begin(), htlcscript.end()));
+    return result;
+}
+
+UniValue getimage(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+        RPCHelpMan{
+            "getimage",
+            "Get the SHA256 or RIPEMD160 hash of a preimage.\n"
+            "This should be called before createhtlcaddress.\n",
+        {
+            {"preimage", RPCArg::Type::STR, RPCArg::Optional::NO, "The preimage."},
+        },
+        RPCResult{
+            "\"preimage\"      The preimage.\n"
+            "\"imagehash_SHA256\"     The imagehash.\n"
+            "\"imagehash_RIPEMD160\"     The imagehash.\n"
+        },
+        RPCExamples{
+            HelpExampleCli("getimage", "\"preimage\"")},
+        }
+    .ToString());
+
+    std::vector<unsigned char> preimage = ParseHexV(request.params[0], "preimage");
+
+    // SHA256
+    std::vector<unsigned char> vch_256(32);
+    {
+        std::vector<unsigned char> vch(32);
+        CSHA256 hash;
+        hash.Write(preimage.data(), preimage.size());
+        hash.Finalize(vch.data());
+        vch_256 = vch;
+    }
+
+    // RIPEMD160
+    std::vector<unsigned char> vch_160(20);
+    {
+        std::vector<unsigned char> vch(20);
+        CRIPEMD160 hash;
+        hash.Write(preimage.data(), preimage.size());
+        hash.Finalize(vch.data());
+        vch_160 = vch;
+    }
+
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("preimage", request.params[0].get_str());
+    result.pushKV("imagehash_SHA256", HexStr(vch_256.begin(),vch_256.end()));
+    result.pushKV("imagehash_RIPEMD160", HexStr(vch_160.begin(),vch_160.end()));
+    return result;
+}
+
 UniValue getdescriptorinfo(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 1) {
@@ -603,6 +734,8 @@ static const CRPCCommand commands[] =
     { "util",               "getdescriptorinfo",      &getdescriptorinfo,      {"descriptor"} },
     { "util",               "verifymessage",          &verifymessage,          {"address","signature","message"} },
     { "util",               "signmessagewithprivkey", &signmessagewithprivkey, {"privkey","message"} },
+    { "util",               "createhtlcaddress",      &createhtlcaddress,      {"seller_key","refund_key","hash","lockheight"} },
+    { "util",               "getimage",               &getimage,               {"preimage"} },
 
     /* Not shown in help */
     { "hidden",             "setmocktime",            &setmocktime,            {"timestamp"}},

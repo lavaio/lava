@@ -309,6 +309,24 @@ CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys)
     return script;
 }
 
+CScript GetScriptForHTLC(const CKeyID seller,
+    const CKeyID refund,
+    const std::vector<unsigned char> image,
+    uint32_t lockHeight,
+    opcodetype hasher_type)
+{
+    CScript script;
+    script << OP_IF;
+    script << hasher_type << image << OP_EQUALVERIFY << OP_DUP << OP_HASH160 << ToByteVector(seller);
+    script << OP_ELSE;
+    script << CScriptNum(lockHeight);
+    script << OP_CHECKLOCKTIMEVERIFY << OP_DROP << OP_DUP << OP_HASH160 << ToByteVector(refund);
+    script << OP_ENDIF;
+    script << OP_EQUALVERIFY;
+    script << OP_CHECKSIG;
+    return script;
+}
+
 CScript GetScriptForWitness(const CScript& redeemscript)
 {
     std::vector<std::vector<unsigned char> > vSolutions;

@@ -169,6 +169,11 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "listslotfs", 1, "all" },
     { "getfirestone", 1, "all" },
     { "getslotinfo", 0, "index" }, 
+    { "createhtlcaddress", 3, "lockheight" }, 
+    { "spendhtlcwithwallet", 1, "out" }, 
+    { "spendhtlcwithwallet", 2, "amout" }, 
+    { "spendhtlcwithwallet", 8, "lockheight" }, 
+    { "spendhtlcwithwallet", 9, "isrefund" }, 
 };
 // clang-format on
 

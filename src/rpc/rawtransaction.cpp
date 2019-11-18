@@ -2040,6 +2040,64 @@ UniValue analyzepsbt(const JSONRPCRequest& request)
     return result;
 }
 
+bool Decodepreimage(CScript scriptsig, std::vector<unsigned char>& vch)
+{
+    // only check the htlc spent tx, not the refund.
+    CScriptBase::const_iterator pc = scriptsig.begin();
+    opcodetype opcodeRet;
+    std::vector<unsigned char> vchRet;
+    if (scriptsig.GetOp(pc, opcodeRet, vchRet)) {
+        // this is the sig.
+        vchRet.clear();
+        if (scriptsig.GetOp(pc, opcodeRet, vchRet) 
+            && scriptsig.GetOp(pc, opcodeRet, vchRet)) {
+                vch = vchRet;
+                return true;
+        }
+    }
+    return false;
+}
+
+UniValue checkpreimage(const JSONRPCRequest& request){
+
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+        RPCHelpMan{
+            "checkpreimage",
+            "Check a htlc spent tx to get preimage.\n"
+            "\nThis rpc should be called before you spend the other htlc, if you dont know the preimage.\n",
+        {
+            {"htlcspenttxid", RPCArg::Type::STR, RPCArg::Optional::NO, "The txid which spent the htlc funds."},
+        },
+        RPCResult{
+            "\"Preimage\"     (string) Preimage used in the tx.\n"
+        },
+        RPCExamples{
+            HelpExampleCli("checkpreimage", "\"0065c370ed658c22f10f8d1caa99260a9e539653691b88e5413d734cce11c3a8\"")},
+        }
+    .ToString());
+
+    uint256 hash = ParseHashV(request.params[0], "HTLCtxid");
+    CTransactionRef tx;
+    uint256 hash_block;
+    CBlockIndex* blockindex = nullptr;
+    if (!GetTransaction(hash, tx, Params().GetConsensus(), hash_block, blockindex)){
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No such mempool or blockchain transaction");
+    }
+    auto outpoint = COutPoint(hash, 0);
+    UniValue result(UniValue::VOBJ);
+
+    // no need to check the refund tx, because refund tx never uses the preimage.
+    auto scriptsig = tx->vin[0].scriptSig;
+    std::vector<unsigned char> vch;
+    if (!Decodepreimage(scriptsig, vch)){
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "decode the preimage err!");
+    }
+
+    result.pushKV("Preimage", HexStr(vch.begin(),vch.end()));
+    return result;
+}
+
 // clang-format off
 static const CRPCCommand commands[] =
 { //  category              name                            actor (function)            argNames
@@ -2053,6 +2111,7 @@ static const CRPCCommand commands[] =
     { "hidden",             "signrawtransaction",           &signrawtransaction,        {"hexstring","prevtxs","privkeys","sighashtype"} },
     { "rawtransactions",    "signrawtransactionwithkey",    &signrawtransactionwithkey, {"hexstring","privkeys","prevtxs","sighashtype"} },
     { "rawtransactions",    "testmempoolaccept",            &testmempoolaccept,         {"rawtxs","allowhighfees"} },
+    { "rawtransactions",    "checkpreimage",                &checkpreimage,             {"txid"}},
     //{ "rawtransactions",    "decodepsbt",                   &decodepsbt,                {"psbt"} },
     //{ "rawtransactions",    "combinepsbt",                  &combinepsbt,               {"txs"} },
     //{ "rawtransactions",    "finalizepsbt",                 &finalizepsbt,              {"psbt", "extract"} },
