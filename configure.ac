@@ -1423,11 +1423,11 @@ AM_CONDITIONAL([ENABLE_SSE41],[test x$enable_sse41 = xyes])
 AM_CONDITIONAL([ENABLE_AVX2],[test x$enable_avx2 = xyes])
 AM_CONDITIONAL([ENABLE_SHANI],[test x$enable_shani = xyes])
 AM_CONDITIONAL([USE_ASM],[test x$use_asm = xyes])
+AM_CONDITIONAL([WITHOUT_ASM],[test $host = *mingw*])
 
 case ${host} in
    *mingw*)
      AC_DEFINE(WITHOUT_ASM, 1, [Define if use mingw toolchain to disalble use shabal.asm])
-     AM_CONDITIONAL([WITHOUT_ASM],[test 1])
    ;;
 esac
 AC_DEFINE(CLIENT_VERSION_MAJOR, _CLIENT_VERSION_MAJOR, [Major version])
