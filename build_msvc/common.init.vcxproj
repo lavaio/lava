@@ -14,31 +14,7 @@
       <DisableSpecificWarnings>4018;4244;4267;4715;4805;</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
       <PreprocessorDefinitions>_WIN32_WINNT=0x0601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(DEPENDS_INCLUDE);..\..\src;..\..\src\univalue\include;..\..\src\secp256k1\include;..\..\src\leveldb\include;..\..\src\leveldb\helpers\memenv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\src;..\..\src\univalue\include;..\..\src\secp256k1\include;..\..\src\leveldb\include;..\..\src\leveldb\helpers\memenv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-  </ItemDefinitionGroup>
-  
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <Link>
-      <AdditionalLibraryDirectories>$(DEPENDS_LIB_PATH)</AdditionalLibraryDirectories>
-    </Link>
-  </ItemDefinitionGroup>
-
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <Link>
-      <AdditionalLibraryDirectories>$(DEPENDS_DEBUG_LIB_PATH)</AdditionalLibraryDirectories>
-    </Link>
-  </ItemDefinitionGroup>
-
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <Link>
-      <AdditionalLibraryDirectories>$(DEPENDS_LIB_PATH)</AdditionalLibraryDirectories>
-    </Link>
-  </ItemDefinitionGroup>
-
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <Link>
-      <AdditionalLibraryDirectories>$(DEPENDS_DEBUG_LIB_PATH)</AdditionalLibraryDirectories>
-    </Link>
   </ItemDefinitionGroup>
 </Project>
