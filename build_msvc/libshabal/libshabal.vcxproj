@@ -31,7 +31,6 @@
     <ProjectGuid>{C72A7FAB-1109-4AF0-A9AB-7A32D3A8C5C7}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>libshabal</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
