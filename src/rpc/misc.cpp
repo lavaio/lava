@@ -22,6 +22,24 @@
 #include <util/strencodings.h>
 #include <warnings.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/rand.h>
+
+#include <event2/bufferevent_ssl.h>
+#include <event2/bufferevent.h>
+#include <event2/buffer.h>
+#include <event2/listener.h>
+#include <event2/util.h>
+#include <event2/http.h>
+#include <support/events.h>
+
+#include <util/client_http.hpp>
+#include <util/client_https.hpp>
+#include <util/crypto.hpp>
+#include <util/status_code.hpp>
+#include <util/utility.hpp>
+
 #include <stdint.h>
 #ifdef HAVE_MALLOC_INFO
 #include <malloc.h>
@@ -268,6 +286,42 @@ UniValue getimage(const JSONRPCRequest& request)
     result.pushKV("imagehash_SHA256", HexStr(vch_256.begin(),vch_256.end()));
     result.pushKV("imagehash_RIPEMD160", HexStr(vch_160.begin(),vch_160.end()));
     return result;
+}
+
+UniValue sendrawbtctx(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
+        throw std::runtime_error(
+        RPCHelpMan{"sendrawbtctx",
+        "\nSubmits raw transaction (serialized, hex-encoded) to BTC main network.\n",
+        {
+            {"hexstring", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The hex string of the raw transaction"},
+        },
+        RPCResult{
+            "\"hex\"             (string) The transaction hash in hex\n"
+        },
+        RPCExamples{
+            "\nSend the BTC transaction (signed hex)\n"
+            + HelpExampleCli("sendrawbtctx", "\"signedhex\"")
+        },
+        }.ToString());
+
+    RPCTypeCheck(request.params, {UniValue::VSTR});
+
+    auto txhex = request.params[0].get_str();
+    using HttpsClient = SimpleWeb::Client<SimpleWeb::HTTPS>;
+    HttpsClient client("api.blockcypher.com", false);
+    
+    std::string txhex_str = "\"" + txhex +"\"";
+    std::string json_string = "{\"tx\":" + txhex_str + "}";
+
+    try {
+        auto r2 = client.request("POST", "/v1/btc/test3/txs/push", json_string);
+        return r2->content.string();
+    }catch(const SimpleWeb::system_error &e) {
+        e.what();
+        throw JSONRPCError(RPC_TYPE_ERROR, "client req error");
+    }
 }
 
 UniValue getdescriptorinfo(const JSONRPCRequest& request)
@@ -735,6 +789,7 @@ static const CRPCCommand commands[] =
     { "util",               "verifymessage",          &verifymessage,          {"address","signature","message"} },
     { "util",               "signmessagewithprivkey", &signmessagewithprivkey, {"privkey","message"} },
     { "util",               "createhtlcaddress",      &createhtlcaddress,      {"seller_key","refund_key","hash","lockheight"} },
+    { "util",               "sendrawbtctx",           &sendrawbtctx,           {"host","tx"} },
     { "util",               "getimage",               &getimage,               {"preimage"} },
 
     /* Not shown in help */

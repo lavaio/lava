@@ -3808,7 +3808,7 @@ UniValue spendhtlcwithwallet(const JSONRPCRequest& request){
     CKey key;
     if (!pwallet->GetKey(keyID, key)){
         UniValue results(UniValue::VOBJ);
-        results.pushKV("ATTENTION:","YOUR ADDRESS HAS NO FIRESTONES!");
+        results.pushKV("ATTENTION:","YOUR ADDRESS HAS NO PRIVKEY!");
         return results;
     }
 
