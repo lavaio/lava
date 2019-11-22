@@ -3722,6 +3722,7 @@ UniValue spendhtlcwithwallet(const JSONRPCRequest& request){
     uint256 htlctxid = ParseHashV(request.params[0], "htlc txid");
 
     int out = request.params[1].get_int();
+    auto isrefund = request.params[9].getBool();
 
     // Amount
     CAmount nAmount = AmountFromValue(request.params[2]);
@@ -3763,11 +3764,11 @@ UniValue spendhtlcwithwallet(const JSONRPCRequest& request){
         image = ParseHex(hs);
 
         if (image.size() == 32) {
-            if (image != vch_256)
+            if (image != vch_256 && !isrefund)
                 throw JSONRPCError(RPC_TYPE_ERROR, "the preimage not match SHA256 imagehash.");
             hasher = OP_SHA256;
         } else if (image.size() == 20) {
-            if (image != vch_160)
+            if (image != vch_160 && !isrefund)
                 throw JSONRPCError(RPC_TYPE_ERROR, "the preimage not match RIPEMD160 imagehash.");
             hasher = OP_RIPEMD160;
         } else {
@@ -3803,8 +3804,6 @@ UniValue spendhtlcwithwallet(const JSONRPCRequest& request){
 
     uint32_t blockheight = request.params[8].get_int();
     CScript htlcscript = GetScriptForHTLC(seller_keyID, refund_keyID, image, blockheight, hasher);
-
-    auto isrefund = request.params[8].getBool();
 
     CKeyID keyID = boost::get<CKeyID>(dest);	
     CKey key;
