@@ -3581,10 +3581,10 @@ UniValue signrawtransactionwithwallet(const JSONRPCRequest& request)
     return SignTransaction(pwallet->chain(), mtx, request.params[1], pwallet, false, request.params[2]);
 }
 
-CTransactionRef CreateHTLCSpendTx(CWallet* const pwallet, uint256 htlctxid, std::vector<unsigned char> preimage, uint32_t nout, CScript redeemScript, CAmount nvalue, CTxDestination& dest, CKey& key, bool isrefund)
+CTransactionRef CreateHTLCSpendTx(CWallet* const pwallet, uint256 htlctxid, std::vector<unsigned char> preimage, uint32_t nout, CScript redeemScript, CAmount nvalue, CTxDestination& dest, CKey& key, bool isrefund, uint32_t lockheight)
 {
     CMutableTransaction mtx;
-    mtx.nLockTime = chainActive.Height();
+    mtx.nLockTime = lockheight; // nlocktime should be equal to the script locktime!
     unsigned int pubKeySizeSum = 0;
 
     mtx.vin.push_back(CTxIn(htlctxid, nout, redeemScript, 0)); 
@@ -3813,7 +3813,7 @@ UniValue spendhtlcwithwallet(const JSONRPCRequest& request){
         return results;
     }
 
-    auto tx = CreateHTLCSpendTx(pwallet, htlctxid, preimage, out, htlcscript, nAmount, dest, key, isrefund);
+    auto tx = CreateHTLCSpendTx(pwallet, htlctxid, preimage, out, htlcscript, nAmount, dest, key, isrefund, blockheight);
     return EncodeHexTx(*tx, RPCSerializationFlags());
 }
 
