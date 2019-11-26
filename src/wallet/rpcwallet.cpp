@@ -3584,7 +3584,10 @@ UniValue signrawtransactionwithwallet(const JSONRPCRequest& request)
 CTransactionRef CreateHTLCSpendTx(CWallet* const pwallet, uint256 htlctxid, std::vector<unsigned char> preimage, uint32_t nout, CScript redeemScript, CAmount nvalue, CTxDestination& dest, CKey& key, bool isrefund, uint32_t lockheight)
 {
     CMutableTransaction mtx;
-    mtx.nLockTime = lockheight; // nlocktime should be equal to the script locktime!
+    if (isrefund){
+        // if the tx is refund, shoud set nlocktime apple-to-apple.
+        mtx.nLockTime = lockheight; // nlocktime should be equal to the script locktime! 
+    }
     unsigned int pubKeySizeSum = 0;
 
     mtx.vin.push_back(CTxIn(htlctxid, nout, redeemScript, 0)); 
