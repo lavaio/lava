@@ -512,19 +512,29 @@ public:
       return mapKeyBirth;
     }
 
-    virtual bool hasAddress(const CTxDestination& dest) override {
+    bool hasAddress(const CTxDestination& dest) override {
       LOCK(m_wallet->cs_wallet);
       auto locked_chain = m_wallet->chain().lock();
       return m_wallet->mapAddressBook.count(dest) > 0;
     }
 
-
-    virtual CKeyID getKeyForDestination(const CTxDestination& dest) {
+    CKeyID getKeyForDestination(const CTxDestination& dest) override {
       return ::GetKeyForDestination(*m_wallet, dest);
     }
 
-    virtual uint256 sendAction(const CAction& action, const CKey& key, CTxDestination destChange) {
+    uint256 sendAction(const CAction& action, const CKey& key, const CTxDestination& destChange) override {
       return ::SendAction(m_wallet.get(), action, key, destChange);
+    }
+
+    CTransactionRef sendMoneyWithOpRet(interfaces::Chain::Lock& locked_chain, const CTxDestination& address,
+                                       CAmount nValue, bool fSubtractFeeFromAmount, const CScript& optScritp,
+                                       const CCoinControl& coin_control) override {
+        mapValue_t mapValue;
+        return ::SendMoneyWithOpRet(locked_chain, m_wallet.get(), address, nValue, fSubtractFeeFromAmount, optScritp, coin_control, std::move(mapValue));
+    }
+    
+    void importScript(const CScript& script, const std::string& strLabel, bool isRedeemScript) override {
+        ::ImportScript(m_wallet.get(), script, strLabel, isRedeemScript);
     }
 
     virtual CFeeRate getPayTxFee() const override {
@@ -539,10 +549,10 @@ public:
       return m_wallet->chain().lock(true);
     }
 
-    virtual void doWithChainAndWalletLock(std::function<void (std::unique_ptr<Chain::Lock>&, CWallet&)> cb) override {
+    virtual void doWithChainAndWalletLock(std::function<void (std::unique_ptr<Chain::Lock>&, Wallet&)> cb) override {
       auto locked_chain = m_wallet->chain().lock(true);
       LOCK(m_wallet->cs_wallet);
-      cb(locked_chain, *m_wallet);
+      cb(locked_chain, *this);
     }
 
     virtual CTransactionRef createTicketAllSpendTx(

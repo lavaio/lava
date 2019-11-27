@@ -9,7 +9,6 @@
 #include <key_io.h>
 #include <validation.h>
 #include <wallet/coincontrol.h>
-#include <wallet/rpcwallet.h>
 #include <univalue.h>
 #include <node/transaction.h>
 #include <txmempool.h>
@@ -113,8 +112,6 @@ FirestoneInfoPage::FirestoneInfo FirestoneInfoPage::getFirestoneInfo(const CKeyI
     return info;
 }
 
-extern void ImportScript(CWallet* const pwallet, const CScript& script, const std::string& strLabel, bool isRedeemScript) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet);
-
 void FirestoneInfoPage::on_btnBuy_clicked()
 {
   if(!_walletModel || _walletModel->wallet().isLocked()) {
@@ -155,10 +152,10 @@ void FirestoneInfoPage::on_btnBuy_clicked()
   }
 
   try {
-      _walletModel->wallet().doWithChainAndWalletLock([&](std::unique_ptr<interfaces::Chain::Lock>& lockedChain, CWallet& wallet) {
+      _walletModel->wallet().doWithChainAndWalletLock([&](std::unique_ptr<interfaces::Chain::Lock>& lockedChain, interfaces::Wallet& iWallet) {
         LOCK(cs_main);
 
-        TxFeeModifer feeUpdater(_walletModel->wallet());
+        TxFeeModifer feeUpdater(iWallet);
         auto locktime = pticketview->LockTime();
         if (locktime == chainActive.Height()) {
           QMessageBox::warning(this, windowTitle(), tr("Can't buy firestone on slot's last block"), QMessageBox::Ok, QMessageBox::Ok);
@@ -175,9 +172,8 @@ void FirestoneInfoPage::on_btnBuy_clicked()
         CCoinControl coin_control;
         coin_control.destChange = CTxDestination(changeID);
 
-        mapValue_t mapValue;
-        CTransactionRef tx = SendMoneyWithOpRet(*lockedChain, &wallet, buyDest, nAmount, false, opRetScript, coin_control, std::move(mapValue));
-        ImportScript(&wallet, redeemScript, "tickets", true);
+        iWallet.sendMoneyWithOpRet(*lockedChain, buyDest, nAmount, false, opRetScript, coin_control);
+        iWallet.importScript(redeemScript, "tickets", true);
       });
 
     QMessageBox::information(this, windowTitle(), tr("Buy firestone success!"), QMessageBox::Ok, QMessageBox::Ok);
