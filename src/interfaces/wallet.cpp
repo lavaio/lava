@@ -505,16 +505,16 @@ public:
     }
 
     std::map<CTxDestination, int64_t> GetKeyBirthTimes() override {
-      LOCK(m_wallet->cs_wallet);
       auto locked_chain = m_wallet->chain().lock();
+      LOCK(m_wallet->cs_wallet);
       std::map<CTxDestination, int64_t> mapKeyBirth;
       m_wallet->GetKeyBirthTimes(*locked_chain, mapKeyBirth);
       return mapKeyBirth;
     }
 
     bool hasAddress(const CTxDestination& dest) override {
-      LOCK(m_wallet->cs_wallet);
       auto locked_chain = m_wallet->chain().lock();
+      LOCK(m_wallet->cs_wallet);
       return m_wallet->mapAddressBook.count(dest) > 0;
     }
 
