@@ -234,28 +234,29 @@ static UniValue getmineraddress(const JSONRPCRequest& request)
             }
                 .ToString());
 
+    std::string label = "miner";
+    bool isCreate = false;
+
+	if (!request.params[0].isNull()) {
+        isCreate = request.params[0].get_bool();
+    }
+
+    std::map<CTxDestination, int64_t> mapKeyBirth;
+    auto locked_chain = pwallet->chain().lock();
+    pwallet->GetKeyBirthTimes(*locked_chain, mapKeyBirth);
+
     LOCK(pwallet->cs_wallet);
 
     if (!pwallet->CanGetAddresses()) {
         throw JSONRPCError(RPC_WALLET_ERROR, "Error: This wallet has no available keys");
     }
 
-    std::string label = "miner";
-    bool isCreate = false;
-
     if (!pwallet->IsLocked()) {
         pwallet->TopUpKeyPool();
     }
-
-	if (!request.params[0].isNull()) {
-        isCreate = request.params[0].get_bool();
-    }
-
-    CKey key;
-    auto locked_chain = pwallet->chain().lock();
-    std::map<CTxDestination, int64_t> mapKeyBirth;
-    pwallet->GetKeyBirthTimes(*locked_chain, mapKeyBirth);
-
+    
+    locked_chain.reset(nullptr);
+    
     // sort time/key pairs
     std::vector<std::pair<int64_t, CKeyID>> vKeyBirth;
     for (const auto& entry : mapKeyBirth) {
@@ -269,6 +270,7 @@ static UniValue getmineraddress(const JSONRPCRequest& request)
     std::vector<std::pair<int64_t, CKeyID>>::const_iterator firstItem = vKeyBirth.begin();
     // if the wallet already has a key, oupt put the legacy address of it
     if (firstItem != vKeyBirth.end() && !isCreate ) {
+        CKey key;
         const CKeyID& keyid = firstItem->second;
         if (pwallet->GetKey(keyid, key)) {
             auto pubkey = key.GetPubKey();
