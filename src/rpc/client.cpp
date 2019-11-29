@@ -169,6 +169,8 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "listslotfs", 1, "all" },
     { "getfirestone", 1, "all" },
     { "getslotinfo", 0, "index" }, 
+    { "cleanfstx",0,"slotindex"},
+    { "listfstx",0,"slotindex"},
 };
 // clang-format on
 

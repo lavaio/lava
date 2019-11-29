@@ -30,7 +30,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-
+#include <fspool.h>
 #include <atomic>
 
 class CBlockIndex;

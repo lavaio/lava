@@ -53,6 +53,7 @@
 #include <blockcache.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <fspool.h>
 
 #ifndef WIN32
 #include <attributes.h>
@@ -1462,6 +1463,7 @@ bool AppInitMain(InitInterfaces& interfaces)
     prelationview.reset(new CRelationView(0));
     pticketview.reset(new CTicketView(0));
     g_blockCache.reset(new CBlockCache());
+    pfspool.reset(new CFSPool(0));
 
     bool fLoaded = false;
     while (!fLoaded && !ShutdownRequested()) {
@@ -1574,6 +1576,13 @@ bool AppInitMain(InitInterfaces& interfaces)
                     strLoadError = _("Error opening relation database");
                     break;
                 }
+
+                // Load Fstx from disk
+                if (!LoadFstx(Params().SlotLength())) {
+                    strLoadError = _("Error read fstx from fspool");
+                    break;
+                }
+
             } catch (const std::exception& e) {
                 LogPrintf("%s\n", e.what());
                 strLoadError = _("Error opening block database");
