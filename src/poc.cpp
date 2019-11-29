@@ -5,7 +5,7 @@
 
 using namespace std;
 
-#if defined(WIN32) && !defined(WHITOUT_ASM)
+#if defined(WIN32) && !defined(WITHOUT_ASM)
 #include <immintrin.h>
 #include <shabal/shabal.h>
 #define CONTEXT               shabal_context

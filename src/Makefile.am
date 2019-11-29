@@ -422,6 +422,9 @@ libbitcoin_consensus_a_SOURCES = \
 # common: shared between bitcoind, and bitcoin-qt and non-server tools
 libbitcoin_common_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_common_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+if WITHOUT_ASM
+libbitcoin_common_a_CXXFLAGS += -DWITHOUT_ASM
+endif
 libbitcoin_common_a_SOURCES = \
   base58.cpp \
   bech32.cpp \
