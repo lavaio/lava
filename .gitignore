@@ -1,12 +1,12 @@
 *.tar.gz
 
 *.exe
-src/bitcoin
-src/bitcoind
-src/bitcoin-cli
-src/bitcoin-tx
-src/bitcoin-wallet
-src/test/test_bitcoin
+src/lava
+src/lavad
+src/lava-cli
+src/lava-tx
+src/lava-wallet
+src/test/test_lava
 src/test/test_bitcoin_fuzzy
 src/qt/test/test_bitcoin-qt
 
