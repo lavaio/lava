@@ -7,6 +7,8 @@
 #include <..\src\streams.h>
 #include <..\src\version.h>
 
+const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
+
 CMutableTransaction BuildSpendingTransaction(const CScript& scriptSig, const CScriptWitness& scriptWitness, int nValue = 0)
 {
     CMutableTransaction txSpend;

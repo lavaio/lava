@@ -47,8 +47,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_libshabal", "test_libs
 		{C72A7FAB-1109-4AF0-A9AB-7A32D3A8C5C7} = {C72A7FAB-1109-4AF0-A9AB-7A32D3A8C5C7}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unit_test", "unit_test\unit_test.vcxproj", "{F6EF9623-C33E-47A4-A737-71CB7F599C02}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -225,14 +223,6 @@ Global
 		{1F219819-FF1D-4454-A13F-CB29F343B509}.Release|x64.Build.0 = Release|x64
 		{1F219819-FF1D-4454-A13F-CB29F343B509}.Release|x86.ActiveCfg = Release|Win32
 		{1F219819-FF1D-4454-A13F-CB29F343B509}.Release|x86.Build.0 = Release|Win32
-		{F6EF9623-C33E-47A4-A737-71CB7F599C02}.Debug|x64.ActiveCfg = Debug|x64
-		{F6EF9623-C33E-47A4-A737-71CB7F599C02}.Debug|x64.Build.0 = Debug|x64
-		{F6EF9623-C33E-47A4-A737-71CB7F599C02}.Debug|x86.ActiveCfg = Debug|Win32
-		{F6EF9623-C33E-47A4-A737-71CB7F599C02}.Debug|x86.Build.0 = Debug|Win32
-		{F6EF9623-C33E-47A4-A737-71CB7F599C02}.Release|x64.ActiveCfg = Release|x64
-		{F6EF9623-C33E-47A4-A737-71CB7F599C02}.Release|x64.Build.0 = Release|x64
-		{F6EF9623-C33E-47A4-A737-71CB7F599C02}.Release|x86.ActiveCfg = Release|Win32
-		{F6EF9623-C33E-47A4-A737-71CB7F599C02}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

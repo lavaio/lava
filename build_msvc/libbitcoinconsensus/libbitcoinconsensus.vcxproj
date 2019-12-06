@@ -117,7 +117,7 @@
     <LinkIncremental>true</LinkIncremental>
     <Linkage-secp256k1>
     </Linkage-secp256k1>
-    <IncludePath>$(DEPENDS_INCLUDE);$(IncludePath)</IncludePath>
+    <IncludePath>$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>true</LinkIncremental>
@@ -128,7 +128,7 @@
     <LinkIncremental>true</LinkIncremental>
     <Linkage-secp256k1>
     </Linkage-secp256k1>
-    <IncludePath>$(DEPENDS_INCLUDE);$(IncludePath)</IncludePath>
+    <IncludePath>$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
