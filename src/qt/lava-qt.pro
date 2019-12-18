@@ -177,7 +177,7 @@ darwin {
   LIBS += -L$$PWD/../secp256k1/.libs/ -lsecp256k1
   LIBS += -L$$PWD/../crypto -lbitcoin_crypto_shani -lbitcoin_crypto_avx2 -lbitcoin_crypto_base -lbitcoin_crypto_sse41
   LIBS += -lbitcoin_cli -lbitcoin_consensus -lbitcoin_server -lbitcoin_zmq
-  LIBS += -lminiupnpc -lqrencode -lzmq
+  LIBS += -lminiupnpc -lqrencode -lzmq -lssl
 
   LIBS += -lboost_thread-mt -lboost_filesystem-mt -lboost_chrono-mt -lboost_system-mt
 
