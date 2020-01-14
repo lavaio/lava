@@ -286,6 +286,7 @@ static UniValue getmineraddress(const JSONRPCRequest& request)
             UniValue obj(UniValue::VOBJ);
             obj.pushKV("address", EncodeDestination(dest));
             obj.pushKV("plotid", pubkey.GetID().GetPlotID());
+            obj.pushKV("minerkeyid", pubkey.GetID().ToString());
             return obj;
         } else {
             UniValue obj(UniValue::VOBJ);
@@ -311,6 +312,7 @@ static UniValue getmineraddress(const JSONRPCRequest& request)
         UniValue obj(UniValue::VOBJ);
         obj.pushKV("address", EncodeDestination(dest));
         obj.pushKV("plotid", newKey.GetID().GetPlotID());
+        obj.pushKV("minerkeyid", newKey.GetID().ToString());
         return obj;
     }
 }
@@ -5453,8 +5455,13 @@ static UniValue getbindinginfo(const JSONRPCRequest& request)
     if (!IsValidDestination(dest) || dest.type() != typeid(CKeyID)) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
     }
+    // check poc21
+    bool pocxFlag = false;
+    if (chainActive.Tip()->nHeight > Params().GetConsensus().LVIP05Height){
+        pocxFlag = true;
+    }
     auto from = boost::get<CKeyID>(dest);
-    auto to = prelationview->To(from);
+    auto to = prelationview->To(from, from.GetPlotID(), pocxFlag);
     if (to == CKeyID()) {
         return UniValue(UniValue::VOBJ);
     }
