@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <queue>
 #include <utility>
+#include <key_io.h>
 
 int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParams, const CBlockIndex* pindexPrev)
 {
@@ -87,7 +88,7 @@ void BlockAssembler::resetBlock()
 Optional<int64_t> BlockAssembler::m_last_block_num_txs{nullopt};
 Optional<int64_t> BlockAssembler::m_last_block_weight{nullopt};
 
-std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, const uint64_t& nonce, const uint64_t& plotID, const uint64_t& deadline, const CTransactionRef& tx)
+std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, const uint64_t& nonce, const CKeyID& minerKeyID, const uint64_t& plotID, const uint64_t& deadline, const CTransactionRef& tx)
 {
     int64_t nTimeStart = GetTimeMicros();
 
@@ -157,11 +158,12 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     // Fill in header
     pblock->hashPrevBlock = pindexPrev->GetBlockHash();
     UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
-    pblock->genSign = CalcGenerationSignature(pindexPrev->genSign, pindexPrev->nPlotID);
+    pblock->genSign = CalcGenerationSignature(pindexPrev->genSign, pindexPrev->nMinerKeyID);
     pblock->nNonce = nonce;
     pblock->nDeadline = deadline;
+    pblock->nMinerKeyID = minerKeyID;
     pblock->nPlotID = plotID;
-    
+
     // Adjust baseTarget
     AdjustBaseTarget(chainActive.Tip(), pblock);
     //pblock->nCumulativeDiff = pindexPrev->nCumulativeDiff + (CUMULATIVE_DIFF_DENOM / pblock->nBaseTarget);

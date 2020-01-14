@@ -34,9 +34,8 @@ bool CPOCBlockAssember::UpdateDeadline(const int height, const CKeyID& keyid, co
         return false;
     }
 
-    auto plotID = keyid.GetPlotID();
-    auto generationSignature = CalcGenerationSignature(prevIndex->genSign, prevIndex->nPlotID);
-    if (CalcDeadline(generationSignature, height, plotID, nonce) != deadline) {
+    auto generationSignature = CalcGenerationSignature(prevIndex->genSign, prevIndex->nMinerKeyID);
+    if (CalcDeadline(generationSignature, height, keyid, nonce) != deadline) {
         LogPrintf("Deadline inconformity %uul\n", deadline);
         return false;
     }
@@ -74,11 +73,9 @@ void CPOCBlockAssember::CreateNewBlock()
         deadline = this->deadline;
     }
     
-    auto plotid = from.GetPlotID();
-    LogPrintf("CPOCBlockAssember CreateNewBlock, plotid: %u nonce:%u newheight:%u deadline:%u utc:%u\n", plotid, nonce, height, deadline, GetTimeMillis()/1000);
     auto params = Params();
-    //plotid bind
-    auto to = prelationview->To(from);
+    uint64_t plotid = 0;  
+    auto to = prelationview->To(from, from.GetPlotID(), true);
     auto target = to.IsNull() ? from : to;
     auto fstx = MakeTransactionRef();
 
@@ -126,7 +123,7 @@ void CPOCBlockAssember::CreateNewBlock()
     }
     
     auto scriptPubKeyIn = GetScriptForDestination(CTxDestination(target));
-    auto blk = BlockAssembler(params).CreateNewBlock(scriptPubKeyIn, nonce, plotid, deadline, fstx);
+    auto blk = BlockAssembler(params).CreateNewBlock(scriptPubKeyIn, nonce, from, plotid, deadline, fstx);
     if (blk) {
         uint32_t extraNonce = 0;
         IncrementExtraNonce(&blk->block, chainActive.Tip(), extraNonce);

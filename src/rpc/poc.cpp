@@ -93,7 +93,7 @@ UniValue getMiningInfo(const JSONRPCRequest& request)
     auto height = chainActive.Height() + 1;
     auto diff = chainActive.Tip()->nCumulativeDiff;
     auto block = chainActive.Tip()->GetBlockHeader();
-    auto generationSignature = CalcGenerationSignature(block.genSign, block.nPlotID);
+    auto generationSignature = CalcGenerationSignature(block.genSign, block.nMinerKeyID);
     auto nBaseTarget = block.nBaseTarget;
     auto param = Params();
     UniValue obj(UniValue::VOBJ);
