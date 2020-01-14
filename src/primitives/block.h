@@ -10,6 +10,7 @@
 #include <serialize.h>
 #include <uint256.h>
 
+static const int SERIALIZE_HEADER_NOT_POC21 = 90022;
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
  * requirements.  When they solve the proof-of-work, they broadcast the block
@@ -30,6 +31,7 @@ public:
     //poc
     uint256 genSign;
     uint64_t nPlotID;
+    CKeyID   nMinerKeyID; // poc21
     uint64_t nBaseTarget;
     uint64_t nDeadline;
 
@@ -49,7 +51,15 @@ public:
         READWRITE(nNonce);
         
         READWRITE(genSign);
-        READWRITE(nPlotID);
+
+        READWRITE(nPlotID);    
+        // mainnet, testnet, regtestnet
+        bool isGensisBlock = nTime == 1566964800 || nTime == 1565259498 || nTime == 1565259498;
+        auto ver = s.GetVersion();
+        if (s.GetVersion() != SERIALIZE_HEADER_NOT_POC21 && nPlotID == uint64_t() && !isGensisBlock){
+            // POC2x, PID is null.
+            READWRITE(nMinerKeyID);
+        }
         READWRITE(nBaseTarget);
         READWRITE(nDeadline);
     }
@@ -64,6 +74,7 @@ public:
         
         genSign.SetNull();
         nPlotID = 0;
+        nMinerKeyID.SetNull();
         nBaseTarget = 0;
         nDeadline = 0;
     }
@@ -128,6 +139,7 @@ public:
 
         block.genSign        = genSign;
         block.nPlotID        = nPlotID;
+        block.nMinerKeyID    = nMinerKeyID;
         block.nBaseTarget    = nBaseTarget;
         block.nDeadline      = nDeadline;
         return block;
