@@ -62,7 +62,9 @@ CAction DecodeAction(const CTransactionRef tx, std::vector<unsigned char>& vchSi
 typedef std::pair<CKeyID, CKeyID> CRelation;
 typedef std::vector<CRelation> CRelationVector;
 typedef std::map<uint64_t,uint64_t> RelationMap;
+typedef std::map<CKeyID,CKeyID> RelationKeyIDMap;
 typedef std::map<int,RelationMap> RelationMapIndex;
+typedef std::map<int,RelationKeyIDMap> RelationMapKeyIDIndex;
 typedef std::pair<CKeyID, CKeyID> CRelationActive;
 
 /** 
@@ -80,9 +82,7 @@ public:
      * @param[in]   from  The KeyID whose target relation we want to get.
      * @return      the target KeyID, which is bound by the "from".
      */
-    CKeyID To(const CKeyID& from) const;
-
-    CKeyID To(const uint64_t plotid) const;
+    CKeyID To(const CKeyID from, uint64_t plotid, bool poc21) const;
 
     /** 
      * Push the relation(bind and unbind), which is at the height, into relation tip set.
@@ -92,16 +92,17 @@ public:
      * @param[out]   relations  the actions set.
      * @return      true if action is accepted.
      */
-    bool AcceptAction(const int height, const uint256& txid, const CAction& action, std::vector<std::pair<uint256, CRelationActive>> &relations);
+    bool AcceptAction(const int height, const uint256& txid, const CAction& action, std::vector<std::pair<uint256, CRelationActive>> &relations, bool poc21);
     
     /** 
      * ConnectBlock is an up-layer api, which calls AcceptAction and WriteRelationsToDisk, as well as be called by ConnectTip.
      * @param[in]    height  the block height, at which the connecttip function calls.
+     * @param[in]    poc21   wether poc2+ is actived.
      * @param[out]   blk     the block.
      */
-    void ConnectBlock(const int height, const CBlock &blk);
+    void ConnectBlock(const int height, const CBlock &blk, bool poc21);
 
-    void DisconnectBlock(const int height, const CBlock &blk);
+    void DisconnectBlock(const int height, const CBlock &blk, bool poc21);
     
     /** 
      * Write the relation tip set on disk.
@@ -111,9 +112,10 @@ public:
     /** 
      * Init the relation tip set.
      * @param[in]   height  the block height, at which loading function calls.
+     * @param[in]   poc21   wether poc2+ is actived.
      * @return      true if loaded.
      */
-    bool LoadRelationFromDisk(const int height);
+    bool LoadRelationFromDisk(const int height, bool poc21);
 
     /** 
     * An api call by wallet,
@@ -124,8 +126,13 @@ public:
 private:
     /** Relation tip set which is push into relationMapIndex.*/
     RelationMap relationTip;
+    /** Relation KEYID tip set which is for POC21.*/
+    RelationKeyIDMap relationKeyIDTip;
+
     /** The map records new relation tip set into, when new block is coming.*/
     RelationMapIndex relationMapIndex; 
+    /** The map records new relation KEYID tip, for POC21.*/
+    RelationMapKeyIDIndex relationMapKeyIDIndex; 
 };
 
 #endif
