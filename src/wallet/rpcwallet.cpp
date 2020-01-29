@@ -4935,7 +4935,7 @@ UniValue spendticket(const JSONRPCRequest& request)
                 "spendticket",
                 "\nSpend frozen output to address.\n",
                 {
-                    {"ticketid", RPCArg::Type::STR, RPCArg::Optional::NO, "The transaction id."},
+                    {"txid", RPCArg::Type::STR, RPCArg::Optional::NO, "The firestone id."},
                     {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The address to recvie."},
                 },
                 RPCResult{
@@ -4943,58 +4943,53 @@ UniValue spendticket(const JSONRPCRequest& request)
                 RPCExamples{
                     HelpExampleCli("spendticket", "\"8199ceda82a056700475d645e2a0cd588b6853e87e1b4b8a459814078799dd87\" \"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
             }
-    .ToString());
+                .ToString());
 
-	auto ticketid = ParseHashV(request.params[0], "params 1");
-	CTicket ticket;
-	/*if (!g_ticketindex->GetTicket(ticketid,ticket)){
-		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No such ticket.");
-	}*/
+    auto txid = ParseHashV(request.params[0], "txid");
+    auto prevTx = MakeTransactionRef();
+    uint256 hashBlock;
+    if (!GetTransaction(txid, prevTx, Params().GetConsensus(), hashBlock)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No such firestone.");
+    }
+
+    auto ticket = prevTx->Ticket();
+    if (ticket == nullptr) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "firestone is invalid.");
+    }
+    auto redeemScript = ticket->redeemScript;
+    auto scriptPubkey = ticket->scriptPubkey;
 
     {
         LOCK(cs_main);
-        if (ticket.State(chainActive.Tip()->nHeight) != CTicket::CTicketState::OVERDUE){
-            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "ticket is not overdue.");
+        if (ticket->State(chainActive.Tip()->nHeight) != CTicket::CTicketState::OVERDUE) {
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "firestone is not overdue.");
         }
     }
 
-	auto txid = ticket.out->hash;
-	auto redeemScript = ticket.redeemScript;
-	auto scriptPubkey = ticket.scriptPubkey;
-
-    auto prevTx = MakeTransactionRef();
-    //LOCK(cs_main);
-    uint256 hashBlock;
-    if (!GetTransaction(txid, prevTx, Params().GetConsensus(), hashBlock)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No such gettransaction.");
-    }
-
     {
-        // check redeemScript
-		CScriptID scriptid;
-		auto ticketscript = scriptPubkey;
-		CScriptBase::const_iterator pc = ticketscript.begin();
-		opcodetype opcodeRet;
-		std::vector<unsigned char> vchRet;
-		if (ticketscript.GetOp(pc, opcodeRet, vchRet) 
-			&& ticketscript.GetOp(pc, opcodeRet, vchRet)) {
-			scriptid = CScriptID(uint160(vchRet));
-			if (!ticketscript.GetOp(pc, opcodeRet, vchRet) || opcodeRet != OP_EQUAL) {
-				throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid ticket ScriptPubkey");
-			}
-		}else{
-			throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid ticket ScriptPubkey");
-		}
+        CScriptID scriptid;
+        auto ticketscript = scriptPubkey;
+        CScriptBase::const_iterator pc = ticketscript.begin();
+        opcodetype opcodeRet;
+        std::vector<unsigned char> vchRet;
+        if (ticketscript.GetOp(pc, opcodeRet, vchRet) && ticketscript.GetOp(pc, opcodeRet, vchRet)) {
+            scriptid = CScriptID(uint160(vchRet));
+            if (!ticketscript.GetOp(pc, opcodeRet, vchRet) || opcodeRet != OP_EQUAL) {
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid firestone ScriptPubkey");
+            }
+        } else {
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid firestone ScriptPubkey");
+        }
 
-		// parese the dest from redeemscript
-		CScriptID dest = CScriptID(redeemScript);
+        // parese the dest from redeemscript
+        CScriptID dest = CScriptID(redeemScript);
 
-		if (dest != scriptid){
-			throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid ticket RedeemScript");
-		}
+        if (dest != scriptid) {
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid firestone RedeemScript");
+        }
     }
 
-	auto n = ticket.out->n;
+    auto n = ticket->out->n;
     if (n < 0 || n >= prevTx->vout.size()) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid params");
     }
@@ -5011,16 +5006,16 @@ UniValue spendticket(const JSONRPCRequest& request)
     if (lockHeight > chainActive.Height()) {
         throw JSONRPCError(RPC_TRANSACTION_REJECTED, "Redeem script non-final");
     }
-    CKey key;
+	CKey key;
     pwallet->GetKey(keyID, key);
     auto tx = CreateTicketSpendTx(pwallet, redeemScript, prevTx->GetHash(), n, prevTx->vout[n], dest, key);
     if (!tx) {
-        throw JSONRPCError(RPC_TRANSACTION_REJECTED, "Create ticket spend transaction error.");
+        throw JSONRPCError(RPC_TRANSACTION_REJECTED, "Create firestone spend transaction error.");
     }
     std::string errStr;
     uint256 spendTxID;
-    const CAmount highfee{ ::maxTxFee };
-    
+    const CAmount highfee{::maxTxFee};
+
     if (TransactionError::OK != BroadcastTransaction(tx, spendTxID, errStr, highfee)) {
         throw JSONRPCError(RPC_TRANSACTION_REJECTED, errStr);
     }
@@ -5662,7 +5657,7 @@ static const CRPCCommand commands[] =
     { "poc",                "listbindings",                     &listbindings,                  {""} },
     { "poc",                "getbindinginfo",                   &getbindinginfo,                {"address"} },
     { "wallet",             "wallethaskey",                     &wallethaskey,                  {"address"} },
-    //{ "wallet",             "spendticket",                      &spendticket,                   {"txid", "vout", "redeem", "address"} },
+    { "wallet",             "spendticket",                      &spendticket,                   {"txid", "address"} },
 	{ "wallet",             "freefirestone",					&freefirestone,				    {"address", "receiver"} },
 };
 // clang-format on
