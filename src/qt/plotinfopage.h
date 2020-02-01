@@ -38,7 +38,7 @@ public:
 
     struct AddressInfo {
       std::string address;
-      uint64_t plotId;
+      std::string plotId;
     };
 
     void updateData();

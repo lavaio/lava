@@ -72,7 +72,7 @@ void PlotInfoPage::updateData() {
   if(defaultAddress) {
     CTxDestination dest = GetDestinationForKey(defaultAddress.get(), OutputType::LEGACY);
     auto address = QString::fromStdString(EncodeDestination(dest));
-    auto plotId = QString("%0").arg(defaultAddress->GetID().GetPlotID());
+    auto plotId = QString::fromStdString(defaultAddress->GetID().ToString());
 
     ui->ebMinerAddress->setText(address);
     ui->ebPlotId->setText(plotId);
@@ -111,7 +111,7 @@ void PlotInfoPage::onNewPlotIdClicked()
   if (addr) {
     CTxDestination dest = GetDestinationForKey(addr.get(), OutputType::LEGACY);
     auto address = QString::fromStdString(EncodeDestination(dest));
-    auto plotId = QString("%0").arg(addr->GetID().GetPlotID());
+    auto plotId = QString::fromStdString(addr->GetID().ToString());
 
     ui->ebNewAddress->setText(address);
     ui->ebNewId->setText(plotId);
@@ -167,8 +167,8 @@ static inline Optional<QPair<PlotInfoPage::AddressInfo, PlotInfoPage::AddressInf
         return ret;
     }
 
-    PlotInfoPage::AddressInfo fromInfo = { EncodeDestination(CTxDestination(from)), from.GetPlotID() };
-    PlotInfoPage::AddressInfo toInfo = { EncodeDestination(CTxDestination(to)), to.GetPlotID() };
+    PlotInfoPage::AddressInfo fromInfo = { EncodeDestination(CTxDestination(from)), from.ToString() };
+    PlotInfoPage::AddressInfo toInfo = { EncodeDestination(CTxDestination(to)), to.ToString() };
 
     auto data = QPair<PlotInfoPage::AddressInfo, PlotInfoPage::AddressInfo>(fromInfo, toInfo);
     return boost::make_optional(data);
