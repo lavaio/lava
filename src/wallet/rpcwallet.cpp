@@ -4794,6 +4794,49 @@ static CTransactionRef SendMoneyWithOpRet(interfaces::Chain::Lock& locked_chain,
 }
 
 
+UniValue getfirestoneredeemscript(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 2)
+        throw std::runtime_error(
+            RPCHelpMan{
+                "getfirestoneredeemscript",
+                "\nget the firestone redeem script(hex string) and the P2Sh address.\n",
+                {
+                    {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The firestone address bought to(only keyid)."},
+                    {"slotindex", RPCArg::Type::NUM, RPCArg::Optional::NO, "The slotindex when buy the firestone."},
+                },
+                RPCResult{
+                    "{											\n"
+                    "\"redeemscipt\"                  (string) The firestone locked redeem script.\n"
+                    "\"P2SHaddress\"                  (string) The firestone locked address.\n"
+                    "}\n"
+                },
+                RPCExamples{
+                    HelpExampleCli("getfirestoneredeemscript", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" \"2\"")},
+            }
+                .ToString());
+
+    CTxDestination dest = DecodeDestination(request.params[0].get_str());
+    int slot = request.params[1].get_int();
+    if (!IsValidDestination(dest)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid receiver address");
+    }
+
+    if (dest.type() != typeid(CKeyID)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Only support PUBKEYHASH");
+    }
+
+    auto keyID = boost::get<CKeyID>(dest);
+    auto locktime = pticketview->LockTime(slot);
+    auto redeemScript = GenerateTicketScript(keyID, locktime);
+    dest = CTxDestination(CScriptID(redeemScript));
+
+    UniValue entry(UniValue::VOBJ);
+    entry.pushKV("redeemscipt", HexStr(redeemScript.begin(), redeemScript.end()));
+    entry.pushKV("P2SHaddress", EncodeDestination(dest));
+    return entry;
+}
+
 UniValue buyfirestone(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
@@ -4920,7 +4963,7 @@ CTransactionRef CreateTicketSpendTx(CWallet* const pwallet, const CScript& redee
     return MakeTransactionRef(tx);
 }
 
-UniValue spendticket(const JSONRPCRequest& request)
+UniValue spendfirestone(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
     CWallet* const pwallet = wallet.get();
@@ -4932,7 +4975,7 @@ UniValue spendticket(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() != 2)
         throw std::runtime_error(
             RPCHelpMan{
-                "spendticket",
+                "spendfirestone",
                 "\nSpend frozen output to address.\n",
                 {
                     {"txid", RPCArg::Type::STR, RPCArg::Optional::NO, "The firestone id."},
@@ -4941,7 +4984,7 @@ UniValue spendticket(const JSONRPCRequest& request)
                 RPCResult{
                     "\"txid\"                  (string) The tx id.\n"},
                 RPCExamples{
-                    HelpExampleCli("spendticket", "\"8199ceda82a056700475d645e2a0cd588b6853e87e1b4b8a459814078799dd87\" \"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
+                    HelpExampleCli("spendfirestone", "\"8199ceda82a056700475d645e2a0cd588b6853e87e1b4b8a459814078799dd87\" \"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
             }
                 .ToString());
 
@@ -5652,12 +5695,13 @@ static const CRPCCommand commands[] =
     { "wallet",             "walletpassphrasechange",           &walletpassphrasechange,        {"oldpassphrase","newpassphrase"} },
     //{ "wallet",             "walletprocesspsbt",                &walletprocesspsbt,             {"psbt","sign","sighashtype","bip32derivs"} },
     { "wallet",             "buyfirestone",                     &buyfirestone,                  {"address","changer"} },
+    { "wallet",             "getfirestoneredeemscript",         &getfirestoneredeemscript,      {"address","slotindex"} },
     { "poc",                "bindplotid",                       &bindplotid,                    {"address", "target"} },
     { "poc",                "unbindplotid",                     &unbindplotid,                  {"address"} },
     { "poc",                "listbindings",                     &listbindings,                  {""} },
     { "poc",                "getbindinginfo",                   &getbindinginfo,                {"address"} },
     { "wallet",             "wallethaskey",                     &wallethaskey,                  {"address"} },
-    { "wallet",             "spendticket",                      &spendticket,                   {"txid", "address"} },
+    { "wallet",             "spendfirestone",                   &spendfirestone,                {"txid", "address"} },
 	{ "wallet",             "freefirestone",					&freefirestone,				    {"address", "receiver"} },
 };
 // clang-format on

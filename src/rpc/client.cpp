@@ -174,6 +174,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "spendhtlcwithwallet", 2, "amout" }, 
     { "spendhtlcwithwallet", 8, "lockheight" }, 
     { "spendhtlcwithwallet", 9, "isrefund" }, 
+    { "getfirestoneredeemscript", 1, "index" }, 
 };
 // clang-format on
 
