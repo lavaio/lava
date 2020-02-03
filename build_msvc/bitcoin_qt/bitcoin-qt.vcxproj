@@ -122,6 +122,7 @@
     </Midl>
     <ResourceCompile>
       <PreprocessorDefinitions>_WINDOWS;UNICODE;_UNICODE;WIN32;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;NOMINMAX;_CONSOLE;SCL_SECURE_NO_WARNINGS;QT_DEPRECATED_WARNINGS;ENABLE_WALLET;HAVE_CONFIG_H;_AMD64_;WIN32;HAVE_DECL_BSWAP_16=1;HAVE_DECL_BSWAP_64=1;ZMQ_STATIC;QT_NO_DEBUG;QT_WIDGETS_LIB;QT_GUI_LIB;QT_NETWORK_LIB;QT_CORE_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../../src</AdditionalIncludeDirectories>
     </ResourceCompile>
     <QtMoc>
       <CompilerFlavor>msvc</CompilerFlavor>
@@ -184,6 +185,7 @@
     </Midl>
     <ResourceCompile>
       <PreprocessorDefinitions>_WINDOWS;UNICODE;_UNICODE;WIN32;_ENABLE_EXTENDED_ALIGNED_STORAGE;WIN64;NOMINMAX;_CONSOLE;SCL_SECURE_NO_WARNINGS;QT_DEPRECATED_WARNINGS;ENABLE_WALLET;HAVE_CONFIG_H;_AMD64_;WIN32;HAVE_DECL_BSWAP_16=1;HAVE_DECL_BSWAP_64=1;ZMQ_STATIC;QT_WIDGETS_LIB;QT_GUI_LIB;QT_NETWORK_LIB;QT_CORE_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../../src</AdditionalIncludeDirectories>
     </ResourceCompile>
     <QtMoc>
       <CompilerFlavor>msvc</CompilerFlavor>
@@ -589,9 +591,6 @@
     <None Include="..\..\src\qt\res\icons\warning.png" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include=".\bitcoin-qt_resource.rc" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\libbitcoinconsensus\libbitcoinconsensus.vcxproj">
       <Project>{2b384fa8-9ee1-4544-93cb-0d733c25e8ce}</Project>
     </ProjectReference>
@@ -631,6 +630,11 @@
     <ProjectReference Include="..\libunivalue\libunivalue.vcxproj">
       <Project>{5724ba7d-a09a-4ba8-800b-c4c1561b3d69}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\..\src\qt\res\bitcoin-qt-res.rc">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">../../src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">
