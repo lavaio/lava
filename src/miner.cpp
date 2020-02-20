@@ -88,7 +88,7 @@ void BlockAssembler::resetBlock()
 Optional<int64_t> BlockAssembler::m_last_block_num_txs{nullopt};
 Optional<int64_t> BlockAssembler::m_last_block_weight{nullopt};
 
-std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, const uint64_t& nonce, const CKeyID& minerKeyID, const uint64_t& plotID, const uint64_t& deadline, const CTransactionRef& tx)
+std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, const uint64_t nonce, const CKeyID& nPublicKeyID, const uint64_t plotID, const uint64_t deadline, const CTransactionRef& tx)
 {
     int64_t nTimeStart = GetTimeMicros();
 
@@ -158,10 +158,14 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     // Fill in header
     pblock->hashPrevBlock = pindexPrev->GetBlockHash();
     UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
-    pblock->genSign = CalcGenerationSignature(pindexPrev->genSign, pindexPrev->nMinerKeyID);
+    if (nHeight >= chainparams.GetConsensus().LVIP05Height){
+        pblock->genSign = CalcGenerationSignature(pindexPrev->genSign, pindexPrev->nPublicKeyID);
+    }else{
+        pblock->genSign = CalcGenerationSignaturePoc2(pindexPrev->genSign, pindexPrev->nPlotID);
+    }
     pblock->nNonce = nonce;
     pblock->nDeadline = deadline;
-    pblock->nMinerKeyID = minerKeyID;
+    pblock->nPublicKeyID = nPublicKeyID;
     pblock->nPlotID = plotID;
 
     // Adjust baseTarget
