@@ -137,7 +137,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
     result.pushKV("difficulty", GetDifficulty(blockindex));
     result.pushKV("deadline", block.nDeadline/baseTarget);
     result.pushKV("plotid", block.nPlotID);
-    result.pushKV("miner", EncodeDestination(block.nMinerKeyID));
+    result.pushKV("publickeyid", EncodeDestination(CKeyID(block.nPublicKeyID)));
     result.pushKV("generationsignature", block.genSign.ToString());
     result.pushKV("basetarget", block.nBaseTarget);
     result.pushKV("cumulativediff", blockindex->nCumulativeDiff.GetHex());
@@ -169,6 +169,53 @@ static UniValue getblockcount(const JSONRPCRequest& request)
 
     LOCK(cs_main);
     return chainActive.Height();
+}
+
+static UniValue getpoc2xstate(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() > 1)
+        throw std::runtime_error(
+        RPCHelpMan{"getpoc2xstate",
+        "\nGet the block's poc2x hard fork state.\n",
+        {
+            {"blockhash", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The block hash"},
+        },
+        RPCResult{
+            "{                           (json object)\n"
+            "  \"state\" : {       (string) The state\n"
+            "  \"height\" : {     (int) Block height\n"
+            "}\n"
+        },
+        RPCExamples{
+            HelpExampleCli("getpoc2xstate", "")
+            + HelpExampleRpc("getpoc2xstate", "")
+        },
+        }.ToString());
+
+    LOCK(cs_main);
+    uint256 hash;
+    CBlockIndex* pblockindex;
+    if (!request.params[0].isNull()) {
+        hash = ParseHashV(request.params[0], "blockhash");
+        pblockindex = LookupBlockIndex(hash);
+        if (!pblockindex) {
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
+        }
+    }else{
+        pblockindex = chainActive.Tip();
+    }
+
+    std::string state;
+    if(chainActive.Tip()->nHeight >= Params().GetConsensus().LVIP05Height) {
+        state = "ACTIVE";
+    }else{
+        state = "DEFINED";
+    }
+
+    UniValue ret(UniValue::VOBJ);
+    ret.pushKV("state", state);
+    ret.pushKV("height", pblockindex->nHeight);
+    return ret;
 }
 
 static UniValue getbestblockhash(const JSONRPCRequest& request)
@@ -2300,6 +2347,7 @@ static const CRPCCommand commands[] =
     { "blockchain",         "getblockstats",          &getblockstats,          {"hash_or_height", "stats"} },
     { "blockchain",         "getbestblockhash",       &getbestblockhash,       {} },
     { "blockchain",         "getblockcount",          &getblockcount,          {} },
+    { "blockchain",         "getpoc2xstate",          &getpoc2xstate,          {"blockhash"} },
     { "blockchain",         "getblock",               &getblock,               {"blockhash","verbosity|verbose"} },
     { "blockchain",         "getblockhash",           &getblockhash,           {"height"} },
     { "blockchain",         "getblockheader",         &getblockheader,         {"blockhash","verbose"} },

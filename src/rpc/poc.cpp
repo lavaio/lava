@@ -64,6 +64,7 @@ UniValue getAddressPlotId(const JSONRPCRequest& request)
 
     UniValue obj(UniValue::VOBJ);
     obj.pushKV("plotid", keyid.GetPlotID());
+    obj.pushKV("publickeyid", keyid.ToString());
     return obj;
 }
 
@@ -93,7 +94,13 @@ UniValue getMiningInfo(const JSONRPCRequest& request)
     auto height = chainActive.Height() + 1;
     auto diff = chainActive.Tip()->nCumulativeDiff;
     auto block = chainActive.Tip()->GetBlockHeader();
-    auto generationSignature = CalcGenerationSignature(block.genSign, block.nMinerKeyID);
+    bool pocxFlag = false;
+    uint256 generationSignature;
+    if (height >= Params().GetConsensus().LVIP05Height){
+        generationSignature = CalcGenerationSignature(block.genSign, block.nPublicKeyID);
+    }else{
+        generationSignature = CalcGenerationSignaturePoc2(block.genSign, block.nPlotID);
+    }
     auto nBaseTarget = block.nBaseTarget;
     auto param = Params();
     UniValue obj(UniValue::VOBJ);
