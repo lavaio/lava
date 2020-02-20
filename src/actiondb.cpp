@@ -10,7 +10,7 @@ CAction MakeBindAction(const CKeyID& from, const CKeyID& to)
     return std::move(CAction(ba));
 }
 
-bool SignAction(const COutPoint out, const CAction &action, const CKey& key, std::vector<unsigned char>& vch)
+bool SignAction(const COutPoint& out, const CAction &action, const CKey& key, std::vector<unsigned char>& vch)
 {
     vch.clear();
     auto actionVch = SerializeAction(action);
@@ -25,7 +25,7 @@ bool SignAction(const COutPoint out, const CAction &action, const CKey& key, std
     return true;
 }
 
-bool VerifyAction(const COutPoint out, const CAction& action, std::vector<unsigned char>& vchSig)
+bool VerifyAction(const COutPoint& out, const CAction& action, std::vector<unsigned char>& vchSig)
 {
     CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
     ss << SerializeAction(action) << out;
@@ -71,7 +71,7 @@ CAction UnserializeAction(const std::vector<unsigned char>& vch) {
     return std::move(CAction(CNilAction{}));
 }
 
-CAction DecodeAction(const CTransactionRef tx, std::vector<unsigned char>& vchSig)
+CAction DecodeAction(const CTransactionRef& tx, std::vector<unsigned char>& vchSig)
 {
     do {
         if (tx->IsCoinBase() || tx->IsNull() || tx->vout.size() != 2 
@@ -117,13 +117,13 @@ CRelationView::CRelationView(size_t nCacheSize, bool fMemory, bool fWipe)
 {
 }
 
-CKeyID CRelationView::To(const CKeyID from, uint64_t plotid, bool poc21) const
+CKeyID CRelationView::To(const uint160& from, uint64_t plotid, bool poc21) const
 {
     if (poc21){
         // If POC21 is actived.
-        auto kv = relationKeyIDTip.find(from);
+        auto kv = relationKeyIDTip.find(CKeyID(from));
         if(kv!=relationKeyIDTip.end()){
-            LogPrint(BCLog::RELATION, "POC2+ RelationView::To failure, can not get from address : %u\n", EncodeDestination(from));
+            LogPrint(BCLog::RELATION, "POC2+ RelationView::To failure, can not get from address : %u\n", EncodeDestination(CKeyID(from)));
             return std::move(kv->second);  
         }
         return std::move(CKeyID());
@@ -300,9 +300,9 @@ bool CRelationView::LoadRelationFromDisk(const int height, bool poc21)
 CRelationVector CRelationView::ListRelations() const
 {
     CRelationVector vch;
-    for (auto iter = relationKeyIDTip.begin(); iter != relationKeyIDTip.end(); iter++ ) {
-        auto value = std::make_pair(iter->first, iter->second);
-        vch.push_back(value);
+    vch.reserve(relationKeyIDTip.size());
+    for (auto& iter : relationKeyIDTip) {
+        vch.emplace_back(iter.first, iter.second);
     }
-    return std::move(vch);
+    return vch;
 }

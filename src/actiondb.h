@@ -53,11 +53,11 @@ CAction UnserializeAction(const std::vector<unsigned char>& vch);
 /** 
  * Sign the transaction, with outpoint inside.
  */
-bool SignAction(const COutPoint out, const CAction &action, const CKey& key, std::vector<unsigned char>& vch);
+bool SignAction(const COutPoint& out, const CAction &action, const CKey& key, std::vector<unsigned char>& vch);
 
-bool VerifyAction(const COutPoint out, const CAction& action, std::vector<unsigned char>& vchSig);
+bool VerifyAction(const COutPoint& out, const CAction& action, std::vector<unsigned char>& vchSig);
 
-CAction DecodeAction(const CTransactionRef tx, std::vector<unsigned char>& vchSig);
+CAction DecodeAction(const CTransactionRef& tx, std::vector<unsigned char>& vchSig);
 
 typedef std::pair<CKeyID, CKeyID> CRelation;
 typedef std::vector<CRelation> CRelationVector;
@@ -82,7 +82,7 @@ public:
      * @param[in]   from  The KeyID whose target relation we want to get.
      * @return      the target KeyID, which is bound by the "from".
      */
-    CKeyID To(const CKeyID from, uint64_t plotid, bool poc21) const;
+    CKeyID To(const uint160& from, uint64_t plotid, bool poc21) const;
 
     /** 
      * Push the relation(bind and unbind), which is at the height, into relation tip set.
