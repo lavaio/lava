@@ -31,7 +31,7 @@ public:
     //poc
     uint256 genSign;
     uint64_t nPlotID;
-    CKeyID   nMinerKeyID; // poc21
+    uint160  nPublicKeyID; // poc21
     uint64_t nBaseTarget;
     uint64_t nDeadline;
 
@@ -53,12 +53,10 @@ public:
         READWRITE(genSign);
 
         READWRITE(nPlotID);    
-        // mainnet, testnet, regtestnet
-        bool isGensisBlock = nTime == 1566964800 || nTime == 1565259498 || nTime == 1565259498;
         auto ver = s.GetVersion();
-        if (s.GetVersion() != SERIALIZE_HEADER_NOT_POC21 && nPlotID == uint64_t() && !isGensisBlock){
+        if (s.GetVersion() != SERIALIZE_HEADER_NOT_POC21 && nPlotID == 0 && !hashPrevBlock.IsNull()){
             // POC2x, PID is null.
-            READWRITE(nMinerKeyID);
+            READWRITE(nPublicKeyID);
         }
         READWRITE(nBaseTarget);
         READWRITE(nDeadline);
@@ -74,7 +72,7 @@ public:
         
         genSign.SetNull();
         nPlotID = 0;
-        nMinerKeyID.SetNull();
+        nPublicKeyID.SetNull();
         nBaseTarget = 0;
         nDeadline = 0;
     }
@@ -139,7 +137,7 @@ public:
 
         block.genSign        = genSign;
         block.nPlotID        = nPlotID;
-        block.nMinerKeyID    = nMinerKeyID;
+        block.nPublicKeyID   = nPublicKeyID;
         block.nBaseTarget    = nBaseTarget;
         block.nDeadline      = nDeadline;
         return block;

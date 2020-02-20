@@ -39,7 +39,7 @@ const uint64_t INITIAL_BASE_TARGET = 18325193796L;
 const uint64_t MAX_BASE_TARGET = 18325193796L;
 
 
-uint256 CalcGenerationSignaturePoc2(uint256 lastSig, uint64_t lastPlotID)
+uint256 CalcGenerationSignaturePoc2(const uint256& lastSig, uint64_t lastPlotID)
 {
     vector<unsigned char> signature(lastSig.size() + sizeof(lastPlotID));
     memcpy(&signature[0], lastSig.begin(), lastSig.size());
@@ -55,12 +55,12 @@ uint256 CalcGenerationSignaturePoc2(uint256 lastSig, uint64_t lastPlotID)
     return uint256(res);
 }
 
-uint256 CalcGenerationSignature(uint256 lastSig, CKeyID MinerKeyID)
+uint256 CalcGenerationSignature(const uint256& lastSig, const uint160& publicKeyID)
 {
-    vector<unsigned char> signature(lastSig.size() + sizeof(MinerKeyID));
+    vector<unsigned char> signature(lastSig.size() + sizeof(publicKeyID));
     memcpy(&signature[0], lastSig.begin(), lastSig.size());
-    unsigned char* vx = (unsigned char*)&MinerKeyID;
-    for (auto i = 0; i < sizeof(MinerKeyID); i++) {
+    unsigned char* vx = (unsigned char*)&publicKeyID;
+    for (auto i = 0; i < sizeof(publicKeyID); i++) {
         signature[lastSig.size() + i] = *(vx + 19 - i);
     }
     CONTEXT ctx;
@@ -113,7 +113,7 @@ vector<uint8_t> genNonceChunkPoc2(const uint64_t plotID, const uint64_t nonce)
     return std::move(data);
 }
 
-vector<uint8_t> genNonceChunk(const CKeyID minerKey, const uint64_t nonce)
+vector<uint8_t> genNonceChunk(const uint160& publicKeyID, const uint64_t nonce)
 {
     CONTEXT ctx;
     MMZEROUPPER();
@@ -124,7 +124,7 @@ vector<uint8_t> genNonceChunk(const CKeyID minerKey, const uint64_t nonce)
         genData[PLOT_SIZE + i] = xv[7 - i];
     }
     //put nonce
-    xv = (uint8_t*)&minerKey;
+    xv = (uint8_t*)&publicKeyID;
     for (size_t i = 0; i < 20; i++) {
         genData[PLOT_SIZE + 8 + i] = xv[19 - i];
     }
@@ -160,7 +160,7 @@ vector<uint8_t> genNonceChunk(const CKeyID minerKey, const uint64_t nonce)
     return std::move(data);
 }
 
-uint64_t CalcDeadlinePoc2(const uint256 genSig, const uint64_t height, const uint64_t plotID, const uint64_t nonce)
+uint64_t CalcDeadlinePoc2(const uint256& genSig, const uint64_t height, const uint64_t plotID, const uint64_t nonce)
 {
     vector<uint8_t> scoopGen(40);
     memcpy(&scoopGen[0], genSig.begin(), genSig.size());
@@ -193,7 +193,7 @@ uint64_t CalcDeadlinePoc2(const uint256 genSig, const uint64_t height, const uin
     return *wertung;
 }
 
-uint64_t CalcDeadline(const uint256 genSig, const uint64_t height, const CKeyID minerKey, const uint64_t nonce)
+uint64_t CalcDeadline(const uint256& genSig, const uint64_t height, const uint160& publicKeyID, const uint64_t nonce)
 {
     vector<uint8_t> scoopGen(40);
     memcpy(&scoopGen[0], genSig.begin(), genSig.size());
@@ -214,7 +214,7 @@ uint64_t CalcDeadline(const uint256 genSig, const uint64_t height, const CKeyID 
     CLOSE(&ctx, genHash);
     uint32_t scoop = (((unsigned char)genHash[31]) + 256 * (unsigned char)genHash[30]) % 4096;
 
-    auto chunk = genNonceChunk(minerKey, nonce);
+    auto chunk = genNonceChunk(publicKeyID, nonce);
     vector<uint8_t> sig(32 + 64);
     memcpy(&sig[0], genSig.begin(), genSig.size());
     memcpy(&sig[32], &chunk[scoop * 64], sizeof(uint8_t) * 64);
@@ -234,19 +234,19 @@ uint64_t CalcDeadlinePoc2(const CBlockHeader* block, const CBlockIndex* prevBloc
 
 uint64_t CalcDeadline(const CBlockHeader* block, const CBlockIndex* prevBlock)
 {
-    auto generationSig = CalcGenerationSignature(prevBlock->genSign, prevBlock->nMinerKeyID);
-    return CalcDeadline(generationSig, prevBlock->nHeight+1, block->nMinerKeyID, block->nNonce);
+    auto generationSig = CalcGenerationSignature(prevBlock->genSign, prevBlock->nPublicKeyID);
+    return CalcDeadline(generationSig, prevBlock->nHeight+1, block->nPublicKeyID, block->nNonce);
 }
 
-bool CheckProofOfCapacityPoc2(const uint256 genSig, const uint64_t height, const uint64_t plotID, const uint64_t nonce, const uint64_t baseTarget, const uint64_t deadline, const uint64_t targetDeadline)
+bool CheckProofOfCapacityPoc2(const uint256& genSig, const uint64_t height, const uint64_t plotID, const uint64_t nonce, const uint64_t baseTarget, const uint64_t deadline, const uint64_t targetDeadline)
 {
     auto dl = CalcDeadlinePoc2(genSig, height, plotID, nonce);
     return (dl == deadline) && (targetDeadline >= dl / baseTarget);
 }
 
-bool CheckProofOfCapacity(const uint256 genSig, const uint64_t height, const CKeyID minerKey, const uint64_t nonce, const uint64_t baseTarget, const uint64_t deadline, const uint64_t targetDeadline)
+bool CheckProofOfCapacity(const uint256& genSig, const uint64_t height, const uint160& publicKeyID, const uint64_t nonce, const uint64_t baseTarget, const uint64_t deadline, const uint64_t targetDeadline)
 {
-    auto dl = CalcDeadline(genSig, height, minerKey, nonce);
+    auto dl = CalcDeadline(genSig, height, publicKeyID, nonce);
     return (dl == deadline) && (targetDeadline >= dl / baseTarget);
 }
 

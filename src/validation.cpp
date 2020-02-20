@@ -1045,7 +1045,7 @@ static bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMes
     return true;
 }
 
-bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const int& height, const Consensus::Params& consensusParams)
+bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const int height, const Consensus::Params& consensusParams)
 {
     block.SetNull();
 
@@ -1064,12 +1064,12 @@ bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const int& heigh
     // Check the header
     auto params = Params();
     bool pocxFlag = false;
-    if (height > consensusParams.LVIP05Height){
+    if (height >= consensusParams.LVIP05Height){
         pocxFlag = true;
     }
 
     if (pocxFlag){
-        if (height != 0 && !CheckProofOfCapacity(block.genSign, height, block.nMinerKeyID, block.nNonce, block.nBaseTarget, block.nDeadline, params.TargetDeadline()))
+        if (height != 0 && !CheckProofOfCapacity(block.genSign, height, block.nPublicKeyID, block.nNonce, block.nBaseTarget, block.nDeadline, params.TargetDeadline()))
             return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
     }else{
         if (height != 0 && !CheckProofOfCapacityPoc2(block.genSign, height, block.nPlotID, block.nNonce, block.nBaseTarget, block.nDeadline, params.TargetDeadline()))
@@ -2069,7 +2069,7 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 
     // check poc2.x
     bool pocxFlag = false;
-    if (pindex->nHeight > chainparams.GetConsensus().LVIP05Height){
+    if (pindex->nHeight >= chainparams.GetConsensus().LVIP05Height){
         pocxFlag = true;
     }
     // check plotid
@@ -2078,17 +2078,17 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
         CTxDestination dest;
         ExtractDestination(script, dest);
         auto coinbaseDest = boost::get<CKeyID>(dest);
-        auto to = prelationview->To(block.nMinerKeyID, block.nPlotID, pocxFlag);
+        auto to = prelationview->To(block.nPublicKeyID, block.nPlotID, pocxFlag);
         if (! pocxFlag){
             auto targetPlotid = to.IsNull() ? block.nPlotID : to.GetPlotID();
             if (targetPlotid != coinbaseDest.GetPlotID()) {
                 return state.DoS(100, false, REJECT_INVALID, "bad-coinbase-plotid", false, "coinbase public key error plot id");
-            }   
+            }
         }else{
-            auto targetMiner = to.IsNull() ? block.nMinerKeyID : to;
+            auto targetMiner = to.IsNull() ? block.nPublicKeyID : to;
             if (targetMiner != coinbaseDest) {
                 return state.DoS(100, false, REJECT_INVALID, "bad-coinbase", false, "coinbase public key error");
-            }   
+            }
         }
     }
 
@@ -2324,7 +2324,7 @@ bool CChainState::DisconnectTip(CValidationState& state, const CChainParams& cha
         pticketview->DisconnectBlock(pindexDelete->nHeight, block);
         // check poc21
         bool pocxFlag = false;
-        if (pindexDelete->nHeight > chainparams.GetConsensus().LVIP05Height){
+        if (pindexDelete->nHeight >= chainparams.GetConsensus().LVIP05Height){
             pocxFlag = true;
         }
         prelationview->DisconnectBlock(pindexDelete->nHeight, block, pocxFlag);
@@ -3146,12 +3146,12 @@ static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state,
     // Check proof of work matches claimed amount
     // TODO... check geneist block
     bool pocxFlag = false;
-    if (height > consensusParams.LVIP05Height){
+    if (height >= consensusParams.LVIP05Height){
         pocxFlag = true;
     }
 
     if (pocxFlag){
-        if (fCheckPoc && height != 0 && !CheckProofOfCapacity(block.genSign, height, block.nMinerKeyID, block.nNonce, block.nBaseTarget, block.nDeadline, params.TargetDeadline()))
+        if (fCheckPoc && height != 0 && !CheckProofOfCapacity(block.genSign, height, block.nPublicKeyID, block.nNonce, block.nBaseTarget, block.nDeadline, params.TargetDeadline()))
             return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of capacity failed");
     }else{
         if (fCheckPoc && height != 0 && !CheckProofOfCapacityPoc2(block.genSign, height, block.nPlotID, block.nNonce, block.nBaseTarget, block.nDeadline, params.TargetDeadline()))
@@ -3356,13 +3356,13 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
 
     // check poc2.x
     bool pocxFlag = false;
-    if ((pindexPrev->nHeight + 1) > consensusParams.LVIP05Height){
+    if (nHeight >= consensusParams.LVIP05Height){
         pocxFlag = true;
     }
 
     uint256 generationSignature;
     if (pocxFlag){
-        generationSignature = CalcGenerationSignature(pindexPrev->genSign, pindexPrev->nMinerKeyID);
+        generationSignature = CalcGenerationSignature(pindexPrev->genSign, pindexPrev->nPublicKeyID);
     }else{
         generationSignature = CalcGenerationSignaturePoc2(pindexPrev->genSign, pindexPrev->nPlotID);
     }
@@ -3453,7 +3453,7 @@ bool CChainState::AcceptBlockHeader(const CBlockHeader& block, CValidationState&
         if (!block.hashPrevBlock.IsNull()) {
             for (auto i = 0; i <= chainActive.Height(); i++) {
                 if (chainActive[i]->GetBlockHash() == block.hashPrevBlock) {
-                    height = chainActive[i]->nHeight + 1;
+                    height = chainActive[i]->nHeight + 1; 
                     break;
                 }
             }
@@ -3670,8 +3670,7 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
 
     NotifyHeaderTip();
 
-    auto activeteBestChain = [chainparams, pblock]()->bool {
-        LOCK(cs_main);
+    auto activateBestChain = [chainparams, pblock]()->bool {
         CValidationState state; // Only used to report errors, not invalidity - ignore it
         if (!g_chainstate.ActivateBestChain(state, chainparams, pblock))
             return error("%s: ActivateBestChain failed (%s)\n", __func__, FormatStateMessage(state));
@@ -3691,7 +3690,7 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
     auto prevIndex = miSelf->second;
     if (pblock->nDeadline / prevIndex->nBaseTarget + prevIndex->nTime > GetSystemTimeInSeconds()) {
         LogPrintf("%s: deadline in feature, add to cache, block:%s, time:%d\n", __func__, pblock->GetHash().ToString(), pblock->nTime);
-        g_blockCache->AddBlock(pblock, activeteBestChain);
+        g_blockCache->AddBlock(pblock, activateBestChain);
         return true;
     }
     CValidationState state; // Only used to report errors, not invalidity - ignore it
@@ -5074,7 +5073,7 @@ bool LoadRelationView()
         for (auto i = 0; i <= chainActive.Height(); i++) {
             try {
                 bool pocxFlag = false;
-                if (currentIndex->nHeight > Params().GetConsensus().LVIP05Height){
+                if (currentIndex->nHeight >= Params().GetConsensus().LVIP05Height){
                     pocxFlag = true;
                 }
 

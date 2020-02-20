@@ -225,7 +225,7 @@ public:
     //! block header poc
     uint256 genSign;
     uint64_t nPlotID;
-    CKeyID   nMinerKeyID;
+    uint160  nPublicKeyID;
     uint64_t nBaseTarget;
     uint64_t nDeadline;
 
@@ -257,7 +257,7 @@ public:
         nNonce         = 0;
 
         nPlotID        = 0;
-        nMinerKeyID.SetNull();
+        nPublicKeyID.SetNull();
         genSign.SetNull();
         nBaseTarget    = 0;
         nDeadline      = 0;
@@ -278,7 +278,7 @@ public:
         nNonce         = block.nNonce;
 
         nPlotID        = block.nPlotID;
-        nMinerKeyID    = block.nMinerKeyID;
+        nPublicKeyID   = block.nPublicKeyID;
         genSign        = block.genSign;
         nBaseTarget    = block.nBaseTarget;
         nDeadline      = block.nDeadline;
@@ -315,7 +315,7 @@ public:
         block.nBaseTarget    = nBaseTarget;
         block.genSign        = genSign;
         block.nPlotID        = nPlotID;
-        block.nMinerKeyID    = nMinerKeyID;
+        block.nPublicKeyID   = nPublicKeyID;
         block.nDeadline      = nDeadline;
         return block;
     }
@@ -447,11 +447,10 @@ public:
         READWRITE(genSign);
         READWRITE(nDeadline);
         READWRITE(nPlotID);
-        // mainnet, testnet, regtestnet
-        bool isGensisBlock = nTime == 1566964800 || nTime == 1565259498 || nTime == 1565259498;
-        if (s.GetVersion() != SERIALIZE_HEADER_NOT_POC21 && nPlotID == uint64_t() && !isGensisBlock){
+        
+        if (s.GetVersion() != SERIALIZE_HEADER_NOT_POC21 && nPlotID == 0 && !hashPrev.IsNull()){
             // POC21
-            READWRITE(nMinerKeyID);
+            READWRITE(nPublicKeyID);
         }
         READWRITE(nBaseTarget);
     }
@@ -467,7 +466,7 @@ public:
         block.genSign         = genSign;
         block.nDeadline       = nDeadline;
         block.nPlotID         = nPlotID;
-        block.nMinerKeyID     = nMinerKeyID;
+        block.nPublicKeyID    = nPublicKeyID;
         block.nBaseTarget     = nBaseTarget;
         return block.GetHash();
     }
