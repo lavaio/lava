@@ -158,11 +158,12 @@ std::vector<std::pair<int64_t, CKeyID> > PlotInfoPage::getWalletKeys()
   return vKeyBirth;
 }
 
-static inline Optional<QPair<PlotInfoPage::AddressInfo, PlotInfoPage::AddressInfo>> getBinding(const CKeyID& from) {
+Optional<QPair<PlotInfoPage::AddressInfo, PlotInfoPage::AddressInfo>> PlotInfoPage::getBinding(const CKeyID& from) {
     Optional<QPair<PlotInfoPage::AddressInfo, PlotInfoPage::AddressInfo>> ret;
 
+    auto& wallet = _walletModel->wallet();
     LOCK(cs_main);
-    auto to = prelationview->To(from);
+    auto to = prelationview->To(from, from.GetPlotID(), wallet.isPoc2x());
     if (to == CKeyID()) {
         return ret;
     }

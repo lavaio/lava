@@ -301,6 +301,8 @@ public:
     virtual void doWithChainAndWalletLock(std::function<void (std::unique_ptr<Chain::Lock>&, Wallet&)>) = 0;
     virtual CTransactionRef createTicketAllSpendTx(std::map<uint256,std::pair<int,CScript>> txScriptInputs,
                                                    std::vector<CTxOut> outs, CTxDestination& dest, CKey& key) = 0;
+    
+    virtual bool isPoc2x() = 0;
 };
 
 //! Tracking object returned by CreateTransaction and passed to CommitTransaction.

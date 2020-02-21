@@ -49,6 +49,7 @@ private:
 
     std::vector<std::pair<int64_t, CKeyID>> getWalletKeys();
 
+    Optional<QPair<PlotInfoPage::AddressInfo, PlotInfoPage::AddressInfo>> getBinding(const CKeyID& from);
     QString getBindingInfoStr(const QPair<AddressInfo, AddressInfo>& data);
 
 public Q_SLOTS:

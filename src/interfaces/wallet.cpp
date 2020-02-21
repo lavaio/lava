@@ -31,6 +31,7 @@
 #include <wallet/rpcwallet.h>
 #include <wallet/wallet.h>
 #include <wallet/walletutil.h>
+#include <chainparams.h>
 
 #include <memory>
 #include <string>
@@ -559,6 +560,10 @@ public:
         std::map<uint256,std::pair<int,CScript>> txScriptInputs,
         std::vector<CTxOut> outs, CTxDestination& dest, CKey& key) override {
       return ::CreateTicketAllSpendTx(m_wallet.get(), txScriptInputs, outs, dest, key);
+    }
+
+    virtual bool isPoc2x() override {
+        return chainActive.Tip()->nHeight >= Params().GetConsensus().LVIP05Height;
     }
 
     std::shared_ptr<CWallet> m_wallet;
