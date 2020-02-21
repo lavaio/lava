@@ -448,7 +448,7 @@ public:
         READWRITE(nDeadline);
         READWRITE(nPlotID);
         
-        if (s.GetVersion() != SERIALIZE_HEADER_NOT_POC21 && nPlotID == 0 && !hashPrev.IsNull()){
+        if (nPlotID == 0 && !hashPrev.IsNull()){
             // POC21
             READWRITE(nPublicKeyID);
         }

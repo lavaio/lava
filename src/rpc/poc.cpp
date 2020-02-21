@@ -94,7 +94,6 @@ UniValue getMiningInfo(const JSONRPCRequest& request)
     auto height = chainActive.Height() + 1;
     auto diff = chainActive.Tip()->nCumulativeDiff;
     auto block = chainActive.Tip()->GetBlockHeader();
-    bool pocxFlag = false;
     uint256 generationSignature;
     if (height >= Params().GetConsensus().LVIP05Height){
         generationSignature = CalcGenerationSignature(block.genSign, block.nPublicKeyID);

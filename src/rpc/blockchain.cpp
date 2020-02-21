@@ -137,7 +137,8 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
     result.pushKV("difficulty", GetDifficulty(blockindex));
     result.pushKV("deadline", block.nDeadline/baseTarget);
     result.pushKV("plotid", block.nPlotID);
-    result.pushKV("publickeyid", EncodeDestination(CKeyID(block.nPublicKeyID)));
+    if (blockindex->nHeight && !block.nPlotID)
+        result.pushKV("publickeyid", block.nPublicKeyID.ToString());
     result.pushKV("generationsignature", block.genSign.ToString());
     result.pushKV("basetarget", block.nBaseTarget);
     result.pushKV("cumulativediff", blockindex->nCumulativeDiff.GetHex());

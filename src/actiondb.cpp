@@ -123,7 +123,6 @@ CKeyID CRelationView::To(const uint160& from, uint64_t plotid, bool poc21) const
         // If POC21 is actived.
         auto kv = relationKeyIDTip.find(CKeyID(from));
         if(kv!=relationKeyIDTip.end()){
-            LogPrint(BCLog::RELATION, "POC2+ RelationView::To failure, can not get from address : %u\n", EncodeDestination(CKeyID(from)));
             return std::move(kv->second);  
         }
         return std::move(CKeyID());
