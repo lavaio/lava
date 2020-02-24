@@ -114,7 +114,7 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
     auto params = Params();
     while (nHeight < nHeightEnd && !ShutdownRequested())
     {
-        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript, 0, 0, 0, MakeTransactionRef()));
+        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript, 0, CKeyID(), 0, 0, MakeTransactionRef()));
         if (!pblocktemplate.get())
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
         CBlock *pblock = &pblocktemplate->block;
@@ -123,7 +123,7 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
             IncrementExtraNonce(pblock, chainActive.Tip(), nExtraNonce);
         }
         while (nMaxTries > 0 && pblock->nNonce < nInnerLoopCount
-            && !CheckProofOfCapacity(pblock->genSign, nHeight, pblock->nPlotID, pblock->nNonce, pblock->nBaseTarget, pblock->nDeadline, params.TargetDeadline())) {
+            && !CheckProofOfCapacity(pblock->genSign, nHeight, pblock->nPublicKeyID, pblock->nNonce, pblock->nBaseTarget, pblock->nDeadline, params.TargetDeadline())) {
                 ++pblock->nNonce;
                 --nMaxTries;
         }
@@ -522,7 +522,7 @@ static UniValue getblocktemplate(const JSONRPCRequest& request)
 
         // Create new block
         CScript scriptDummy = CScript() << OP_TRUE;
-        pblocktemplate = BlockAssembler(Params()).CreateNewBlock(scriptDummy, 0, 0, 0, MakeTransactionRef());
+        pblocktemplate = BlockAssembler(Params()).CreateNewBlock(scriptDummy, 0, CKeyID(), 0, 0, MakeTransactionRef());
         if (!pblocktemplate)
             throw JSONRPCError(RPC_OUT_OF_MEMORY, "Out of memory");
 

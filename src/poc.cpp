@@ -32,12 +32,14 @@ extern "C" {
 #define HASH_CAP 4096
 #define SCOOP_SIZE 64
 #define PLOT_SIZE (HASH_CAP * SCOOP_SIZE) // 4096*64
+#define SEED_LENGTH 31
 
+static constexpr char SEED_MAGIC[] = "LV\x0\x80";
 const uint64_t INITIAL_BASE_TARGET = 18325193796L;
 const uint64_t MAX_BASE_TARGET = 18325193796L;
 
 
-uint256 CalcGenerationSignature(uint256 lastSig, uint64_t lastPlotID)
+uint256 CalcGenerationSignaturePoc2(const uint256& lastSig, uint64_t lastPlotID)
 {
     vector<unsigned char> signature(lastSig.size() + sizeof(lastPlotID));
     memcpy(&signature[0], lastSig.begin(), lastSig.size());
@@ -45,7 +47,7 @@ uint256 CalcGenerationSignature(uint256 lastSig, uint64_t lastPlotID)
     for (auto i = 0; i < sizeof(lastPlotID); i++) {
         signature[lastSig.size() + i] = *(vx + 7 - i);
     }
-	CONTEXT ctx;
+    CONTEXT ctx;
     INIT(&ctx);
     SHABAL(&ctx, &signature[0], signature.size());
     vector<unsigned char> res(32);
@@ -53,7 +55,23 @@ uint256 CalcGenerationSignature(uint256 lastSig, uint64_t lastPlotID)
     return uint256(res);
 }
 
-vector<uint8_t> genNonceChunk(const uint64_t plotID, const uint64_t nonce)
+uint256 CalcGenerationSignature(const uint256& lastSig, const uint160& publicKeyID)
+{
+    vector<unsigned char> signature(lastSig.size() + sizeof(publicKeyID));
+    memcpy(&signature[0], lastSig.begin(), lastSig.size());
+    unsigned char* vx = (unsigned char*)&publicKeyID;
+    for (auto i = 0; i < sizeof(publicKeyID); i++) {
+        signature[lastSig.size() + i] = *(vx + 19 - i);
+    }
+    CONTEXT ctx;
+    INIT(&ctx);
+    SHABAL(&ctx, &signature[0], signature.size());
+    vector<unsigned char> res(32);
+    CLOSE(&ctx, &res[0]);
+    return uint256(res);
+}
+
+vector<uint8_t> genNonceChunkPoc2(const uint64_t plotID, const uint64_t nonce)
 {
     CONTEXT ctx;
     MMZEROUPPER();
@@ -83,7 +101,7 @@ vector<uint8_t> genNonceChunk(const uint64_t plotID, const uint64_t nonce)
     for (size_t i = 0; i < PLOT_SIZE; i++) {
         genData[i] ^= (final[i % HASH_SIZE]);
     }
-    
+
     vector<uint8_t> data(PLOT_SIZE);
     for (size_t i = 0; i < PLOT_SIZE; i += HASH_SIZE) {
         if ((i / HASH_SIZE) % 2 == 0) {
@@ -95,7 +113,54 @@ vector<uint8_t> genNonceChunk(const uint64_t plotID, const uint64_t nonce)
     return std::move(data);
 }
 
-uint64_t CalcDeadline(const uint256 genSig, const uint64_t height, const uint64_t plotID, const uint64_t nonce)
+vector<uint8_t> genNonceChunk(const uint160& publicKeyID, const uint64_t nonce)
+{
+    CONTEXT ctx;
+    MMZEROUPPER();
+    vector<uint8_t> genData(SEED_LENGTH + PLOT_SIZE);
+    //put nonce
+    uint8_t* xv = (uint8_t*)&nonce;
+    for (size_t i = 0; i < 8; i++) {
+        genData[PLOT_SIZE + i] = xv[7 - i];
+    }
+    //put nonce
+    xv = (uint8_t*)&publicKeyID;
+    for (size_t i = 0; i < 20; i++) {
+        genData[PLOT_SIZE + 8 + i] = xv[19 - i];
+    }
+    //put LAVA label
+    for (size_t i = 0; i < 3; i++) {
+        genData[PLOT_SIZE + 28 + i] = SEED_MAGIC[i];
+    }
+
+    for (auto i = PLOT_SIZE; i > 0; i -= HASH_SIZE) {
+        INIT(&ctx);
+        auto len = PLOT_SIZE + SEED_LENGTH - i;
+        if (len > HASH_CAP) len = HASH_CAP;
+        SHABAL(&ctx, &genData[i], len);
+        CLOSE(&ctx, &genData[i - HASH_SIZE]);
+    }
+    INIT(&ctx);
+    SHABAL(&ctx, &genData[0], SEED_LENGTH + PLOT_SIZE);
+    vector<uint8_t> final(32);
+    CLOSE(&ctx, &final[0]);
+    // XOR with final
+    for (size_t i = 0; i < PLOT_SIZE; i++) {
+        genData[i] ^= (final[i % HASH_SIZE]);
+    }
+
+    vector<uint8_t> data(PLOT_SIZE);
+    for (size_t i = 0; i < PLOT_SIZE; i += HASH_SIZE) {
+        if ((i / HASH_SIZE) % 2 == 0) {
+            memmove(&data[i], &genData[i], HASH_SIZE);
+        } else {
+            memmove(&data[i], &genData[PLOT_SIZE - i], HASH_SIZE);
+        }
+    }
+    return std::move(data);
+}
+
+uint64_t CalcDeadlinePoc2(const uint256& genSig, const uint64_t height, const uint64_t plotID, const uint64_t nonce)
 {
     vector<uint8_t> scoopGen(40);
     memcpy(&scoopGen[0], genSig.begin(), genSig.size());
@@ -116,7 +181,7 @@ uint64_t CalcDeadline(const uint256 genSig, const uint64_t height, const uint64_
     CLOSE(&ctx, genHash);
     uint32_t scoop = (((unsigned char)genHash[31]) + 256 * (unsigned char)genHash[30]) % 4096;
 
-    auto chunk = genNonceChunk(plotID, nonce);
+    auto chunk = genNonceChunkPoc2(plotID, nonce);
     vector<uint8_t> sig(32 + 64);
     memcpy(&sig[0], genSig.begin(), genSig.size());
     memcpy(&sig[32], &chunk[scoop * 64], sizeof(uint8_t) * 64);
@@ -128,15 +193,60 @@ uint64_t CalcDeadline(const uint256 genSig, const uint64_t height, const uint64_
     return *wertung;
 }
 
-uint64_t CalcDeadline(const CBlockHeader* block, const CBlockIndex* prevBlock)
+uint64_t CalcDeadline(const uint256& genSig, const uint64_t height, const uint160& publicKeyID, const uint64_t nonce)
 {
-    auto generationSig = CalcGenerationSignature(prevBlock->genSign, prevBlock->nPlotID);
-    return CalcDeadline(generationSig, prevBlock->nHeight+1, block->nPlotID, block->nNonce);
+    vector<uint8_t> scoopGen(40);
+    memcpy(&scoopGen[0], genSig.begin(), genSig.size());
+    const uint8_t* mov = (uint8_t*)&height;
+    scoopGen[32] = mov[7];
+    scoopGen[33] = mov[6];
+    scoopGen[34] = mov[5];
+    scoopGen[35] = mov[4];
+    scoopGen[36] = mov[3];
+    scoopGen[37] = mov[2];
+    scoopGen[38] = mov[1];
+    scoopGen[39] = mov[0];
+    CONTEXT ctx;
+    MMZEROUPPER();
+    INIT(&ctx);
+    SHABAL(&ctx, &scoopGen[0], 40);
+    char genHash[32];
+    CLOSE(&ctx, genHash);
+    uint32_t scoop = (((unsigned char)genHash[31]) + 256 * (unsigned char)genHash[30]) % 4096;
+
+    auto chunk = genNonceChunk(publicKeyID, nonce);
+    vector<uint8_t> sig(32 + 64);
+    memcpy(&sig[0], genSig.begin(), genSig.size());
+    memcpy(&sig[32], &chunk[scoop * 64], sizeof(uint8_t) * 64);
+    INIT(&ctx);
+    SHABAL(&ctx, &sig[0], 64 + 32);
+    vector<uint8_t> res(32);
+    CLOSE(&ctx, &res[0]);
+    uint64_t* wertung = (uint64_t*)&res[0];
+    return *wertung;
 }
 
-bool CheckProofOfCapacity(const uint256 genSig, const uint64_t height, const uint64_t plotID, const uint64_t nonce, const uint64_t baseTarget, const uint64_t deadline, const uint64_t targetDeadline)
+uint64_t CalcDeadlinePoc2(const CBlockHeader* block, const CBlockIndex* prevBlock)
 {
-    auto dl = CalcDeadline(genSig, height, plotID, nonce);
+    auto generationSig = CalcGenerationSignaturePoc2(prevBlock->genSign, prevBlock->nPlotID);
+    return CalcDeadlinePoc2(generationSig, prevBlock->nHeight+1, block->nPlotID, block->nNonce);
+}
+
+uint64_t CalcDeadline(const CBlockHeader* block, const CBlockIndex* prevBlock)
+{
+    auto generationSig = CalcGenerationSignature(prevBlock->genSign, prevBlock->nPublicKeyID);
+    return CalcDeadline(generationSig, prevBlock->nHeight+1, block->nPublicKeyID, block->nNonce);
+}
+
+bool CheckProofOfCapacityPoc2(const uint256& genSig, const uint64_t height, const uint64_t plotID, const uint64_t nonce, const uint64_t baseTarget, const uint64_t deadline, const uint64_t targetDeadline)
+{
+    auto dl = CalcDeadlinePoc2(genSig, height, plotID, nonce);
+    return (dl == deadline) && (targetDeadline >= dl / baseTarget);
+}
+
+bool CheckProofOfCapacity(const uint256& genSig, const uint64_t height, const uint160& publicKeyID, const uint64_t nonce, const uint64_t baseTarget, const uint64_t deadline, const uint64_t targetDeadline)
+{
+    auto dl = CalcDeadline(genSig, height, publicKeyID, nonce);
     return (dl == deadline) && (targetDeadline >= dl / baseTarget);
 }
 

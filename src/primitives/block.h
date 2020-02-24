@@ -30,6 +30,7 @@ public:
     //poc
     uint256 genSign;
     uint64_t nPlotID;
+    uint160  nPublicKeyID; // poc21
     uint64_t nBaseTarget;
     uint64_t nDeadline;
 
@@ -49,7 +50,12 @@ public:
         READWRITE(nNonce);
         
         READWRITE(genSign);
-        READWRITE(nPlotID);
+
+        READWRITE(nPlotID);    
+        if (nPlotID == 0 && !hashPrevBlock.IsNull()){
+            // POC2x, PID is null.
+            READWRITE(nPublicKeyID);
+        }
         READWRITE(nBaseTarget);
         READWRITE(nDeadline);
     }
@@ -64,6 +70,7 @@ public:
         
         genSign.SetNull();
         nPlotID = 0;
+        nPublicKeyID.SetNull();
         nBaseTarget = 0;
         nDeadline = 0;
     }
@@ -128,6 +135,7 @@ public:
 
         block.genSign        = genSign;
         block.nPlotID        = nPlotID;
+        block.nPublicKeyID   = nPublicKeyID;
         block.nBaseTarget    = nBaseTarget;
         block.nDeadline      = nDeadline;
         return block;

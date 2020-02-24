@@ -1045,7 +1045,7 @@ static bool WriteBlockToDisk(const CBlock& block, CDiskBlockPos& pos, const CMes
     return true;
 }
 
-bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const int& height, const Consensus::Params& consensusParams)
+bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const int height, const Consensus::Params& consensusParams)
 {
     block.SetNull();
 
@@ -1063,9 +1063,18 @@ bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const int& heigh
 
     // Check the header
     auto params = Params();
-    if (height != 0 && !CheckProofOfCapacity(block.genSign, height, block.nPlotID, block.nNonce, block.nBaseTarget, block.nDeadline, params.TargetDeadline()))
-        return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
+    bool pocxFlag = false;
+    if (height >= consensusParams.LVIP05Height){
+        pocxFlag = true;
+    }
 
+    if (pocxFlag){
+        if (height != 0 && !CheckProofOfCapacity(block.genSign, height, block.nPublicKeyID, block.nNonce, block.nBaseTarget, block.nDeadline, params.TargetDeadline()))
+            return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
+    }else{
+        if (height != 0 && !CheckProofOfCapacityPoc2(block.genSign, height, block.nPlotID, block.nNonce, block.nBaseTarget, block.nDeadline, params.TargetDeadline()))
+            return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
+    }
     return true;
 }
 
@@ -2058,21 +2067,33 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     nTimeCallbacks += nTime6 - nTime5;
     LogPrint(BCLog::BENCH, "    - Callbacks: %.2fms [%.2fs (%.2fms/blk)]\n", MILLI * (nTime6 - nTime5), nTimeCallbacks * MICRO, nTimeCallbacks * MILLI / nBlocksTotal);
 
+    // check poc2.x
+    bool pocxFlag = false;
+    if (pindex->nHeight >= chainparams.GetConsensus().LVIP05Height){
+        pocxFlag = true;
+    }
     // check plotid
     {
         auto script = block.vtx[0]->vout[0].scriptPubKey;
         CTxDestination dest;
         ExtractDestination(script, dest);
         auto coinbaseDest = boost::get<CKeyID>(dest);
-        auto to = prelationview->To(block.nPlotID);
-        auto targetPlotid = to.IsNull() ? block.nPlotID : to.GetPlotID();
-        if (targetPlotid != coinbaseDest.GetPlotID()) {
-            return state.DoS(100, false, REJECT_INVALID, "bad-coinbase-plotid", false, "coinbase public key error plot id");
+        auto to = prelationview->To(block.nPublicKeyID, block.nPlotID, pocxFlag);
+        if (! pocxFlag){
+            auto targetPlotid = to.IsNull() ? block.nPlotID : to.GetPlotID();
+            if (targetPlotid != coinbaseDest.GetPlotID()) {
+                return state.DoS(100, false, REJECT_INVALID, "bad-coinbase-plotid", false, "coinbase public key error plot id");
+            }
+        }else{
+            auto targetMiner = to.IsNull() ? block.nPublicKeyID : to;
+            if (targetMiner != coinbaseDest) {
+                return state.DoS(100, false, REJECT_INVALID, "bad-coinbase", false, "coinbase public key error");
+            }
         }
     }
 
     //accept action
-    prelationview->ConnectBlock(pindex->nHeight, block);
+    prelationview->ConnectBlock(pindex->nHeight, block, pocxFlag);
     pticketview->ConnectBlock(pindex->nHeight, block, TestTicket);
     return true;
 }
@@ -2301,7 +2322,12 @@ bool CChainState::DisconnectTip(CValidationState& state, const CChainParams& cha
         CCoinsViewCache view(pcoinsTip.get());
         assert(view.GetBestBlock() == pindexDelete->GetBlockHash());
         pticketview->DisconnectBlock(pindexDelete->nHeight, block);
-        prelationview->DisconnectBlock(pindexDelete->nHeight, block);
+        // check poc21
+        bool pocxFlag = false;
+        if (pindexDelete->nHeight >= chainparams.GetConsensus().LVIP05Height){
+            pocxFlag = true;
+        }
+        prelationview->DisconnectBlock(pindexDelete->nHeight, block, pocxFlag);
         if (DisconnectBlock(block, pindexDelete, view) != DISCONNECT_OK)
             return error("DisconnectTip(): DisconnectBlock %s failed", pindexDelete->GetBlockHash().ToString());
         bool flushed = view.Flush();
@@ -3119,8 +3145,18 @@ static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state,
     auto params = Params();
     // Check proof of work matches claimed amount
     // TODO... check geneist block
-    if (fCheckPoc && height != 0 && !CheckProofOfCapacity(block.genSign, height, block.nPlotID, block.nNonce, block.nBaseTarget, block.nDeadline, params.TargetDeadline()))
-        return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of capacity failed");
+    bool pocxFlag = false;
+    if (height >= consensusParams.LVIP05Height){
+        pocxFlag = true;
+    }
+
+    if (pocxFlag){
+        if (fCheckPoc && height != 0 && !CheckProofOfCapacity(block.genSign, height, block.nPublicKeyID, block.nNonce, block.nBaseTarget, block.nDeadline, params.TargetDeadline()))
+            return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of capacity failed");
+    }else{
+        if (fCheckPoc && height != 0 && !CheckProofOfCapacityPoc2(block.genSign, height, block.nPlotID, block.nNonce, block.nBaseTarget, block.nDeadline, params.TargetDeadline()))
+            return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of capacity failed");
+    }
 
     return true;
 }
@@ -3318,7 +3354,18 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
         return state.Invalid(false, REJECT_INVALID, "block-time-err", "block timestamp error");
     }
 
-    auto generationSignature = CalcGenerationSignature(pindexPrev->genSign, pindexPrev->nPlotID);
+    // check poc2.x
+    bool pocxFlag = false;
+    if (nHeight >= consensusParams.LVIP05Height){
+        pocxFlag = true;
+    }
+
+    uint256 generationSignature;
+    if (pocxFlag){
+        generationSignature = CalcGenerationSignature(pindexPrev->genSign, pindexPrev->nPublicKeyID);
+    }else{
+        generationSignature = CalcGenerationSignaturePoc2(pindexPrev->genSign, pindexPrev->nPlotID);
+    }
     if (block.genSign != generationSignature){
         return state.Invalid(false, REJECT_INVALID, "block-sig-err", "block genSign error");
     }
@@ -3406,7 +3453,7 @@ bool CChainState::AcceptBlockHeader(const CBlockHeader& block, CValidationState&
         if (!block.hashPrevBlock.IsNull()) {
             for (auto i = 0; i <= chainActive.Height(); i++) {
                 if (chainActive[i]->GetBlockHash() == block.hashPrevBlock) {
-                    height = chainActive[i]->nHeight + 1;
+                    height = chainActive[i]->nHeight + 1; 
                     break;
                 }
             }
@@ -3623,8 +3670,7 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
 
     NotifyHeaderTip();
 
-    auto activeteBestChain = [chainparams, pblock]()->bool {
-        LOCK(cs_main);
+    auto activateBestChain = [chainparams, pblock]()->bool {
         CValidationState state; // Only used to report errors, not invalidity - ignore it
         if (!g_chainstate.ActivateBestChain(state, chainparams, pblock))
             return error("%s: ActivateBestChain failed (%s)\n", __func__, FormatStateMessage(state));
@@ -3644,7 +3690,7 @@ bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<cons
     auto prevIndex = miSelf->second;
     if (pblock->nDeadline / prevIndex->nBaseTarget + prevIndex->nTime > GetSystemTimeInSeconds()) {
         LogPrintf("%s: deadline in feature, add to cache, block:%s, time:%d\n", __func__, pblock->GetHash().ToString(), pblock->nTime);
-        g_blockCache->AddBlock(pblock, activeteBestChain);
+        g_blockCache->AddBlock(pblock, activateBestChain);
         return true;
     }
     CValidationState state; // Only used to report errors, not invalidity - ignore it
@@ -5023,10 +5069,17 @@ bool LoadRelationView()
         return true;
     }else{
         // assember relationMap index.
+        CBlockIndex *currentIndex = chainActive.Genesis();
         for (auto i = 0; i <= chainActive.Height(); i++) {
             try {
-                if (!prelationview->LoadRelationFromDisk(i))
+                bool pocxFlag = false;
+                if (currentIndex->nHeight >= Params().GetConsensus().LVIP05Height){
+                    pocxFlag = true;
+                }
+
+                if (!prelationview->LoadRelationFromDisk(i, pocxFlag))
                     return error("%s: failed to read relation from disk, height: %s", __func__, i);
+                currentIndex = chainActive.Next(currentIndex);
             } catch (const std::runtime_error& e) {
                 return error("%s: failure: %s", __func__, e.what());
             }

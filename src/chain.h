@@ -225,6 +225,7 @@ public:
     //! block header poc
     uint256 genSign;
     uint64_t nPlotID;
+    uint160  nPublicKeyID;
     uint64_t nBaseTarget;
     uint64_t nDeadline;
 
@@ -256,6 +257,7 @@ public:
         nNonce         = 0;
 
         nPlotID        = 0;
+        nPublicKeyID.SetNull();
         genSign.SetNull();
         nBaseTarget    = 0;
         nDeadline      = 0;
@@ -276,6 +278,7 @@ public:
         nNonce         = block.nNonce;
 
         nPlotID        = block.nPlotID;
+        nPublicKeyID   = block.nPublicKeyID;
         genSign        = block.genSign;
         nBaseTarget    = block.nBaseTarget;
         nDeadline      = block.nDeadline;
@@ -312,6 +315,7 @@ public:
         block.nBaseTarget    = nBaseTarget;
         block.genSign        = genSign;
         block.nPlotID        = nPlotID;
+        block.nPublicKeyID   = nPublicKeyID;
         block.nDeadline      = nDeadline;
         return block;
     }
@@ -443,6 +447,11 @@ public:
         READWRITE(genSign);
         READWRITE(nDeadline);
         READWRITE(nPlotID);
+        
+        if (nPlotID == 0 && !hashPrev.IsNull()){
+            // POC21
+            READWRITE(nPublicKeyID);
+        }
         READWRITE(nBaseTarget);
     }
 
@@ -457,6 +466,7 @@ public:
         block.genSign         = genSign;
         block.nDeadline       = nDeadline;
         block.nPlotID         = nPlotID;
+        block.nPublicKeyID    = nPublicKeyID;
         block.nBaseTarget     = nBaseTarget;
         return block.GetHash();
     }
