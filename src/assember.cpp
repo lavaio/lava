@@ -35,10 +35,19 @@ bool CPOCBlockAssember::UpdateDeadline(const int height, const CKeyID& keyid, co
     }
 
     auto plotID = keyid.GetPlotID();
-    auto generationSignature = CalcGenerationSignature(prevIndex->genSign, prevIndex->nPlotID);
-    if (CalcDeadline(generationSignature, height, plotID, nonce) != deadline) {
-        LogPrintf("Deadline inconformity %uul\n", deadline);
-        return false;
+    uint256 generationSignature;
+    if (height >= Params().GetConsensus().LVIP05Height){
+        generationSignature = CalcGenerationSignature(prevIndex->genSign, prevIndex->nPublicKeyID);
+        if (CalcDeadline(generationSignature, height, uint160(keyid), nonce) != deadline) {
+            LogPrintf("POC2.x Deadline inconformity %uul\n", deadline);
+            return false;
+        }
+    }else{
+        generationSignature = CalcGenerationSignaturePoc2(prevIndex->genSign, prevIndex->nPlotID);
+        if (CalcDeadlinePoc2(generationSignature, height, plotID, nonce) != deadline) {
+            LogPrintf("POC2 Deadline inconformity %uul\n", deadline);
+            return false;
+        }
     }
     auto ts = (deadline / prevIndex->nBaseTarget);
     LogPrintf("Update new deadline: %u, now: %u, target: %u\n", ts, GetTimeMillis() / 1000, prevIndex->nTime + ts);
@@ -74,11 +83,12 @@ void CPOCBlockAssember::CreateNewBlock()
         deadline = this->deadline;
     }
     
-    auto plotid = from.GetPlotID();
-    LogPrintf("CPOCBlockAssember CreateNewBlock, plotid: %u nonce:%u newheight:%u deadline:%u utc:%u\n", plotid, nonce, height, deadline, GetTimeMillis()/1000);
     auto params = Params();
-    //plotid bind
-    auto to = prelationview->To(from);
+    uint64_t plotid = from.GetPlotID();
+    if (height >= Params().GetConsensus().LVIP05Height){
+        plotid = 0;
+    }
+    auto to = prelationview->To(from, from.GetPlotID(), true);
     auto target = to.IsNull() ? from : to;
     auto fstx = MakeTransactionRef();
 
@@ -126,7 +136,7 @@ void CPOCBlockAssember::CreateNewBlock()
     }
     
     auto scriptPubKeyIn = GetScriptForDestination(CTxDestination(target));
-    auto blk = BlockAssembler(params).CreateNewBlock(scriptPubKeyIn, nonce, plotid, deadline, fstx);
+    auto blk = BlockAssembler(params).CreateNewBlock(scriptPubKeyIn, nonce, from, plotid, deadline, fstx);
     if (blk) {
         uint32_t extraNonce = 0;
         IncrementExtraNonce(&blk->block, chainActive.Tip(), extraNonce);

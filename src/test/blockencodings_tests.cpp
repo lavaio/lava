@@ -60,7 +60,7 @@ static CBlock BuildBlockTestCase() {
     block.hashMerkleRoot = BlockMerkleRoot(block, &mutated);
     assert(!mutated);
     auto params = Params();
-    CheckProofOfCapacity(block.genSign, height, block.nPlotID, block.nNonce, block.nBaseTarget, block.nDeadline, params.TargetDeadline());
+    CheckProofOfCapacity(block.genSign, height, block.nPublicKeyID, block.nNonce, block.nBaseTarget, block.nDeadline, params.TargetDeadline());
     return block;
 }
 
@@ -318,7 +318,7 @@ BOOST_AUTO_TEST_CASE(EmptyBlockRoundTripTest)
     block.nBaseTarget = 18325193796;
     block.nDeadline = 24 * block.nBaseTarget;
     auto params = Params();
-    CheckProofOfCapacity(block.genSign, height, block.nPlotID, block.nNonce, block.nBaseTarget, block.nDeadline, params.TargetDeadline());
+    CheckProofOfCapacity(block.genSign, height, block.nPublicKeyID, block.nNonce, block.nBaseTarget, block.nDeadline, params.TargetDeadline());
 
     // Test simple header round-trip with only coinbase
     {

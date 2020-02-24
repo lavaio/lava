@@ -286,6 +286,7 @@ static UniValue getmineraddress(const JSONRPCRequest& request)
             UniValue obj(UniValue::VOBJ);
             obj.pushKV("address", EncodeDestination(dest));
             obj.pushKV("plotid", pubkey.GetID().GetPlotID());
+            obj.pushKV("publickeyid", pubkey.GetID().ToString());
             return obj;
         } else {
             UniValue obj(UniValue::VOBJ);
@@ -311,6 +312,7 @@ static UniValue getmineraddress(const JSONRPCRequest& request)
         UniValue obj(UniValue::VOBJ);
         obj.pushKV("address", EncodeDestination(dest));
         obj.pushKV("plotid", newKey.GetID().GetPlotID());
+        obj.pushKV("publickeyid", newKey.GetID().ToString());
         return obj;
     }
 }
@@ -5432,10 +5434,12 @@ static UniValue getbindinginfo(const JSONRPCRequest& request)
                     "  \"from\": {\n"
                     "    \"address\": \"17VkcJoDJEHyuCKgGyky8CGNnb1kPgbwr4\",\n"
                     "    \"plotid\": 8512475111423,\n"
+                    "    \"publickeyid\": 957c5a75687fa36528feb8fa773cb23f4c689c01,\n"
                     "  },\n"
                     "  \"to\": {\n"
                     "    \"address\": \"1QEWDafENaWingtsSGtnc3M2fiQVuEkZHi\",\n"
                     "    \"plotid\": 14776299456771222,\n"
+                    "    \"publickeyid\": 799c5acef87fa36abedeb8fa773cb2gefc680098,\n"
                     "  }\n"
                     "}\n"
                  },
@@ -5451,18 +5455,25 @@ static UniValue getbindinginfo(const JSONRPCRequest& request)
     if (!IsValidDestination(dest) || dest.type() != typeid(CKeyID)) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address");
     }
+    // check poc21
+    bool pocxFlag = false;
+    if (chainActive.Tip()->nHeight >= Params().GetConsensus().LVIP05Height){
+        pocxFlag = true;
+    }
     auto from = boost::get<CKeyID>(dest);
-    auto to = prelationview->To(from);
+    auto to = prelationview->To(from, from.GetPlotID(), pocxFlag);
     if (to == CKeyID()) {
         return UniValue(UniValue::VOBJ);
     }
     UniValue fromVal(UniValue::VOBJ);
     fromVal.pushKV("address", EncodeDestination(CTxDestination(from)));
     fromVal.pushKV("plotid", from.GetPlotID());
+    fromVal.pushKV("publickeyid", from.ToString());
 
     UniValue toVal(UniValue::VOBJ);
     toVal.pushKV("address", EncodeDestination(CTxDestination(to)));
     toVal.pushKV("plotid", to.GetPlotID());
+    toVal.pushKV("publickeyid", to.ToString());
     UniValue result(UniValue::VOBJ);
     result.pushKV("from", fromVal);
     result.pushKV("to", toVal);
@@ -5483,20 +5494,24 @@ static UniValue listbindings(const JSONRPCRequest& request)
                     "    \"from\": {\n"
                     "      \"address\": \"1LfaqrJ9vrXTU3RdVTsHz7Dgn5b1ooN8KN\",\n"
                     "      \"plotid\": 14045118739489404631,\n"
+                    "      \"publickeyid\": 799c5acef87fa36abedeb8fa773cb2gefc680098,\n"
                     "    },\n"
                     "    \"to\": {\n"
                     "      \"address\": \"1GwFgPsGwmyohfMCbdD6tGCYMNzbeK1N4V\",\n"
                     "      \"plotid\": 12495994880773508270,\n"
+                    "      \"publickeyid\": 799c5acef87fa36abedeb8fa773cb2gefc680098,\n"
                     "    }\n"
                     "  },\n"
                     "  {\n"
                     "    \"from\": {\n"
                     "      \"address\": \"1JWYKVAY2r73FbMxwZdgwXaHPwT2srRrUx\",\n"
                     "      \"plotid\": 8195665653426294976,\n"
+                    "      \"publickeyid\": 799c5acef87fa36abedeb8fa773cb2gefc680098,\n"
                     "    },\n"
                     "    \"to\": {\n"
                     "      \"address\": \"1MxchR6KHhE44M4KGPMRJtftY5jcXZ3nfA\",\n"
                     "      \"plotid\": 13765273405587843045,\n"
+                    "      \"publickeyid\": 799c5acef87fa36abedeb8fa773cb2gefc680098,\n"
                     "    }\n"
                     "  }\n"
                     "]\n"
@@ -5515,10 +5530,12 @@ static UniValue listbindings(const JSONRPCRequest& request)
         UniValue fromVal(UniValue::VOBJ);
         fromVal.pushKV("address", EncodeDestination(CTxDestination(from)));
         fromVal.pushKV("plotid", from.GetPlotID());
+        fromVal.pushKV("publickeyid", from.ToString());
 
         UniValue toVal(UniValue::VOBJ);
         toVal.pushKV("address", EncodeDestination(CTxDestination(to)));
         toVal.pushKV("plotid", to.GetPlotID());
+        toVal.pushKV("publickeyid", to.ToString());
 
         UniValue val(UniValue::VOBJ);
         val.pushKV("from", fromVal);

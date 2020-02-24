@@ -2,6 +2,7 @@
 #include <validation.h>
 #include <chainparams.h>
 #include <logging.h>
+#include <key_io.h>
 
 CAction MakeBindAction(const CKeyID& from, const CKeyID& to)
 {
@@ -9,7 +10,7 @@ CAction MakeBindAction(const CKeyID& from, const CKeyID& to)
     return std::move(CAction(ba));
 }
 
-bool SignAction(const COutPoint out, const CAction &action, const CKey& key, std::vector<unsigned char>& vch)
+bool SignAction(const COutPoint& out, const CAction &action, const CKey& key, std::vector<unsigned char>& vch)
 {
     vch.clear();
     auto actionVch = SerializeAction(action);
@@ -24,7 +25,7 @@ bool SignAction(const COutPoint out, const CAction &action, const CKey& key, std
     return true;
 }
 
-bool VerifyAction(const COutPoint out, const CAction& action, std::vector<unsigned char>& vchSig)
+bool VerifyAction(const COutPoint& out, const CAction& action, std::vector<unsigned char>& vchSig)
 {
     CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
     ss << SerializeAction(action) << out;
@@ -70,7 +71,7 @@ CAction UnserializeAction(const std::vector<unsigned char>& vch) {
     return std::move(CAction(CNilAction{}));
 }
 
-CAction DecodeAction(const CTransactionRef tx, std::vector<unsigned char>& vchSig)
+CAction DecodeAction(const CTransactionRef& tx, std::vector<unsigned char>& vchSig)
 {
     do {
         if (tx->IsCoinBase() || tx->IsNull() || tx->vout.size() != 2 
@@ -116,14 +117,17 @@ CRelationView::CRelationView(size_t nCacheSize, bool fMemory, bool fWipe)
 {
 }
 
-CKeyID CRelationView::To(const CKeyID& from) const
+CKeyID CRelationView::To(const uint160& from, uint64_t plotid, bool poc21) const
 {
-    auto to = To(from.GetPlotID());
-    return std::move(to);
-}
+    if (poc21){
+        // If POC21 is actived.
+        auto kv = relationKeyIDTip.find(CKeyID(from));
+        if(kv!=relationKeyIDTip.end()){
+            return std::move(kv->second);  
+        }
+        return std::move(CKeyID());
+    }
 
-CKeyID CRelationView::To(uint64_t plotid) const
-{
     CKeyID value;
     auto key = relationTip.find(plotid);
     if(key!=relationTip.end()){
@@ -137,36 +141,46 @@ CKeyID CRelationView::To(uint64_t plotid) const
     return std::move(value);
 }
 
-bool CRelationView::AcceptAction(const int height, const uint256& txid, const CAction& action, std::vector<std::pair<uint256, CRelationActive>>& relations)
+bool CRelationView::AcceptAction(const int height, const uint256& txid, const CAction& action, std::vector<std::pair<uint256, CRelationActive>>& relations, bool poc21)
 {
     CDBBatch batch(*this);
     LogPrintf("AcceptAction, tx:%s\n", txid.GetHex());
     if (action.type() == typeid(CBindAction)) {
         auto ba = boost::get<CBindAction>(action);
-        auto from = ba.first;
-        auto to = ba.second;
-        auto active = std::make_pair(txid, std::make_pair(from, to));
+        auto active = std::make_pair(txid, std::make_pair(ba.first, ba.second));
         relations.push_back(active);
-        // write plotID and CKeyID into disk.
-        batch.Write(std::make_pair(DB_RELATIONID, ba.first.GetPlotID()), ba.first);
-        batch.Write(std::make_pair(DB_RELATIONID, ba.second.GetPlotID()), ba.second);
-        // add new action at tip
-        relationTip[ba.first.GetPlotID()] = ba.second.GetPlotID();
-        LogPrintf("bind action, from:%u, to:%u\n", from.GetPlotID(), ba.second.GetPlotID());
+        if (! poc21){
+            // old poc2 need old relationMap to validate.
+            // write plotID and CKeyID into disk.
+            batch.Write(std::make_pair(DB_RELATIONID, ba.first.GetPlotID()), ba.first);
+            batch.Write(std::make_pair(DB_RELATIONID, ba.second.GetPlotID()), ba.second);
+            // add new action at tip
+            relationTip[ba.first.GetPlotID()] = ba.second.GetPlotID();
+            LogPrintf("bind action, from:%u, to:%u\n", ba.first.GetPlotID(), ba.second.GetPlotID());
+        }
+        relationKeyIDTip[ba.first] = ba.second;
+        LogPrintf("POC2+ bind action, from address : %u, to address : %u\n", EncodeDestination(ba.first), EncodeDestination(ba.second));
     } else if (action.type() == typeid(CUnbindAction)) {
         auto from = boost::get<CUnbindAction>(action);
         auto active = std::make_pair(txid,std::make_pair(from, CKeyID()));
         relations.push_back(active);
-        LogPrintf("unbind action, from:%u\n", from.GetPlotID());
-        auto key = relationTip.find(from.GetPlotID());
-        if(key!=relationTip.end()){
-            relationTip.erase(key);
+        if (! poc21){
+            LogPrintf("unbind action, from plotid:%u\n", from.GetPlotID());
+            auto key = relationTip.find(from.GetPlotID());
+            if(key!=relationTip.end()){
+                relationTip.erase(key);
+            }
+        }
+        LogPrintf("POC2+ unbind action, from address : %u\n", EncodeDestination(from));
+        auto key = relationKeyIDTip.find(from);
+        if(key!=relationKeyIDTip.end()){
+            relationKeyIDTip.erase(key);
         }
     }
     return WriteBatch(batch);
 }
 
-void CRelationView::ConnectBlock(const int height, const CBlock &blk){
+void CRelationView::ConnectBlock(const int height, const CBlock &blk, bool poc21){
     //get tip relation map
     if (height > 0){
         relationTip = relationMapIndex[height-1];
@@ -181,7 +195,7 @@ void CRelationView::ConnectBlock(const int height, const CBlock &blk){
             LogPrintf("DecodeAction not nil action: %s\n", tx->GetHash().GetHex());
             auto out = tx->vin[0].prevout;
             if (VerifyAction(out, action, vchSig)) {
-                if (!AcceptAction(height, tx->GetHash(), action, relations)) {
+                if (!AcceptAction(height, tx->GetHash(), action, relations, poc21)) {
                     LogPrintf("AcceptAction failure: %s\n", tx->GetHash().GetHex());
                 }
             }
@@ -190,8 +204,10 @@ void CRelationView::ConnectBlock(const int height, const CBlock &blk){
             }
         }
     }
-    relationMapIndex[height] = relationTip;
-
+    if (! poc21){
+        relationMapIndex[height] = relationTip;
+    }
+    relationMapKeyIDIndex[height] = relationKeyIDTip;
     if (relations.size() > 0) {
         if (!WriteRelationsToDisk(height, relations)) {
             LogPrint(BCLog::RELATION, "%s: WriteRelationToDisk retrun false, height:%d\n", __func__, height);
@@ -206,24 +222,35 @@ bool CRelationView::WriteRelationsToDisk(const int height, const std::vector<std
 }
 
 
-void CRelationView::DisconnectBlock(const int height, const CBlock &blk)
+void CRelationView::DisconnectBlock(const int height, const CBlock &blk, bool poc21)
 {
     // erase disk
     LogPrint(BCLog::RELATION, "%s: height:%d, block:%s\n", __func__, height, blk.GetHash().ToString());
     auto key = std::make_pair(DB_ACTIVE_ACTION_KEY, height);
     Erase(key, true);
 
-    // reset tip relation
-    relationTip = relationMapIndex[height-1];
+    if (! poc21){
+        // reset tip relation
+        relationTip = relationMapIndex[height-1];
 
-    // erase tip at height
-    auto relationkey = relationMapIndex.find(height);
-    if(relationkey!=relationMapIndex.end()){
-        relationMapIndex.erase(relationkey);
+        // erase tip at height
+        auto relationkey = relationMapIndex.find(height);
+        if(relationkey!=relationMapIndex.end()){
+            relationMapIndex.erase(relationkey);
+        }
+    }
+
+    // reset POC2+ KeyID tip relation
+    relationKeyIDTip = relationMapKeyIDIndex[height-1];
+
+    // erase POC2+ KeyID tip at height
+    auto relationkey = relationMapKeyIDIndex.find(height);
+    if(relationkey!=relationMapKeyIDIndex.end()){
+        relationMapKeyIDIndex.erase(relationkey);
     }
 }
 
-bool CRelationView::LoadRelationFromDisk(const int height)
+bool CRelationView::LoadRelationFromDisk(const int height, bool poc21)
 {
     auto key = std::make_pair(DB_ACTIVE_ACTION_KEY, height);
     if (Exists(key)) {
@@ -236,42 +263,45 @@ bool CRelationView::LoadRelationFromDisk(const int height)
             if (relation.second.second != CKeyID()) {
                 auto from = relation.second.first;
                 auto to   = relation.second.second;
-                relationTip[from.GetPlotID()] = to.GetPlotID();
-                LogPrintf("bind action, from:%u, to:%u\n", from.GetPlotID(), to.GetPlotID());
+                if (! poc21){
+                    relationTip[from.GetPlotID()] = to.GetPlotID();
+                    LogPrintf("bind action, from:%u, to:%u\n", from.GetPlotID(), to.GetPlotID());
+                    relationMapIndex[height] = relationTip;
+                }
+                relationKeyIDTip[from] = to;
+                LogPrintf("POC2+ bind action, from : %u, to : %u\n", EncodeDestination(from), EncodeDestination(to));
             } else if (relation.second.second == CKeyID()) {
                 auto from = relation.second.first;
-                LogPrintf("unbind action, from:%u\n", from.GetPlotID());
-                auto key = relationTip.find(from.GetPlotID());
-                if(key!=relationTip.end()){
-                    relationTip.erase(key);
+                if (! poc21){
+                    LogPrintf("unbind action, from:%u\n", from.GetPlotID());
+                    auto key = relationTip.find(from.GetPlotID());
+                    if(key!=relationTip.end()){
+                        relationTip.erase(key);
+                    }
+                    relationMapIndex[height] = relationTip;
+                }
+                LogPrintf("POC2+ unbind action, from : %u\n", EncodeDestination(from));
+                auto key = relationKeyIDTip.find(from);
+                if(key!=relationKeyIDTip.end()){
+                    relationKeyIDTip.erase(key);
                 }
             }
         }
     }
-    relationMapIndex[height] = relationTip;
+
+    if (! poc21){
+        relationMapIndex[height] = relationTip;
+    }
+    relationMapKeyIDIndex[height] = relationKeyIDTip;
     return true;
 }
 
 CRelationVector CRelationView::ListRelations() const
 {
     CRelationVector vch;
-    for (auto iter = relationTip.begin(); iter != relationTip.end(); iter++ ) {
-        auto fromPlotid = iter->first;
-        auto from_key = std::make_pair(DB_RELATIONID, fromPlotid);
-        CKeyID from;
-        if(!Read(from_key, from)){
-            LogPrint(BCLog::RELATION, "%s: Read KeyID retrun false, PlotID:%u\n", __func__, fromPlotid);
-            continue;
-        }
-        auto toPlotid = iter->second;
-        auto to_key = std::make_pair(DB_RELATIONID, toPlotid);
-        CKeyID to;
-        if(!Read(to_key, to)){
-            LogPrint(BCLog::RELATION, "%s: Read KeyID retrun false, PlotID:%u\n", __func__, toPlotid);
-            continue;
-        }
-        auto value = std::make_pair(from, to);
-        vch.push_back(value);
+    vch.reserve(relationKeyIDTip.size());
+    for (auto& iter : relationKeyIDTip) {
+        vch.emplace_back(iter.first, iter.second);
     }
-    return std::move(vch);
+    return vch;
 }
