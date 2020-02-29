@@ -422,6 +422,8 @@
     <QtUic Include="..\..\src\qt\forms\debugwindow.ui">
       <QtUicDir>..\..\src\qt\forms</QtUicDir>
       <QtUicFileName>ui_$(Configuration)window.h</QtUicFileName>
+      <QtUicFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ui_%(Filename).h</QtUicFileName>
+      <QtUicFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ui_%(Filename).h</QtUicFileName>
     </QtUic>
     <QtUic Include="..\..\src\qt\forms\editaddressdialog.ui">
       <QtUicDir>..\..\src\qt\forms</QtUicDir>
