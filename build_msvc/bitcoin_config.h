@@ -8,7 +8,7 @@
 //#define CLIENT_VERSION_BUILD 0
 
 /* Version is release */
-#define CLIENT_VERSION_IS_RELEASE false
+#define CLIENT_VERSION_IS_RELEASE true
 
 /* Major version */
 #define CLIENT_VERSION_MAJOR 0
@@ -17,7 +17,7 @@
 #define CLIENT_VERSION_MINOR 4
 
 /* Build revision */
-#define CLIENT_VERSION_REVISION 1
+#define CLIENT_VERSION_REVISION 2
 
 /* Copyright holder(s) before %s replacement */
 #define COPYRIGHT_HOLDERS "The %s developers"
@@ -393,6 +393,9 @@
 
 /* Define if QR support should be compiled in */
 //#define USE_QRCODE 1
+
+/* Define if not use shabal.asm */
+#define WITHOUT_ASM
 
 /* UPnP support not compiled if undefined, otherwise value (0 or 1) determines
    default state */

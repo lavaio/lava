@@ -25,12 +25,12 @@ bool CPOCBlockAssember::UpdateDeadline(const int height, const CKeyID& keyid, co
     }
     auto params = Params();
     if (deadline / prevIndex->nBaseTarget > params.TargetDeadline()) {
-        LogPrintf("Invalid deadline %uul\n", deadline);
+        LogPrintf("Invalid deadline %ull\n", deadline);
         return false;
     }
 
     if (this->deadline != 0 && deadline >= this->deadline) {
-        LogPrintf("Invalid deadline %uul\n", deadline);
+        LogPrintf("Invalid deadline %ull\n", deadline);
         return false;
     }
 

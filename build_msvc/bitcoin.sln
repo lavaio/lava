@@ -42,10 +42,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libleveldb", "libleveldb\li
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libshabal", "libshabal\libshabal.vcxproj", "{C72A7FAB-1109-4AF0-A9AB-7A32D3A8C5C7}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_libshabal", "test_libshabal\test_libshabal.vcxproj", "{1F219819-FF1D-4454-A13F-CB29F343B509}"
-	ProjectSection(ProjectDependencies) = postProject
-		{C72A7FAB-1109-4AF0-A9AB-7A32D3A8C5C7} = {C72A7FAB-1109-4AF0-A9AB-7A32D3A8C5C7}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lava-qt", "bitcoin_qt\bitcoin-qt.vcxproj", "{7F7EE2B3-E57F-3666-B03F-6ED000198BD0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -215,14 +212,12 @@ Global
 		{C72A7FAB-1109-4AF0-A9AB-7A32D3A8C5C7}.Release|x64.Build.0 = Release|x64
 		{C72A7FAB-1109-4AF0-A9AB-7A32D3A8C5C7}.Release|x86.ActiveCfg = Release|Win32
 		{C72A7FAB-1109-4AF0-A9AB-7A32D3A8C5C7}.Release|x86.Build.0 = Release|Win32
-		{1F219819-FF1D-4454-A13F-CB29F343B509}.Debug|x64.ActiveCfg = Debug|x64
-		{1F219819-FF1D-4454-A13F-CB29F343B509}.Debug|x64.Build.0 = Debug|x64
-		{1F219819-FF1D-4454-A13F-CB29F343B509}.Debug|x86.ActiveCfg = Debug|Win32
-		{1F219819-FF1D-4454-A13F-CB29F343B509}.Debug|x86.Build.0 = Debug|Win32
-		{1F219819-FF1D-4454-A13F-CB29F343B509}.Release|x64.ActiveCfg = Release|x64
-		{1F219819-FF1D-4454-A13F-CB29F343B509}.Release|x64.Build.0 = Release|x64
-		{1F219819-FF1D-4454-A13F-CB29F343B509}.Release|x86.ActiveCfg = Release|Win32
-		{1F219819-FF1D-4454-A13F-CB29F343B509}.Release|x86.Build.0 = Release|Win32
+		{7F7EE2B3-E57F-3666-B03F-6ED000198BD0}.Debug|x64.ActiveCfg = Debug|x64
+		{7F7EE2B3-E57F-3666-B03F-6ED000198BD0}.Debug|x64.Build.0 = Debug|x64
+		{7F7EE2B3-E57F-3666-B03F-6ED000198BD0}.Debug|x86.ActiveCfg = Debug|x64
+		{7F7EE2B3-E57F-3666-B03F-6ED000198BD0}.Release|x64.ActiveCfg = Release|x64
+		{7F7EE2B3-E57F-3666-B03F-6ED000198BD0}.Release|x64.Build.0 = Release|x64
+		{7F7EE2B3-E57F-3666-B03F-6ED000198BD0}.Release|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
