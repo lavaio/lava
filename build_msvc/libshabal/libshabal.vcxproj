@@ -27,6 +27,9 @@
   <ItemGroup>
     <ClInclude Include="..\..\src\shabal\shabal.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\crypto\shabal.c" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{C72A7FAB-1109-4AF0-A9AB-7A32D3A8C5C7}</ProjectGuid>
@@ -143,7 +146,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
