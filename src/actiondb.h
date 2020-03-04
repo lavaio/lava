@@ -133,6 +133,8 @@ private:
     RelationMapIndex relationMapIndex; 
     /** The map records new relation KEYID tip, for POC21.*/
     RelationMapKeyIDIndex relationMapKeyIDIndex; 
+
+    bool pushBackRelation(const int height, bool poc21);
 };
 
 #endif

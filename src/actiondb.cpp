@@ -181,11 +181,6 @@ bool CRelationView::AcceptAction(const int height, const uint256& txid, const CA
 }
 
 void CRelationView::ConnectBlock(const int height, const CBlock &blk, bool poc21){
-    //get tip relation map
-    if (height > 0){
-        relationTip = relationMapIndex[height-1];
-    }
-
     std::vector<std::pair<uint256, CRelationActive>> relations;
     //accept action
     for (auto tx: blk.vtx) {
@@ -204,10 +199,8 @@ void CRelationView::ConnectBlock(const int height, const CBlock &blk, bool poc21
             }
         }
     }
-    if (! poc21){
-        relationMapIndex[height] = relationTip;
-    }
-    relationMapKeyIDIndex[height] = relationKeyIDTip;
+
+    pushBackRelation(height, poc21);
     if (relations.size() > 0) {
         if (!WriteRelationsToDisk(height, relations)) {
             LogPrint(BCLog::RELATION, "%s: WriteRelationToDisk retrun false, height:%d\n", __func__, height);
@@ -289,11 +282,22 @@ bool CRelationView::LoadRelationFromDisk(const int height, bool poc21)
         }
     }
 
+    pushBackRelation(height, poc21);
+    return true;
+}
+
+bool CRelationView::pushBackRelation(const int height, bool poc21){
     if (! poc21){
+        if (relationMapIndex.size() >= 1000) {
+            relationMapIndex.erase(height - 1000);
+        }
         relationMapIndex[height] = relationTip;
     }
+
+    if (relationMapKeyIDIndex.size() >= 1000) {
+        relationMapKeyIDIndex.erase(height - 1000);
+    }
     relationMapKeyIDIndex[height] = relationKeyIDTip;
-    return true;
 }
 
 CRelationVector CRelationView::ListRelations() const
