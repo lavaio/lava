@@ -1722,11 +1722,11 @@
     </message>
     <message>
         <source>PlotId:</source>
-        <translation>PlotId:</translation>
+        <translation>PubkeyID:</translation>
     </message>
     <message>
         <source>New Plot ID</source>
-        <translation>生成新PlotID</translation>
+        <translation>生成新PubkeyID</translation>
     </message>
     <message>
         <source>New Mining Address</source>
@@ -1734,7 +1734,7 @@
     </message>
     <message>
         <source>Failed to Generate New Plot Id</source>
-        <translation>无法生成PlotId</translation>
+        <translation>无法生成PubkeyID</translation>
     </message>
     <message>
         <source>Please check the address pool</source>
@@ -1762,7 +1762,7 @@
     </message>
     <message>
         <source>Bind PlotId</source>
-        <translation>绑定PlotId</translation>
+        <translation>绑定PubkeyID</translation>
     </message>
     <message>
         <source>Binding Info:</source>
