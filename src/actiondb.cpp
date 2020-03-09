@@ -298,6 +298,7 @@ bool CRelationView::pushBackRelation(const int height, bool poc21){
         relationMapKeyIDIndex.erase(height - 1000);
     }
     relationMapKeyIDIndex[height] = relationKeyIDTip;
+    return true;
 }
 
 CRelationVector CRelationView::ListRelations() const
