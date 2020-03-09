@@ -1569,6 +1569,9 @@ bool AppInitMain(InitInterfaces& interfaces)
                     break;
                 }
 
+                // Load blockcache best block.
+                g_blockCache->UpdateBestBlockIndex(chainActive.Tip());
+
                 // Load relation from disk
                 if (!LoadRelationView()) {
                     strLoadError = _("Error opening relation database");

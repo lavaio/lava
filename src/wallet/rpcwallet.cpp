@@ -253,6 +253,8 @@ static UniValue getmineraddress(const JSONRPCRequest& request)
 
     if (!pwallet->IsLocked()) {
         pwallet->TopUpKeyPool();
+    }else{
+        throw JSONRPCError(RPC_WALLET_ERROR, "Please unlock your wallet first!");
     }
     
     locked_chain.reset(nullptr);
