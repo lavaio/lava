@@ -61,10 +61,12 @@ CAction DecodeAction(const CTransactionRef& tx, std::vector<unsigned char>& vchS
 
 typedef std::pair<CKeyID, CKeyID> CRelation;
 typedef std::vector<CRelation> CRelationVector;
+typedef std::pair<int32_t, CKeyID> CPersonalHeightRelation;
+typedef std::vector<CPersonalHeightRelation> CPersonalHeightRelationVec;
+typedef std::map<int32_t, CKeyID> CPersonalRelationHistoryList;
+typedef std::map<CKeyID, CPersonalRelationHistoryList> CRelationsHistoryMap;
 typedef std::map<uint64_t,uint64_t> RelationMap;
 typedef std::map<CKeyID,CKeyID> RelationKeyIDMap;
-typedef std::map<int,RelationMap> RelationMapIndex;
-typedef std::map<int,RelationKeyIDMap> RelationMapKeyIDIndex;
 typedef std::pair<CKeyID, CKeyID> CRelationActive;
 
 /** 
@@ -84,6 +86,9 @@ public:
      */
     CKeyID To(const uint160& from, uint64_t plotid, bool poc21) const;
 
+    void addRelationHistory(const int height, const CKeyID& from, const CKeyID& to);
+    bool removeRelationHistory(const int height, const CKeyID& from, bool poc21);
+
     /** 
      * Push the relation(bind and unbind), which is at the height, into relation tip set.
      * @param[in]    height     the block height, at which this action appears.
@@ -94,6 +99,7 @@ public:
      */
     bool AcceptAction(const int height, const uint256& txid, const CAction& action, std::vector<std::pair<uint256, CRelationActive>> &relations, bool poc21);
     
+    bool RollBackAction(const int height, const uint256& txid, const CAction& action, bool poc21);
     /** 
      * ConnectBlock is an up-layer api, which calls AcceptAction and WriteRelationsToDisk, as well as be called by ConnectTip.
      * @param[in]    height  the block height, at which the connecttip function calls.
@@ -108,7 +114,7 @@ public:
      * Write the relation tip set on disk.
      */
     bool WriteRelationsToDisk(const int height, const std::vector<std::pair<uint256, CRelationActive>> &relations);
-    
+
     /** 
      * Init the relation tip set.
      * @param[in]   height  the block height, at which loading function calls.
@@ -129,12 +135,7 @@ private:
     /** Relation KEYID tip set which is for POC21.*/
     RelationKeyIDMap relationKeyIDTip;
 
-    /** The map records new relation tip set into, when new block is coming.*/
-    RelationMapIndex relationMapIndex; 
-    /** The map records new relation KEYID tip, for POC21.*/
-    RelationMapKeyIDIndex relationMapKeyIDIndex; 
-
-    bool pushBackRelation(const int height, bool poc21);
+    CRelationsHistoryMap relationsHistoryMap;
 };
 
 #endif

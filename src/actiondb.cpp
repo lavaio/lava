@@ -3,6 +3,7 @@
 #include <chainparams.h>
 #include <logging.h>
 #include <key_io.h>
+#include <algorithm>
 
 CAction MakeBindAction(const CKeyID& from, const CKeyID& to)
 {
@@ -141,6 +142,18 @@ CKeyID CRelationView::To(const uint160& from, uint64_t plotid, bool poc21) const
     return std::move(value);
 }
 
+void CRelationView::addRelationHistory(const int height, const CKeyID& from, const CKeyID& to){
+    CPersonalRelationHistoryList personalRelationList;
+    auto iter = relationsHistoryMap.find(from);
+    if (iter != relationsHistoryMap.end()){
+        personalRelationList = relationsHistoryMap[from];
+    }
+    // For one person, 
+    // One height only to One action
+    personalRelationList[height] = to;
+    relationsHistoryMap[from] = personalRelationList;
+}
+
 bool CRelationView::AcceptAction(const int height, const uint256& txid, const CAction& action, std::vector<std::pair<uint256, CRelationActive>>& relations, bool poc21)
 {
     CDBBatch batch(*this);
@@ -159,6 +172,8 @@ bool CRelationView::AcceptAction(const int height, const uint256& txid, const CA
             LogPrintf("bind action, from:%u, to:%u\n", ba.first.GetPlotID(), ba.second.GetPlotID());
         }
         relationKeyIDTip[ba.first] = ba.second;
+        // use a cache map--personalRelationsMap to record each person relations history
+        addRelationHistory(height, ba.first, ba.second);
         LogPrintf("POC2+ bind action, from address : %u, to address : %u\n", EncodeDestination(ba.first), EncodeDestination(ba.second));
     } else if (action.type() == typeid(CUnbindAction)) {
         auto from = boost::get<CUnbindAction>(action);
@@ -176,6 +191,8 @@ bool CRelationView::AcceptAction(const int height, const uint256& txid, const CA
         if(key!=relationKeyIDTip.end()){
             relationKeyIDTip.erase(key);
         }
+        // use a cache map--personalRelationsMap to record each person relations history
+        addRelationHistory(height, from, CKeyID());
     }
     return WriteBatch(batch);
 }
@@ -200,7 +217,6 @@ void CRelationView::ConnectBlock(const int height, const CBlock &blk, bool poc21
         }
     }
 
-    pushBackRelation(height, poc21);
     if (relations.size() > 0) {
         if (!WriteRelationsToDisk(height, relations)) {
             LogPrint(BCLog::RELATION, "%s: WriteRelationToDisk retrun false, height:%d\n", __func__, height);
@@ -214,6 +230,74 @@ bool CRelationView::WriteRelationsToDisk(const int height, const std::vector<std
     return Write(std::make_pair(DB_ACTIVE_ACTION_KEY, height), relations);
 }
 
+bool sort_first_decline(const CPersonalHeightRelation & m1, const CPersonalHeightRelation & m2) {
+    // decline sort for the height
+    return m1.first > m2.first;
+}
+
+bool CRelationView::removeRelationHistory(const int height, const CKeyID& from, bool poc21){
+    // use a cache map--personalRelationsMap to record each person relations history
+    auto iter = relationsHistoryMap.find(from);
+    if (iter == relationsHistoryMap.end()){
+        // There are actions of this one at the current height,
+        // but the history has no this person's relation.
+        return true;
+    }
+    // remove relationsHistoryMap entry for prev relation
+    CPersonalRelationHistoryList personalRelationList = relationsHistoryMap[from];
+    for (auto iter = personalRelationList.begin(); iter != personalRelationList.end(); ++iter){
+        if (iter->first >= height){
+            personalRelationList.erase(iter);
+        }
+    }
+    
+    if (personalRelationList.size() == 0){
+        relationsHistoryMap.erase(from);
+        // clear the relation
+        if(!poc21){
+            relationTip.erase(from.GetPlotID());
+        }
+        relationKeyIDTip.erase(from);
+        return true;
+    }else{
+        relationsHistoryMap[from] = personalRelationList;
+    }
+
+    // sort and find the first prev relation
+    CPersonalHeightRelationVec vec;
+    copy(personalRelationList.begin(), personalRelationList.end(), std::back_inserter<CPersonalHeightRelationVec>(vec));
+    sort(vec.begin(), vec.end(), sort_first_decline); 
+    auto is_first_prev = [height](const CPersonalHeightRelation& personHeightRelation)->bool{
+        return (height > personHeightRelation.first);
+    };
+    auto prevRelationIter = find_if(vec.begin(), vec.end(), is_first_prev);
+    if (prevRelationIter == vec.end()){
+        // clear the relation
+        if(!poc21){
+            relationTip.erase(from.GetPlotID());
+        }
+        relationKeyIDTip.erase(from);
+    }else{
+        // update the tip
+        if(!poc21){
+            relationTip[from.GetPlotID()] = prevRelationIter->second.GetPlotID();
+        }
+        relationKeyIDTip[from] = prevRelationIter->second;
+    }
+    return true;
+}
+
+bool CRelationView::RollBackAction(const int height, const uint256& txid, const CAction& action, bool poc21){;
+    LogPrintf("%s: tx:%s\n", __func__, txid.GetHex());
+    if (action.type() == typeid(CBindAction)) {
+        auto ba = boost::get<CBindAction>(action);
+        return removeRelationHistory(height, ba.first, poc21);
+    } else if (action.type() == typeid(CUnbindAction)) {
+        auto from = boost::get<CUnbindAction>(action);
+        return removeRelationHistory(height, from, poc21);
+    }
+    return false;
+}
 
 void CRelationView::DisconnectBlock(const int height, const CBlock &blk, bool poc21)
 {
@@ -222,24 +306,21 @@ void CRelationView::DisconnectBlock(const int height, const CBlock &blk, bool po
     auto key = std::make_pair(DB_ACTIVE_ACTION_KEY, height);
     Erase(key, true);
 
-    if (! poc21){
-        // reset tip relation
-        relationTip = relationMapIndex[height-1];
-
-        // erase tip at height
-        auto relationkey = relationMapIndex.find(height);
-        if(relationkey!=relationMapIndex.end()){
-            relationMapIndex.erase(relationkey);
+    for (auto tx: blk.vtx) {
+        std::vector<unsigned char> vchSig;
+        auto action = DecodeAction(tx, vchSig);
+        if (action.type() != typeid(CNilAction)) {
+            LogPrintf("DisconnectRelation: DecodeAction not nil action: %s\n", tx->GetHash().GetHex());
+            auto out = tx->vin[0].prevout;
+            if (VerifyAction(out, action, vchSig)) {
+                if (!RollBackAction(height, tx->GetHash(), action, poc21)) {
+                    LogPrintf("DisconnectRelation: RollBackAction failure: %s\n", tx->GetHash().GetHex());
+                }
+            }
+            else {
+                LogPrintf("DisconnectRelation: VerifyAction failure: %s\n", tx->GetHash().GetHex());
+            }
         }
-    }
-
-    // reset POC2+ KeyID tip relation
-    relationKeyIDTip = relationMapKeyIDIndex[height-1];
-
-    // erase POC2+ KeyID tip at height
-    auto relationkey = relationMapKeyIDIndex.find(height);
-    if(relationkey!=relationMapKeyIDIndex.end()){
-        relationMapKeyIDIndex.erase(relationkey);
     }
 }
 
@@ -259,9 +340,9 @@ bool CRelationView::LoadRelationFromDisk(const int height, bool poc21)
                 if (! poc21){
                     relationTip[from.GetPlotID()] = to.GetPlotID();
                     LogPrintf("bind action, from:%u, to:%u\n", from.GetPlotID(), to.GetPlotID());
-                    relationMapIndex[height] = relationTip;
                 }
                 relationKeyIDTip[from] = to;
+                addRelationHistory(height, from, to);
                 LogPrintf("POC2+ bind action, from : %u, to : %u\n", EncodeDestination(from), EncodeDestination(to));
             } else if (relation.second.second == CKeyID()) {
                 auto from = relation.second.first;
@@ -271,33 +352,16 @@ bool CRelationView::LoadRelationFromDisk(const int height, bool poc21)
                     if(key!=relationTip.end()){
                         relationTip.erase(key);
                     }
-                    relationMapIndex[height] = relationTip;
                 }
                 LogPrintf("POC2+ unbind action, from : %u\n", EncodeDestination(from));
                 auto key = relationKeyIDTip.find(from);
                 if(key!=relationKeyIDTip.end()){
                     relationKeyIDTip.erase(key);
                 }
+                addRelationHistory(height, from, CKeyID());
             }
         }
     }
-
-    pushBackRelation(height, poc21);
-    return true;
-}
-
-bool CRelationView::pushBackRelation(const int height, bool poc21){
-    if (! poc21){
-        if (relationMapIndex.size() >= 1000) {
-            relationMapIndex.erase(height - 1000);
-        }
-        relationMapIndex[height] = relationTip;
-    }
-
-    if (relationMapKeyIDIndex.size() >= 1000) {
-        relationMapKeyIDIndex.erase(height - 1000);
-    }
-    relationMapKeyIDIndex[height] = relationKeyIDTip;
     return true;
 }
 
