@@ -222,7 +222,6 @@ void CRelationView::ConnectBlock(const int height, const CBlock &blk, bool poc21
             LogPrint(BCLog::RELATION, "%s: WriteRelationToDisk retrun false, height:%d\n", __func__, height);
         }
     }
-
 }
 
 bool CRelationView::WriteRelationsToDisk(const int height, const std::vector<std::pair<uint256, CRelationActive>>& relations)
@@ -236,33 +235,28 @@ bool sort_first_decline(const CPersonalHeightRelation & m1, const CPersonalHeigh
 }
 
 bool CRelationView::removeRelationHistory(const int height, const CKeyID& from, bool poc21){
-    // use a cache map--personalRelationsMap to record each person relations history
-    auto iter = relationsHistoryMap.find(from);
-    if (iter == relationsHistoryMap.end()){
-        // There are actions of this one at the current height,
-        // but the history has no this person's relation.
-        return true;
-    }
     // remove relationsHistoryMap entry for prev relation
     CPersonalRelationHistoryList personalRelationList = relationsHistoryMap[from];
     for (auto iter = personalRelationList.begin(); iter != personalRelationList.end(); ++iter){
         if (iter->first >= height){
             personalRelationList.erase(iter);
         }
-    }
-    
-    if (personalRelationList.size() == 0){
-        relationsHistoryMap.erase(from);
-        // clear the relation
-        if(!poc21){
-            relationTip.erase(from.GetPlotID());
-        }
-        relationKeyIDTip.erase(from);
-        return true;
-    }else{
-        relationsHistoryMap[from] = personalRelationList;
-    }
 
+        if (personalRelationList.size() == 0){
+            // the last relation has been removed,
+            // so after clearing the RelationTip, we finish the work.
+            relationsHistoryMap.erase(from);
+            // clear the relation
+            if(!poc21){
+                relationTip.erase(from.GetPlotID());
+            }
+            relationKeyIDTip.erase(from);
+            return true;
+        }
+    }
+    relationsHistoryMap[from] = personalRelationList;
+
+    // Now, we deal with the relationTip.
     // sort and find the first prev relation
     CPersonalHeightRelationVec vec;
     copy(personalRelationList.begin(), personalRelationList.end(), std::back_inserter<CPersonalHeightRelationVec>(vec));
@@ -287,18 +281,6 @@ bool CRelationView::removeRelationHistory(const int height, const CKeyID& from, 
     return true;
 }
 
-bool CRelationView::RollBackAction(const int height, const uint256& txid, const CAction& action, bool poc21){;
-    LogPrintf("%s: tx:%s\n", __func__, txid.GetHex());
-    if (action.type() == typeid(CBindAction)) {
-        auto ba = boost::get<CBindAction>(action);
-        return removeRelationHistory(height, ba.first, poc21);
-    } else if (action.type() == typeid(CUnbindAction)) {
-        auto from = boost::get<CUnbindAction>(action);
-        return removeRelationHistory(height, from, poc21);
-    }
-    return false;
-}
-
 void CRelationView::DisconnectBlock(const int height, const CBlock &blk, bool poc21)
 {
     // erase disk
@@ -306,20 +288,11 @@ void CRelationView::DisconnectBlock(const int height, const CBlock &blk, bool po
     auto key = std::make_pair(DB_ACTIVE_ACTION_KEY, height);
     Erase(key, true);
 
-    for (auto tx: blk.vtx) {
-        std::vector<unsigned char> vchSig;
-        auto action = DecodeAction(tx, vchSig);
-        if (action.type() != typeid(CNilAction)) {
-            LogPrintf("DisconnectRelation: DecodeAction not nil action: %s\n", tx->GetHash().GetHex());
-            auto out = tx->vin[0].prevout;
-            if (VerifyAction(out, action, vchSig)) {
-                if (!RollBackAction(height, tx->GetHash(), action, poc21)) {
-                    LogPrintf("DisconnectRelation: RollBackAction failure: %s\n", tx->GetHash().GetHex());
-                }
-            }
-            else {
-                LogPrintf("DisconnectRelation: VerifyAction failure: %s\n", tx->GetHash().GetHex());
-            }
+    for(auto historyEntry : relationsHistoryMap){
+        auto iter = historyEntry.second.find(height);
+        if (iter != historyEntry.second.end()){
+            CKeyID from = historyEntry.first;
+            removeRelationHistory(height, from, poc21);
         }
     }
 }

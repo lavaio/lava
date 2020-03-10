@@ -99,7 +99,6 @@ public:
      */
     bool AcceptAction(const int height, const uint256& txid, const CAction& action, std::vector<std::pair<uint256, CRelationActive>> &relations, bool poc21);
     
-    bool RollBackAction(const int height, const uint256& txid, const CAction& action, bool poc21);
     /** 
      * ConnectBlock is an up-layer api, which calls AcceptAction and WriteRelationsToDisk, as well as be called by ConnectTip.
      * @param[in]    height  the block height, at which the connecttip function calls.
