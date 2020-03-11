@@ -8,6 +8,8 @@
 #include <key_io.h>
 #include <actiondb.h>
 #include <timedata.h>
+#include <fspool.h>
+#include <wallet/rpcwallet.h>
 
 #include <boost/bind.hpp>
 
@@ -92,8 +94,20 @@ void CPOCBlockAssember::CreateNewBlock()
     auto target = to.IsNull() ? from : to;
     auto fstx = MakeTransactionRef();
 
-    //find firestone for coinbase
-    {
+    // get a fstx from fspool
+    auto usableIndex = (height / pticketview->SlotLength());
+    auto FstxRefSet = pfspool->GetFstxBySlotIndex(usableIndex);
+    for (auto fstxRef:FstxRefSet){
+        if (!pcoinsTip->AccessCoin(fstxRef->vin[0].prevout).IsSpent()){
+            fstx = fstxRef;
+            LogPrint(BCLog::FIRESTONE, "%s: get fstx:%s from fspool.\n", __func__,fstx->GetHash().ToString());
+            break;
+        }
+    }
+
+    if (fstx->IsNull()){
+        // there is no fstx in fspool.
+        // so, we use the wallet to sign a fstx.
         LOCK(cs_main);
         CTicketRef fs;
         auto fskey = firestoneKey.IsValid() ? firestoneKey : key;
@@ -108,29 +122,7 @@ void CPOCBlockAssember::CreateNewBlock()
             }
         }
 
-        if (fs && fs->Invalid() && fskey.IsValid()) { //find firestone
-            auto makeSpentTicketTx = [](const CTicketRef& ticket, const int height, const CTxDestination& dest, const CKey& key)->CTransactionRef {
-                CMutableTransaction mtx;
-                auto redeemScript = ticket->redeemScript;
-                mtx.vin.push_back(CTxIn(ticket->out->hash, ticket->out->n, redeemScript, 0));
-                mtx.vout.push_back(CTxOut(ticket->nValue, GetScriptForDestination(dest)));
-                mtx.nLockTime = height - 1;
-
-                CMutableTransaction txcopy(mtx);
-                txcopy.vin[0] = CTxIn(txcopy.vin[0].prevout, redeemScript, 0);
-                CHashWriter ss(SER_GETHASH, 0);
-                ss << txcopy << 1;
-                auto hash = ss.GetHash();
-                std::vector<unsigned char> vchSig;
-                if (!key.Sign(hash, vchSig)) {
-                    LogPrint(BCLog::FIRESTONE, "%s: sign firestone tx failure, key:%d, %s:%d, keyid:%s\n", __func__, key.GetPubKey().GetID().ToString());
-                    return MakeTransactionRef();
-                }
-                vchSig.push_back((unsigned char)SIGHASH_ALL);
-                mtx.vin[0].scriptSig = CScript() << vchSig << ToByteVector(key.GetPubKey()) << ToByteVector(redeemScript);
-                CTransaction tx(mtx);
-                return MakeTransactionRef(tx);
-            };
+        if (fs && fskey.IsValid()) { //find firestone
             fstx = makeSpentTicketTx(fs, height, CTxDestination(fskey.GetPubKey().GetID()), fskey);
         }
     }
