@@ -5551,7 +5551,7 @@ CTransactionRef makeSpentTicketTx(const CTicketRef& ticket, const int height, co
     auto redeemScript = ticket->redeemScript;
     mtx.vin.push_back(CTxIn(ticket->out->hash, ticket->out->n, redeemScript, 0));
     mtx.vout.push_back(CTxOut(ticket->nValue, GetScriptForDestination(dest)));
-    mtx.nLockTime = height;
+    mtx.nLockTime = height - 1;
 
     CMutableTransaction txcopy(mtx);
     txcopy.vin[0] = CTxIn(txcopy.vin[0].prevout, redeemScript, 0);

@@ -99,14 +99,21 @@ void CPOCBlockAssember::CreateNewBlock()
     auto FstxRefSet = pfspool->GetFstxBySlotIndex(usableIndex);
     for (auto fstxRef:FstxRefSet){
         if (!pcoinsTip->AccessCoin(fstxRef->vin[0].prevout).IsSpent()){
-            fstx = fstxRef;
-            LogPrint(BCLog::FIRESTONE, "%s: get fstx:%s from fspool.\n", __func__,fstx->GetHash().ToString());
-            break;
+            auto index = (height / pticketview->SlotLength()) - 1;
+            for (auto ticket : pticketview->GetTicketsBySlotIndex(index)) {
+                if (fstxRef->vin[0].prevout.hash == ticket->out->hash){
+                    // fstx is derivatived by the regular firestone in the prev slot-index
+                    fstx = fstxRef;
+                    LogPrint(BCLog::FIRESTONE, "%s: get fstx:%s from fspool.\n", __func__,fstx->GetHash().ToString());
+                    goto CREATE_WITH_COLDFS;
+                } 
+            }
         }
     }
 
-    if (fstx->IsNull()){
+    {
         // there is no fstx in fspool.
+        // or the fstx is un-regular, which suffered blockchain-rollback 
         // so, we use the wallet to sign a fstx.
         LOCK(cs_main);
         CTicketRef fs;
@@ -126,7 +133,8 @@ void CPOCBlockAssember::CreateNewBlock()
             fstx = makeSpentTicketTx(fs, height, CTxDestination(fskey.GetPubKey().GetID()), fskey);
         }
     }
-    
+   
+CREATE_WITH_COLDFS:
     auto scriptPubKeyIn = GetScriptForDestination(CTxDestination(target));
     auto blk = BlockAssembler(params).CreateNewBlock(scriptPubKeyIn, nonce, from, plotid, deadline, fstx);
     if (blk) {
