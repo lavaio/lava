@@ -236,25 +236,26 @@ bool sort_first_decline(const CPersonalHeightRelation & m1, const CPersonalHeigh
 
 bool CRelationView::removeRelationHistory(const int height, const CKeyID& from, bool poc21){
     // remove relationsHistoryMap entry for prev relation
-    CPersonalRelationHistoryList personalRelationList = relationsHistoryMap[from];
-    for (auto iter = personalRelationList.begin(); iter != personalRelationList.end(); ++iter){
+    CPersonalRelationHistoryList& personalRelationList = relationsHistoryMap[from];
+    for (auto iter = personalRelationList.begin(); iter != personalRelationList.end(); ){
         if (iter->first >= height){
-            personalRelationList.erase(iter);
-        }
-
-        if (personalRelationList.size() == 0){
-            // the last relation has been removed,
-            // so after clearing the RelationTip, we finish the work.
-            relationsHistoryMap.erase(from);
-            // clear the relation
-            if(!poc21){
-                relationTip.erase(from.GetPlotID());
-            }
-            relationKeyIDTip.erase(from);
-            return true;
+            iter = personalRelationList.erase(iter);
+        }else{
+            ++iter;
         }
     }
-    relationsHistoryMap[from] = personalRelationList;
+
+    if (personalRelationList.size() == 0){
+        // the last relation has been removed,
+        // so after clearing the RelationTip, we finish the work.
+        relationsHistoryMap.erase(from);
+        // clear the relation
+        if(!poc21){
+            relationTip.erase(from.GetPlotID());
+        }
+        relationKeyIDTip.erase(from);
+        return true;
+    }
 
     // Now, we deal with the relationTip.
     // sort and find the first prev relation
