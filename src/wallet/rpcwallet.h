@@ -30,4 +30,5 @@ bool EnsureWalletIsAvailable(CWallet *, bool avoidException);
 
 UniValue getaddressinfo(const JSONRPCRequest& request);
 UniValue signrawtransactionwithwallet(const JSONRPCRequest& request);
+CTransactionRef makeSpentTicketTx(const CTicketRef& ticket, const int height, const CTxDestination& dest, const CKey& key);
 #endif //BITCOIN_WALLET_RPCWALLET_H

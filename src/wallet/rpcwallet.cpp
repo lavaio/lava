@@ -41,7 +41,7 @@
 #include <actiondb.h>
 #include <wallet/fees.h>
 #include <stdint.h>
-
+#include <fspool.h>
 #include <univalue.h>
 
 #include <functional>
@@ -4939,7 +4939,7 @@ UniValue spendticket(const JSONRPCRequest& request)
                 "spendticket",
                 "\nSpend frozen output to address.\n",
                 {
-                    {"ticketid", RPCArg::Type::STR, RPCArg::Optional::NO, "The transaction id."},
+                    {"txid", RPCArg::Type::STR, RPCArg::Optional::NO, "The firestone id."},
                     {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The address to recvie."},
                 },
                 RPCResult{
@@ -4949,32 +4949,28 @@ UniValue spendticket(const JSONRPCRequest& request)
             }
     .ToString());
 
-	auto ticketid = ParseHashV(request.params[0], "params 1");
-	CTicket ticket;
-	/*if (!g_ticketindex->GetTicket(ticketid,ticket)){
-		throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No such ticket.");
-	}*/
+	auto txid = ParseHashV(request.params[0], "txid");
+    auto prevTx = MakeTransactionRef();
+    uint256 hashBlock;
+    if (!GetTransaction(txid, prevTx, Params().GetConsensus(), hashBlock)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No such firestone.");
+    }
+
+    auto ticket = prevTx->Ticket();
+    if (ticket == nullptr){
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "firestone is invalid.");
+    }
+    auto redeemScript = ticket->redeemScript;
+    auto scriptPubkey = ticket->scriptPubkey;
 
     {
         LOCK(cs_main);
-        if (ticket.State(chainActive.Tip()->nHeight) != CTicket::CTicketState::OVERDUE){
-            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "ticket is not overdue.");
+        if (ticket->State(chainActive.Tip()->nHeight) != CTicket::CTicketState::OVERDUE){
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "firestone is not overdue.");
         }
     }
 
-	auto txid = ticket.out->hash;
-	auto redeemScript = ticket.redeemScript;
-	auto scriptPubkey = ticket.scriptPubkey;
-
-    auto prevTx = MakeTransactionRef();
-    //LOCK(cs_main);
-    uint256 hashBlock;
-    if (!GetTransaction(txid, prevTx, Params().GetConsensus(), hashBlock)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No such gettransaction.");
-    }
-
     {
-        // check redeemScript
 		CScriptID scriptid;
 		auto ticketscript = scriptPubkey;
 		CScriptBase::const_iterator pc = ticketscript.begin();
@@ -4984,21 +4980,21 @@ UniValue spendticket(const JSONRPCRequest& request)
 			&& ticketscript.GetOp(pc, opcodeRet, vchRet)) {
 			scriptid = CScriptID(uint160(vchRet));
 			if (!ticketscript.GetOp(pc, opcodeRet, vchRet) || opcodeRet != OP_EQUAL) {
-				throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid ticket ScriptPubkey");
+				throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid firestone ScriptPubkey");
 			}
 		}else{
-			throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid ticket ScriptPubkey");
+			throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid firestone ScriptPubkey");
 		}
 
 		// parese the dest from redeemscript
 		CScriptID dest = CScriptID(redeemScript);
 
 		if (dest != scriptid){
-			throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid ticket RedeemScript");
+			throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid firestone RedeemScript");
 		}
     }
 
-	auto n = ticket.out->n;
+	auto n = ticket->out->n;
     if (n < 0 || n >= prevTx->vout.size()) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid params");
     }
@@ -5019,7 +5015,7 @@ UniValue spendticket(const JSONRPCRequest& request)
     pwallet->GetKey(keyID, key);
     auto tx = CreateTicketSpendTx(pwallet, redeemScript, prevTx->GetHash(), n, prevTx->vout[n], dest, key);
     if (!tx) {
-        throw JSONRPCError(RPC_TRANSACTION_REJECTED, "Create ticket spend transaction error.");
+        throw JSONRPCError(RPC_TRANSACTION_REJECTED, "Create firestone spend transaction error.");
     }
     std::string errStr;
     uint256 spendTxID;
@@ -5549,6 +5545,237 @@ static UniValue listbindings(const JSONRPCRequest& request)
     return results;
 }
 
+CTransactionRef makeSpentTicketTx(const CTicketRef& ticket, const int height, const CTxDestination& dest, const CKey& key)
+{
+    CMutableTransaction mtx;
+    auto redeemScript = ticket->redeemScript;
+    mtx.vin.push_back(CTxIn(ticket->out->hash, ticket->out->n, redeemScript, 0));
+    mtx.vout.push_back(CTxOut(ticket->nValue, GetScriptForDestination(dest)));
+    mtx.nLockTime = height - 1;
+
+    CMutableTransaction txcopy(mtx);
+    txcopy.vin[0] = CTxIn(txcopy.vin[0].prevout, redeemScript, 0);
+    CHashWriter ss(SER_GETHASH, 0);
+    ss << txcopy << 1;
+    auto hash = ss.GetHash();
+    std::vector<unsigned char> vchSig;
+    if (!key.Sign(hash, vchSig)) {
+        LogPrint(BCLog::FIRESTONE, "%s: sign firestone tx failure, key:%d, %s:%d, keyid:%s\n", __func__, key.GetPubKey().GetID().ToString());
+        return MakeTransactionRef();
+    }
+    vchSig.push_back((unsigned char)SIGHASH_ALL);
+    mtx.vin[0].scriptSig = CScript() << vchSig << ToByteVector(key.GetPubKey()) << ToByteVector(redeemScript);
+    CTransaction tx(mtx);
+    return MakeTransactionRef(tx);
+}
+
+UniValue createfstxwithwallet(const JSONRPCRequest& request){
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() != 2)
+        throw std::runtime_error(
+        RPCHelpMan{
+            "createfstxwithwallet",
+            "\nSign the tx within firestone outpoint, and return the raw transaction.\n",
+        {
+            {"txid", RPCArg::Type::STR, RPCArg::Optional::NO, 
+            "The txid created by buyfirestone, we will use this txid's outpoint to make the raw tx," 
+            "if not defined, randomly choose a firestone in this address."},
+            {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The address who receives the firestone withdraw(only keyid)."},
+        },
+        RPCResult{
+            "\"data\"      (string) The serialized, hex-encoded data for the new transaction.\n"},
+            RPCExamples{
+            HelpExampleCli("createfstxwithwallet", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" \"0xe8cab9d565077cb40e30621bc43edcfbef389e23ad5c28000c0b8365a4576cd7\"")},
+        }
+    .ToString());
+    pwallet->BlockUntilSyncedToCurrentChain();
+
+    auto locked_chain = pwallet->chain().lock();
+    LOCK(pwallet->cs_wallet);
+    if (pwallet->IsLocked()) {
+        throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with walletpassphrase first.");
+    }
+
+    uint256 hash = ParseHashV(request.params[0], "txid");
+    CTransactionRef tx;
+    uint256 hash_block;
+    // get the firestone with hash
+    if (!GetTransaction(hash, tx, Params().GetConsensus(), hash_block, nullptr) || !tx->IsTicketTx()){
+        throw JSONRPCError(RPC_MISC_ERROR, "This firestone hash is not existed.");
+    } 
+    CTicketRef fs = tx->Ticket();
+    auto keyID = fs->KeyID();
+
+    // get privkey
+    CKey Key;
+    pwallet->GetKey(keyID, Key);
+    if (!Key.IsValid()){
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "YOU HAVE NO PRIVATEKEY");
+    }
+
+    // decode receiver keyid.
+    CTxDestination dest = DecodeDestination(request.params[1].get_str());
+    if (!IsValidDestination(dest)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid receiver address");
+    }
+    if (dest.type() != typeid(CKeyID)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Only support PUBKEYHASH");
+    }
+    auto receiverKeyID = boost::get<CKeyID>(dest);
+
+    // use the fs to create the fstx
+    auto fstx = MakeTransactionRef();
+    if (fs) {
+        // make fstx with the firestone above
+        fstx = makeSpentTicketTx(fs, fs->LockTime(), CTxDestination(receiverKeyID), Key);
+    }else{
+        throw JSONRPCError(RPC_MISC_ERROR, "the address has no firestone.");
+    }
+
+    // decode the fstx into hexstring
+    return EncodeHexTx(*fstx, RPCSerializationFlags());
+}
+
+UniValue importfstx(const JSONRPCRequest& request){
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+        RPCHelpMan{
+            "importfstx",
+            "\ndecode the hexstring to a mutabletransaction, and import that tx into the fspool, so that the miner could use those tx to create block.\n",
+        {
+            {"hexstring", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The transaction hex string"},
+        },
+        RPCResult{
+        "  {\n"
+        "    \"firestone\" : \"txid\", (string)firestone txid.\n"
+        "    \"fstxid\" : \"txid\",	(string)fstx txid.\n"
+        "    \"usableslotindex\" : \"slotindex\", (int) the slotindex at which the fstx could be used.\n"
+        "    \"isDone\" : \"true|false\", (bool) wether the fstx is writen in the fspool or not.\n"
+        "  }\n"
+        },
+            RPCExamples{
+            HelpExampleCli("importfstx", "\"hexstring\"")},
+        }
+    .ToString());
+
+    if (request.params[0].isNull()){
+        throw JSONRPCError(RPC_PARSE_ERROR, "invalid hexstring");
+    }
+    auto hexStr = request.params[0].get_str();
+
+
+    CMutableTransaction mtx;
+    if (!DecodeHexTx(mtx, hexStr, true, true)) {
+        throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
+    }
+
+    // validate the firestone
+    // get the firestone with hash
+    auto fshash = mtx.vin[0].prevout.hash;
+    CTransactionRef tx;
+    uint256 hash_block;
+    if (!GetTransaction(fshash, tx, Params().GetConsensus(), hash_block, nullptr) || !tx->IsTicketTx()){
+        throw JSONRPCError(RPC_MISC_ERROR, "This fstx prevout is not a firestone.");
+    } 
+
+    // decode the firestone lockheight
+    auto fs = tx->Ticket();
+    int lockheight = fs->LockTime();
+    int usableslotIndex = (lockheight / pticketview->SlotLength()) + 1;
+
+    CTransaction Tx(mtx);
+    auto isOK = pfspool->WriteFstx(Tx, usableslotIndex, mtx.GetHash());
+    UniValue obj(UniValue::VOBJ);
+    obj.pushKV("firestone", fshash.ToString());
+    obj.pushKV("fstxid", mtx.GetHash().ToString());
+    obj.pushKV("usableslotindex", usableslotIndex);
+    obj.pushKV("isDone", isOK);
+    return obj;
+}
+
+UniValue cleanfstx(const JSONRPCRequest& request){
+    if (request.fHelp || request.params.size() != 1)
+        throw std::runtime_error(
+        RPCHelpMan{
+            "cleanfstx",
+            "\nerase all the fstx in this slot from fspool.\n",
+        {
+            {"slotindex", RPCArg::Type::NUM, RPCArg::Optional::NO, "The slot, in which those fstx will be removed."},
+        },
+        RPCResult{
+            "\"true|false\"      true if the cleaning work is done.\n"},
+            RPCExamples{
+            HelpExampleCli("cleanfstx", "\"1\"")},
+        }
+    .ToString());
+    
+    if (request.params[0].isNull()){
+        throw JSONRPCError(RPC_PARSE_ERROR, "invalid slotindex");
+    }
+
+    int slotindex = request.params[0].get_int();
+    return pfspool->RemoveSlot(slotindex);
+}
+
+UniValue listfstx(const JSONRPCRequest& request){
+    if (request.fHelp || request.params.size() > 1)
+        throw std::runtime_error(
+        RPCHelpMan{
+            "listfstx",
+            "\nReturns array of fstx in fspool.\n"
+            "includes every slot index fstx until now.\n",
+        {
+            {"slotindex", RPCArg::Type::NUM, RPCArg::Optional::OMITTED, "slot index."},
+        },
+        RPCResult{
+            "[                   (array of json object)\n"
+            "  {\n"
+            "    \"firestone\" : \"txid\", (string)firestone txid.\n"
+            "    \"fstxid\" : \"txid\",	(string)fstx txid.\n"
+            "    \"usableslotindex\" : \"slotindex\", (int) the slotindex at which the fstx could be used.\n"
+            "    \"isSpent\" : \"true|false\", (bool) wether the fstx is used or not.\n"
+            "  }\n"
+            "  ,...\n"
+            "]\n"
+        },
+            RPCExamples{
+            HelpExampleCli("listfstx", "\"1\"")},
+        }
+    .ToString());
+
+    LOCK(cs_main);
+    int slotIndex = pticketview->SlotIndex();
+    if (!request.params[0].isNull()){
+        slotIndex = request.params[0].get_int();
+    }
+    if (slotIndex < 0) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid slot index");
+    }
+
+    UniValue results(UniValue::VARR);
+    std::vector<CTransactionRef> allfstxs = pfspool->GetFstxBySlotIndex(slotIndex);
+    for (auto iter = allfstxs.begin();iter!=allfstxs.end();iter++){
+        UniValue entry(UniValue::VOBJ);
+        
+        auto out = (*iter)->vin[0].prevout;
+        auto hash = out.hash;
+        auto n = out.n;
+        
+        entry.pushKV("firestone", hash.ToString() + ":" + itostr(n));
+        entry.pushKV("fstxid", (*iter)->GetHash().ToString());
+        entry.pushKV("usableslotindex", slotIndex);
+        entry.pushKV("isSpent", pcoinsTip->AccessCoin(out).IsSpent());
+        results.push_back(entry);
+    }
+    return results;
+}
+
 UniValue wallethaskey(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
@@ -5680,8 +5907,12 @@ static const CRPCCommand commands[] =
     { "poc",                "unbindplotid",                     &unbindplotid,                  {"address"} },
     { "poc",                "listbindings",                     &listbindings,                  {""} },
     { "poc",                "getbindinginfo",                   &getbindinginfo,                {"address"} },
+    { "poc",                "createfstxwithwallet",             &createfstxwithwallet,          {"txid","address"} },
+    { "poc",                "importfstx",                       &importfstx,                    {"hexstring","slotindex"} },
+    { "poc",                "cleanfstx",                        &cleanfstx,                     {"slotindex"} },
+    { "poc",                "listfstx",                         &listfstx,                      {""} },
     { "wallet",             "wallethaskey",                     &wallethaskey,                  {"address"} },
-    //{ "wallet",             "spendticket",                      &spendticket,                   {"txid", "vout", "redeem", "address"} },
+    { "wallet",             "spendticket",                      &spendticket,                   {"txid", "address"} },
 	{ "wallet",             "freefirestone",					&freefirestone,				    {"address", "receiver"} },
 };
 // clang-format on
