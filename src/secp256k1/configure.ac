@@ -85,9 +85,9 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([[char foo;]])],
     ])
 
 AC_ARG_ENABLE(benchmark,
-    AS_HELP_STRING([--enable-benchmark],[compile benchmark (default is no)]),
+    AS_HELP_STRING([--enable-benchmark],[compile benchmark (default is yes)]),
     [use_benchmark=$enableval],
-    [use_benchmark=no])
+    [use_benchmark=yes])
 
 AC_ARG_ENABLE(coverage,
     AS_HELP_STRING([--enable-coverage],[enable compiler flags to support kcov coverage analysis]),
@@ -129,15 +129,55 @@ AC_ARG_ENABLE(module_ecdh,
     [enable_module_ecdh=$enableval],
     [enable_module_ecdh=no])
 
+AC_ARG_ENABLE(module_schnorrsig,
+    AS_HELP_STRING([--enable-module-schnorrsig],[enable schnorrsig module (experimental)]),
+    [enable_module_schnorrsig=$enableval],
+    [enable_module_schnorrsig=no])
+
 AC_ARG_ENABLE(module_recovery,
     AS_HELP_STRING([--enable-module-recovery],[enable ECDSA pubkey recovery module (default is no)]),
     [enable_module_recovery=$enableval],
     [enable_module_recovery=no])
 
+AC_ARG_ENABLE(module_generator,
+    AS_HELP_STRING([--enable-module-generator],[enable NUMS generator module (default is no)]),
+    [enable_module_generator=$enableval],
+    [enable_module_generator=no])
+
+AC_ARG_ENABLE(module_commitment,
+    AS_HELP_STRING([--enable-module-commitment],[enable Pedersen commitments module (default is no)]),
+    [enable_module_commitment=$enableval],
+    [enable_module_commitment=no])
+
+AC_ARG_ENABLE(module_rangeproof,
+    AS_HELP_STRING([--enable-module-rangeproof],[enable zero-knowledge range proofs module (default is no)]),
+    [enable_module_rangeproof=$enableval],
+    [enable_module_rangeproof=no])
+
+AC_ARG_ENABLE(module_bulletproof,
+    AS_HELP_STRING([--enable-module-bulletproof],[enable Pedersen / zero-knowledge bulletproofs module (default is no)]),
+    [enable_module_bulletproof=$enableval],
+    [enable_module_bulletproof=no])
+
+AC_ARG_ENABLE(module_aggsig,
+    AS_HELP_STRING([--enable-module-aggsig],[enable Grin aggsig modules]),
+    [enable_module_aggsig=$enableval],
+    [enable_module_aggsig=no])
+
+AC_ARG_ENABLE(module_whitelist,
+    AS_HELP_STRING([--enable-module-whitelist],[enable key whitelisting module (default is no)]),
+    [enable_module_whitelist=$enableval],
+    [enable_module_whitelist=no])
+
 AC_ARG_ENABLE(jni,
-    AS_HELP_STRING([--enable-jni],[enable libsecp256k1_jni (default is auto)]),
+    AS_HELP_STRING([--enable-jni],[enable libsecp256k1_jni (default is no)]),
     [use_jni=$enableval],
-    [use_jni=auto])
+    [use_jni=no])
+
+AC_ARG_ENABLE(module_surjectionproof,
+    AS_HELP_STRING([--enable-module-surjectionproof],[enable surjection proof module (default is no)]),
+    [enable_module_surjectionproof=$enableval],
+    [enable_module_surjectionproof=no])
 
 AC_ARG_WITH([field], [AS_HELP_STRING([--with-field=64bit|32bit|auto],
 [Specify Field Implementation. Default is auto])],[req_field=$withval], [req_field=auto])
@@ -167,6 +207,25 @@ else
     CFLAGS="$CFLAGS -O3"
 fi
 
+AC_MSG_CHECKING([for __builtin_popcount])
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[void myfunc() {__builtin_popcount(0);}]])],
+    [ AC_MSG_RESULT([yes]);AC_DEFINE(HAVE_BUILTIN_POPCOUNT,1,[Define this symbol if __builtin_popcount is available]) ],
+    [ AC_MSG_RESULT([no])
+    ])
+
+AC_MSG_CHECKING([for __builtin_popcountl])
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[void myfunc() {__builtin_popcountl(0);}]])],
+    [ AC_MSG_RESULT([yes]);AC_DEFINE(HAVE_BUILTIN_POPCOUNTL,1,[Define this symbol if __builtin_popcountl is available]) ],
+    [ AC_MSG_RESULT([no])
+    ])
+
+AC_MSG_CHECKING([for __builtin_ctzl])
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[void myfunc() {__builtin_ctzl(0);}]])],
+    [ AC_MSG_RESULT([yes]);AC_DEFINE(HAVE_BUILTIN_CTZL,1,[Define this symbol if __builtin_ctzl is available]) ],
+    [ AC_MSG_RESULT([no])
+    ])
+
+
 if test x"$use_ecmult_static_precomputation" != x"no"; then
   save_cross_compiling=$cross_compiling
   cross_compiling=no
@@ -194,6 +253,12 @@ if test x"$use_ecmult_static_precomputation" != x"no"; then
 else
   set_precomp=no
 fi
+
+AC_MSG_CHECKING([for  __builtin_clzll])
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[void myfunc() { __builtin_clzll(1);}]])],
+    [ AC_MSG_RESULT([yes]);AC_DEFINE(HAVE_BUILTIN_CLZLL,1,[Define this symbol if  __builtin_clzll is available]) ],
+    [ AC_MSG_RESULT([no])
+    ])
 
 if test x"$req_asm" = x"auto"; then
   SECP_64BIT_ASM_CHECK
@@ -431,8 +496,40 @@ if test x"$enable_module_ecdh" = x"yes"; then
   AC_DEFINE(ENABLE_MODULE_ECDH, 1, [Define this symbol to enable the ECDH module])
 fi
 
+if test x"$enable_module_schnorrsig" = x"yes"; then
+  AC_DEFINE(ENABLE_MODULE_SCHNORRSIG, 1, [Define this symbol to enable the schnorrsig module])
+fi
+
 if test x"$enable_module_recovery" = x"yes"; then
   AC_DEFINE(ENABLE_MODULE_RECOVERY, 1, [Define this symbol to enable the ECDSA pubkey recovery module])
+fi
+
+if test x"$enable_module_generator" = x"yes"; then
+  AC_DEFINE(ENABLE_MODULE_GENERATOR, 1, [Define this symbol to enable the NUMS generator module])
+fi
+
+if test x"$enable_module_commitment" = x"yes"; then
+  AC_DEFINE(ENABLE_MODULE_COMMITMENT, 1, [Define this symbol to enable the Pedersen commitment module])
+fi
+
+if test x"$enable_module_rangeproof" = x"yes"; then
+  AC_DEFINE(ENABLE_MODULE_RANGEPROOF, 1, [Define this symbol to enable the zero knowledge range proof module])
+fi
+
+if test x"$enable_module_bulletproof" = x"yes"; then
+  AC_DEFINE(ENABLE_MODULE_BULLETPROOF, 1, [Define this symbol to enable the Pedersen / zero knowledge bulletproof module])
+fi
+
+if test x"$enable_module_aggsig" = x"yes"; then
+  AC_DEFINE(ENABLE_MODULE_AGGSIG, 1, [Define this symbol to enable the Grin Aggsig module])
+fi
+
+if test x"$enable_module_whitelist" = x"yes"; then
+  AC_DEFINE(ENABLE_MODULE_WHITELIST, 1, [Define this symbol to enable the key whitelisting module])
+fi
+
+if test x"$enable_module_surjectionproof" = x"yes"; then
+  AC_DEFINE(ENABLE_MODULE_SURJECTIONPROOF, 1, [Define this symbol to enable the surjection proof module])
 fi
 
 AC_C_BIGENDIAN()
@@ -447,6 +544,7 @@ AC_MSG_NOTICE([Using field implementation: $set_field])
 AC_MSG_NOTICE([Using bignum implementation: $set_bignum])
 AC_MSG_NOTICE([Using scalar implementation: $set_scalar])
 AC_MSG_NOTICE([Using endomorphism optimizations: $use_endomorphism])
+AC_MSG_NOTICE([Building benchmarks: $use_benchmark])
 AC_MSG_NOTICE([Building for coverage analysis: $enable_coverage])
 AC_MSG_NOTICE([Building ECDH module: $enable_module_ecdh])
 AC_MSG_NOTICE([Building ECDSA pubkey recovery module: $enable_module_recovery])
@@ -457,13 +555,72 @@ if test x"$enable_experimental" = x"yes"; then
   AC_MSG_NOTICE([WARNING: experimental build])
   AC_MSG_NOTICE([Experimental features do not have stable APIs or properties, and may not be safe for production use.])
   AC_MSG_NOTICE([Building ECDH module: $enable_module_ecdh])
+  AC_MSG_NOTICE([Building NUMS generator module: $enable_module_generator])
+  AC_MSG_NOTICE([Building Pedersen commitment module: $enable_module_commitment])
+  AC_MSG_NOTICE([Building range proof module: $enable_module_rangeproof])
+  AC_MSG_NOTICE([Building bulletproof module: $enable_module_bulletproof])
+  AC_MSG_NOTICE([Building aggsig module: $enable_module_aggsig])
+  AC_MSG_NOTICE([Building key whitelisting module: $enable_module_whitelist])
+  AC_MSG_NOTICE([Building surjection proof module: $enable_module_surjectionproof])
+  AC_MSG_NOTICE([Building schnorrsig module: $enable_module_schnorrsig])
   AC_MSG_NOTICE([******])
+
+  if test x"$enable_module_generator" != x"yes"; then
+    if test x"$enable_module_commitment" = x"yes"; then
+      AC_MSG_ERROR([Commitment module requires the generator module. Use --enable-module-generator to allow.])
+    fi
+    if test x"$enable_module_bulletproof" = x"yes"; then
+      AC_MSG_ERROR([Bulletproof module requires the generator module. Use --enable-module-generator to allow.])
+    fi
+  fi
+
+  if test x"$enable_module_commitment" != x"yes"; then
+    if test x"$enable_module_rangeproof" = x"yes"; then
+      AC_MSG_ERROR([Rangeproof module requires the commitment module. Use --enable-module-commitment to allow.])
+    fi
+    if test x"$enable_module_bulletproof" = x"yes"; then
+      AC_MSG_ERROR([Bulletproof module requires the commitment module. Use --enable-module-commitment to allow.])
+    fi
+  fi
+
+  if test x"$enable_module_rangeproof" != x"yes"; then
+    if test x"$enable_module_whitelist" = x"yes"; then
+      AC_MSG_ERROR([Whitelist module requires the rangeproof module. Use --enable-module-rangeproof to allow.])
+    fi
+    if test x"$enable_module_surjectionproof" = x"yes"; then
+      AC_MSG_ERROR([Surjection proof module requires the rangeproof module. Use --enable-module-rangeproof to allow.])
+    fi
+  fi
 else
   if test x"$enable_module_ecdh" = x"yes"; then
     AC_MSG_ERROR([ECDH module is experimental. Use --enable-experimental to allow.])
   fi
+  if test x"$enable_module_schnorrsig" = x"yes"; then
+    AC_MSG_ERROR([schnorrsig module is experimental. Use --enable-experimental to allow.])
+  fi
   if test x"$set_asm" = x"arm"; then
     AC_MSG_ERROR([ARM assembly optimization is experimental. Use --enable-experimental to allow.])
+  fi
+  if test x"$enable_module_generator" = x"yes"; then
+    AC_MSG_ERROR([NUMS generator module is experimental. Use --enable-experimental to allow.])
+  fi
+  if test x"$enable_module_commitment" = x"yes"; then
+    AC_MSG_ERROR([Pedersen commitment module is experimental. Use --enable-experimental to allow.])
+  fi
+  if test x"$enable_module_rangeproof" = x"yes"; then
+    AC_MSG_ERROR([Range proof module is experimental. Use --enable-experimental to allow.])
+  fi
+  if test x"$enable_module_bulletproof" = x"yes"; then
+    AC_MSG_ERROR([Bulletproof module is experimental. Use --enable-experimental to allow.])
+  fi
+  if test x"$enable_module_agggsig" = x"yes"; then
+    AC_MSG_ERROR([Aggsig module is experimental. Use --enable-experimental to allow.])
+  fi
+  if test x"$enable_module_whitelist" = x"yes"; then
+    AC_MSG_ERROR([Key whitelisting module is experimental. Use --enable-experimental to allow.])
+  fi
+  if test x"$enable_module_surjectionproof" = x"yes"; then
+    AC_MSG_ERROR([Surjection proof module is experimental. Use --enable-experimental to allow.])
   fi
 fi
 
@@ -480,14 +637,32 @@ AM_CONDITIONAL([USE_EXHAUSTIVE_TESTS], [test x"$use_exhaustive_tests" != x"no"])
 AM_CONDITIONAL([USE_BENCHMARK], [test x"$use_benchmark" = x"yes"])
 AM_CONDITIONAL([USE_ECMULT_STATIC_PRECOMPUTATION], [test x"$set_precomp" = x"yes"])
 AM_CONDITIONAL([ENABLE_MODULE_ECDH], [test x"$enable_module_ecdh" = x"yes"])
+AM_CONDITIONAL([ENABLE_MODULE_SCHNORRSIG], [test x"$enable_module_schnorrsig" = x"yes"])
 AM_CONDITIONAL([ENABLE_MODULE_RECOVERY], [test x"$enable_module_recovery" = x"yes"])
+AM_CONDITIONAL([ENABLE_MODULE_GENERATOR], [test x"$enable_module_generator" = x"yes"])
+AM_CONDITIONAL([ENABLE_MODULE_COMMITMENT], [test x"$enable_module_commitment" = x"yes"])
+AM_CONDITIONAL([ENABLE_MODULE_RANGEPROOF], [test x"$enable_module_rangeproof" = x"yes"])
+AM_CONDITIONAL([ENABLE_MODULE_BULLETPROOF], [test x"$enable_module_bulletproof" = x"yes"])
+AM_CONDITIONAL([ENABLE_MODULE_AGGSIG], [test x"$enable_module_aggsig" = x"yes"])
+AM_CONDITIONAL([ENABLE_MODULE_WHITELIST], [test x"$enable_module_whitelist" = x"yes"])
 AM_CONDITIONAL([USE_JNI], [test x"$use_jni" == x"yes"])
 AM_CONDITIONAL([USE_EXTERNAL_ASM], [test x"$use_external_asm" = x"yes"])
 AM_CONDITIONAL([USE_ASM_ARM], [test x"$set_asm" = x"arm"])
+AM_CONDITIONAL([ENABLE_MODULE_SURJECTIONPROOF], [test x"$enable_module_surjectionproof" = x"yes"])
 
 dnl make sure nothing new is exported so that we don't break the cache
 PKGCONFIG_PATH_TEMP="$PKG_CONFIG_PATH"
 unset PKG_CONFIG_PATH
 PKG_CONFIG_PATH="$PKGCONFIG_PATH_TEMP"
+
+dnl build modules Grin needs by default
+
+AC_DEFINE(ENABLE_MODULE_ECDH, 1)
+AC_DEFINE(ENABLE_MODULE_GENERATOR, 1)
+AC_DEFINE(ENABLE_MODULE_RECOVERY, 1)
+AC_DEFINE(ENABLE_MODULE_RANGEPROOF, 1)
+AC_DEFINE(ENABLE_MODULE_BULLETPROOF, 1)
+AC_DEFINE(ENABLE_MODULE_AGGSIG, 1)
+AC_DEFINE(ENABLE_MODULE_SCHNORRSIG, 1)
 
 AC_OUTPUT
