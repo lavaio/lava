@@ -40,4 +40,5 @@ CTransactionRef CreateTicketAllSpendTx(CWallet* const pwallet, std::map<uint256,
 
 void ImportScript(CWallet* const pwallet, const CScript& script, const std::string& strLabel, bool isRedeemScript) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet); // in rpcdump.cpp
 
+CTransactionRef makeSpentTicketTx(const CTicketRef& ticket, const int height, const CTxDestination& dest, const CKey& key);
 #endif //BITCOIN_WALLET_RPCWALLET_H
