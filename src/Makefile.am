@@ -562,7 +562,7 @@ lava_tx_LDADD = \
   $(LIBMEMENV) \
   $(LIBSECP256K1)
 
-lava_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
+lava_tx_LDADD += $(BOOST_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS)
 #
 
 # lava-wallet binary #
@@ -583,12 +583,13 @@ lava_wallet_LDADD = \
   $(LIBBITCOIN_CONSENSUS) \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_CRYPTO) \
+  $(LIBUNIVALUE) \
   $(LIBLEVELDB) \
   $(LIBLEVELDB_SSE42) \
   $(LIBMEMENV) \
   $(LIBSECP256K1)
 
-lava_wallet_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS)
+lava_wallet_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_LIBS)
 #
 
 # bitcoinconsensus library #
