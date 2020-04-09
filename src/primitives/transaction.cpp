@@ -46,12 +46,18 @@ std::string CTxIn::ToString() const
     return str;
 }
 
-CTxOut::CTxOut(const CAmount& nValueIn, CScript scriptPubKeyIn,const CConfidentialAsset& nAssetIn, const CConfidentialValue& nValueCAIn)
+CTxOut::CTxOut(const CAmount& nValueIn, CScript scriptPubKeyIn)
 {
     nValue = nValueIn;
     scriptPubKey = scriptPubKeyIn;
+}
+
+CTxOut::CTxOut(const CConfidentialAsset& nAssetIn, const CConfidentialValue& nValueIn, CScript scriptPubKeyIn)
+{
+    nValue = 0;
     nAsset = nAssetIn;
-    nValueCA = nValueCAIn;
+    nValueCA = nValueIn;
+    scriptPubKey = scriptPubKeyIn;
 }
 
 std::string CTxOut::ToString() const

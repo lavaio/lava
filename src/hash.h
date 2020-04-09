@@ -204,4 +204,11 @@ unsigned int MurmurHash3(unsigned int nHashSeed, const std::vector<unsigned char
 
 void BIP32Hash(const ChainCode &chainCode, unsigned int nChild, unsigned char header, const unsigned char data[32], unsigned char output[64]);
 
+/*
+ * Compute the Merkle root of the transactions in a block using mid-state only.
+ * Note that the merkle root calculated with this method is not the same as the
+ * one computed by ComputeMerkleRoot.
+ */
+uint256 ComputeFastMerkleRoot(const std::vector<uint256>& hashes);
+
 #endif // BITCOIN_HASH_H

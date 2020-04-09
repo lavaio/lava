@@ -10,8 +10,6 @@
 #include <uint256.h>
 #include <util/strencodings.h>
 
-extern bool g_con_elementsmode;
-
 /**
  * Confidential assets, values, and nonces all share enough code in common
  * that it makes sense to define a common abstract base class. */
@@ -102,11 +100,6 @@ public:
 
     void SetNull() {
         vchCommitment.clear();
-
-        // Set to dummy asset when not doing CA.
-        if (!g_con_elementsmode) {
-            SetToAsset(CAsset());
-        }
     }
 
     /* An explicit asset identifier is a 256-bit nothing-up-my-sleeve number
@@ -133,10 +126,6 @@ public:
      * a 64-bit big-endian integer. */
     CAmount GetAmount() const
     {
-        if (!g_con_elementsmode && IsNull()) {
-            return -1;
-        }
-
         assert(IsExplicit());;
         return ReadBE64(&vchCommitment[1]);
     }

@@ -13,7 +13,6 @@
 #include <uint256.h>
 #include <ticket.h>
 #include <primitives/confidential.h>
-#include <primitives/txwitness.h>
 
 static const int SERIALIZE_TRANSACTION_NO_WITNESS = 0x40000000;
 
@@ -78,6 +77,8 @@ public:
     std::string ToString() const;
 };
 
+typedef std::vector<unsigned char> ProofData;
+
 /** An input of a transaction.  It contains the location of the previous
  * transaction's output that it claims and a signature that matches the
  * output's public key.
@@ -88,10 +89,11 @@ public:
     COutPoint prevout;
     CScript scriptSig;
     uint32_t nSequence;
-    CScriptWitness scriptWitness; //!< Only serialized through CTransaction              
+    CScriptWitness scriptWitness; //!< Only serialized through CTransaction
+    
+    CAssetIssuance assetIssuance;
     std::vector<unsigned char> vchIssuanceAmountRangeproof;
     std::vector<unsigned char> vchInflationKeysRangeproof;
-    CAssetIssuance assetIssuance;
 
     /* Setting nSequence to this value for every input in a transaction
      * disables nLockTime. */
@@ -226,6 +228,7 @@ class CTxOut
 public:
     CAmount nValue;
     CScript scriptPubKey;
+
     CConfidentialAsset nAsset;
     CConfidentialValue nValueCA;
     CConfidentialNonce nNonce;
@@ -237,8 +240,10 @@ public:
         SetNull();
     }
 
-    CTxOut(const CAmount& nValueIn, CScript scriptPubKeyIn,const CConfidentialAsset& nAssetIn, const CConfidentialValue& nValueCAIn);
+    CTxOut(const CAmount& nValueIn, CScript scriptPubKeyIn);
 
+    CTxOut(const CConfidentialAsset& nAssetIn, const CConfidentialValue& nValueIn, CScript scriptPubKeyIn);
+    
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>
