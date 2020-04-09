@@ -40,23 +40,33 @@ std::string CTxIn::ToString() const
         str += strprintf(", scriptSig=%s", HexStr(scriptSig).substr(0, 24));
     if (nSequence != SEQUENCE_FINAL)
         str += strprintf(", nSequence=%u", nSequence);
+    if (!assetIssuance.IsNull())
+        str += strprintf(", %s", assetIssuance.ToString());
     str += ")";
     return str;
 }
 
-CTxOut::CTxOut(const CAmount& nValueIn, CScript scriptPubKeyIn)
+CTxOut::CTxOut(const CAmount& nValueIn, CScript scriptPubKeyIn,const CConfidentialAsset& nAssetIn, const CConfidentialValue& nValueCAIn)
 {
     nValue = nValueIn;
     scriptPubKey = scriptPubKeyIn;
+    nAsset = nAssetIn;
+    nValueCA = nValueCAIn;
 }
 
 std::string CTxOut::ToString() const
 {
-    return strprintf("CTxOut(nValue=%d.%08d, scriptPubKey=%s)", nValue / COIN, nValue % COIN, HexStr(scriptPubKey).substr(0, 30));
+    std::string strAsset;
+    if (nAsset.IsExplicit())
+        strAsset = strprintf("nAsset=%s, ", nAsset.GetAsset().GetHex());
+    if (nAsset.IsCommitment())
+        strAsset = std::string("nAsset=CONFIDENTIAL, ");
+    return strprintf("CTxOut(%snValue=%s, scriptPubKey=%s)", strAsset, (nValueCA.IsExplicit() ? strprintf("%d.%08d", nValueCA.GetAmount() / COIN, nValueCA.GetAmount() % COIN) : std::string("CONFIDENTIAL")), HexStr(scriptPubKey).substr(0, 30));
 }
 
 CMutableTransaction::CMutableTransaction() : nVersion(CTransaction::CURRENT_VERSION), nLockTime(0) {}
-CMutableTransaction::CMutableTransaction(const CTransaction& tx) : vin(tx.vin), vout(tx.vout), nVersion(tx.nVersion), nLockTime(tx.nLockTime) {}
+CMutableTransaction::CMutableTransaction(const CTransaction& tx) :
+        vin(tx.vin), vout(tx.vout), nVersion(tx.nVersion), nLockTime(tx.nLockTime) {}
 
 uint256 CMutableTransaction::GetHash() const
 {
@@ -76,10 +86,38 @@ uint256 CTransaction::ComputeWitnessHash() const
     return SerializeHash(*this, SER_GETHASH, 0);
 }
 
+// CA ONLY
+uint256 CTransaction::GetWitnessOnlyHash() const
+{
+    std::vector<uint256> leaves;
+    leaves.reserve(std::max(vin.size(), vout.size()));
+    /* Inputs */
+    for (size_t i = 0; i < vin.size(); ++i) {
+        // Input has no witness OR is null input(coinbase)
+        const CTxInWitness& txinwit = (witness.vtxinwit.size() <= i || vin[i].prevout.IsNull()) ? CTxInWitness() : witness.vtxinwit[i];
+        leaves.push_back(txinwit.GetHash());
+    }
+    uint256 hashIn = ComputeFastMerkleRoot(leaves);
+    leaves.clear();
+    /* Outputs */
+    for (size_t i = 0; i < vout.size(); ++i) {
+        const CTxOutWitness& txoutwit = witness.vtxoutwit.size() <= i ? CTxOutWitness() : witness.vtxoutwit[i];
+        leaves.push_back(txoutwit.GetHash());
+    }
+    uint256 hashOut = ComputeFastMerkleRoot(leaves);
+    leaves.clear();
+    /* Combined */
+    leaves.push_back(hashIn);
+    leaves.push_back(hashOut);
+    return ComputeFastMerkleRoot(leaves);
+}
+
 /* For backward compatibility, the hash is initialized to 0. TODO: remove the need for this default constructor entirely. */
 CTransaction::CTransaction() : vin(), vout(), nVersion(CTransaction::CURRENT_VERSION), nLockTime(0), hash{}, m_witness_hash{} {}
-CTransaction::CTransaction(const CMutableTransaction& tx) : vin(tx.vin), vout(tx.vout), nVersion(tx.nVersion), nLockTime(tx.nLockTime), hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}
-CTransaction::CTransaction(CMutableTransaction&& tx) : vin(std::move(tx.vin)), vout(std::move(tx.vout)), nVersion(tx.nVersion), nLockTime(tx.nLockTime), hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}
+CTransaction::CTransaction(const CMutableTransaction& tx) :
+        vin(tx.vin), vout(tx.vout), nVersion(tx.nVersion), nLockTime(tx.nLockTime), hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}
+CTransaction::CTransaction(CMutableTransaction&& tx) :
+        vin(std::move(tx.vin)), vout(std::move(tx.vout)), nVersion(tx.nVersion), nLockTime(tx.nLockTime), hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}
 
 CAmount CTransaction::GetValueOut() const
 {
@@ -122,14 +160,14 @@ bool IsTicketVout(const CScript script, CScriptID &scriptID)
     opcodetype opcodeRet;
     std::vector<unsigned char> vchRet;
     if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_HASH160) {
-	vchRet.clear();
-	if (script.GetOp(pc, opcodeRet, vchRet)) {
-	    scriptID = CScriptID(uint160(vchRet));
-	    if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_EQUAL) {
-		vchRet.clear();
-		return true;
-	    }
-	}
+        vchRet.clear();
+        if (script.GetOp(pc, opcodeRet, vchRet)) {
+            scriptID = CScriptID(uint160(vchRet));
+            if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_EQUAL) {
+                vchRet.clear();
+                return true;
+            }
+        }
     }
     return false;
 }
@@ -138,27 +176,27 @@ bool CTransaction::IsTicketTx() const
 {
     // check the vout size is 2 or 3.
     if(vout.size()!=2 && vout.size()!=3){
-	    return false;
+        return false;
     }
-    
+
     CScript redeemscript;
     CScriptID scriptID;
     CScript scriptzero;
     bool HasTicketVout = false;
     for (auto i=0; i<vout.size();i++){
-	if (vout[i].nValue == 0){
-	    // from 0 value vout's script decode the redeemScript.
-	    CScript script = vout[i].scriptPubKey;
-	    scriptzero = script;
-	    if (!GetRedeemFromScript(script,redeemscript)){
+        if (vout[i].nValue == 0){
+            // from 0 value vout's script decode the redeemScript.
+            CScript script = vout[i].scriptPubKey;
+            scriptzero = script;
+            if (!GetRedeemFromScript(script,redeemscript)){
                 return false;
-	    }
-	}
+            }
+        }
 
-	auto ticketScript = vout[i].scriptPubKey;
-	if (IsTicketVout(ticketScript, scriptID)){
-	    HasTicketVout=true;
-	}
+        auto ticketScript = vout[i].scriptPubKey;
+        if (IsTicketVout(ticketScript, scriptID)){
+            HasTicketVout=true;
+        }
     }
 
     if (!HasTicketVout) 
