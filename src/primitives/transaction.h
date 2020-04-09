@@ -89,7 +89,8 @@ public:
     CScript scriptSig;
     uint32_t nSequence;
     CScriptWitness scriptWitness; //!< Only serialized through CTransaction              
-    std::vector<CTxInWitness> vtxinwit;
+    std::vector<unsigned char> vchIssuanceAmountRangeproof;
+    std::vector<unsigned char> vchInflationKeysRangeproof;
     CAssetIssuance assetIssuance;
 
     /* Setting nSequence to this value for every input in a transaction
@@ -228,7 +229,8 @@ public:
     CConfidentialAsset nAsset;
     CConfidentialValue nValueCA;
     CConfidentialNonce nNonce;
-    std::vector<CTxOutWitness> vtxoutwit;
+    std::vector<unsigned char> vchSurjectionproof;
+    std::vector<unsigned char> vchRangeproof;
 
     CTxOut()
     {
