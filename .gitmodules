@@ -1,3 +1,0 @@
-[submodule "src/secp256k1"]
-	path = src/secp256k1
-	url = https://github.com/ventfang/secp256k1-zkp.git

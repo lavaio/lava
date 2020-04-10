@@ -559,8 +559,8 @@ static int secp256k1_bulletproof_innerproduct_pf_ecmult_callback_l(secp256k1_sca
     }
 
     /* step 3 */
-    for (i = 0; (1u << i) < ctx->grouping; i++) {
-        size_t grouping = (1u << i);
+    for (i = 0; (1ull << i) < ctx->grouping; i++) {
+        size_t grouping = (1ull << i);
         if ((((idx / grouping) % 2) ^ ((idx / ctx->grouping) % 2)) == 0) {
             secp256k1_scalar_mul(sc, sc, &ctx->x[i]);
         } else {
@@ -598,8 +598,8 @@ static int secp256k1_bulletproof_innerproduct_pf_ecmult_callback_r(secp256k1_sca
     }
 
     /* step 3 */
-    for (i = 0; (1u << i) < ctx->grouping; i++) {
-        size_t grouping = (1u << i);
+    for (i = 0; (1ull << i) < ctx->grouping; i++) {
+        size_t grouping = (1ull << i);
         if ((((idx / grouping) % 2) ^ ((idx / ctx->grouping) % 2)) == 1) {
             secp256k1_scalar_mul(sc, sc, &ctx->x[i]);
         } else {
@@ -617,8 +617,8 @@ static int secp256k1_bulletproof_innerproduct_pf_ecmult_callback_g(secp256k1_sca
 
     *pt = ctx->geng[idx];
     secp256k1_scalar_set_int(sc, 1);
-    for (i = 0; (1u << i) <= ctx->grouping; i++) {
-        if (idx & (1u << i)) {
+    for (i = 0; (1ull << i) <= ctx->grouping; i++) {
+        if (idx & (1ull << i)) {
             secp256k1_scalar_mul(sc, sc, &ctx->x[i]);
         } else {
             secp256k1_scalar_mul(sc, sc, &ctx->xinv[i]);
@@ -633,8 +633,8 @@ static int secp256k1_bulletproof_innerproduct_pf_ecmult_callback_h(secp256k1_sca
 
     *pt = ctx->genh[idx];
     secp256k1_scalar_set_int(sc, 1);
-    for (i = 0; (1u << i) <= ctx->grouping; i++) {
-        if (idx & (1u << i)) {
+    for (i = 0; (1ull << i) <= ctx->grouping; i++) {
+        if (idx & (1ull << i)) {
             secp256k1_scalar_mul(sc, sc, &ctx->xinv[i]);
         } else {
             secp256k1_scalar_mul(sc, sc, &ctx->x[i]);
@@ -667,7 +667,7 @@ static int secp256k1_bulletproof_inner_product_real_prove_impl(const secp256k1_e
         size_t j;
         int overflow;
 
-        pfdata.grouping = 1u << i;
+        pfdata.grouping = 1ull << i;
 
         /* L */
         secp256k1_scalar_clear(&pfdata.g_sc);
