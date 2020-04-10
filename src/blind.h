@@ -15,7 +15,7 @@
 #include <secp256k1_surjectionproof.h>
 
 // 64-bit bulletproofs size
-static const size_t DEFAULT_RANGEPROOF_SIZE = 675;
+static const size_t DEFAULT_RANGEPROOF_SIZE = 4174;
 // constant-size surjection proof
 static const size_t SURJECTION_PROOF_SIZE = 67;
 

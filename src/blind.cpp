@@ -341,7 +341,6 @@ int BlindTransaction(std::vector<uint256 >& input_value_blinding_factors, const 
     //Number of outputs and issuances to blind
     int num_to_blind = 0;
 
-    size_t txoutwitsize = tx.vout.size();
     for (size_t nIn = 0; nIn < tx.vin.size(); nIn++) {
         if (!input_value_blinding_factors[nIn].IsNull() || !input_asset_blinding_factors[nIn].IsNull()) {
             if (input_amounts[nIn] < 0) {
@@ -379,7 +378,7 @@ int BlindTransaction(std::vector<uint256 >& input_value_blinding_factors, const 
             // Keys must be valid and outputs completely unblinded or else call fails
             if (!output_pubkeys[nOut].IsFullyValid() ||
                 (!tx.vout[nOut].nValueCA.IsExplicit() || !tx.vout[nOut].nAsset.IsExplicit()) ||
-                   (txoutwitsize > nOut && !tx.vout[nOut].IsNull())) {
+                (!tx.vout[nOut].vchRangeproof.empty() || !tx.vout[nOut].vchSurjectionproof.empty())) {
                 return -1;
             }
             num_to_blind++;

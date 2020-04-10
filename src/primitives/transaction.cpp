@@ -54,7 +54,7 @@ CTxOut::CTxOut(const CAmount& nValueIn, CScript scriptPubKeyIn)
 
 CTxOut::CTxOut(const CConfidentialAsset& nAssetIn, const CConfidentialValue& nValueIn, CScript scriptPubKeyIn)
 {
-    nValue = 0;
+    nValue = -1;
     flags = 1;
     nAsset = nAssetIn;
     nValueCA = nValueIn;
