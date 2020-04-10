@@ -288,7 +288,7 @@ public:
 class CCaOut : public CTxOut
 {
 public:
-    CCaOut();
+    CCaOut() : CTxOut(){}
     CCaOut(const CTxOut& txout) : CTxOut(txout.nValue,  txout.scriptPubKey, txout.nAsset, txout.nValueCA, txout.nNonce, txout.flags){}
     ADD_SERIALIZE_METHODS;
 
