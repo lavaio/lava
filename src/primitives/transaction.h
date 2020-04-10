@@ -37,7 +37,7 @@ public:
     /* The inverse of the combination of the preceding flags. Used to
      * extract the original meaning of `n` as the index into the
      * transaction's output array. */
-    static const uint32_t OUTPOINT_INDEX_MASK = 0x3fffffff;
+    static const uint32_t OUTPOINT_INDEX_MASK = 0x7fffffff;
 
     // END CA
     //
@@ -220,6 +220,8 @@ public:
     std::string ToString() const;
 };
 
+struct CCaOut;
+
 /** An output of a transaction.  It contains the public key that the next input
  * must be able to sign with to claim it.
  */
@@ -248,22 +250,8 @@ public:
 
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action) {
-        if (g_con_elementsmode) {
-            READWRITE(nAsset);
-            READWRITE(nValue);
-            READWRITE(nNonce);
-            READWRITE(scriptPubKey);
-        } else {
-            CAmount value;
-            if (!ser_action.ForRead()) {
-                value = nValue.GetAmount();
-            }
-            READWRITE(value);
-            if (ser_action.ForRead()) {
-                nValue.SetToAmount(value);
-            }
-            READWRITE(scriptPubKey);
-        }
+        READWRITE(nValue);
+        READWRITE(scriptPubKey);
     }
 
     void SetNull()
@@ -277,17 +265,7 @@ public:
 
     bool IsNull() const
     {
-        if (!g_con_elementsmode) {
-            // Ignore the asset and the nonce in compatibility mode.
-            return nValueCA.IsNull() && scriptPubKey.empty();
-        }
-
-        return (nValue == -1)&&nAsset.IsNull() && nValueCA.IsNull() && nNonce.IsNull() && scriptPubKey.empty();
-    }
-
-    bool IsFee() const {
-        return g_con_elementsmode && scriptPubKey == CScript()
-            && nValueCA.IsExplicit() && nAsset.IsExplicit();
+        return (nValue == -1) && nAsset.IsNull() && nValueCA.IsNull() && nNonce.IsNull() && scriptPubKey.empty();
     }
 
     friend bool operator==(const CTxOut& a, const CTxOut& b)
@@ -295,6 +273,7 @@ public:
         return (a.nAsset == b.nAsset &&
                 a.nValue == b.nValue &&
                 a.nNonce == b.nNonce &&
+                a.nValueCA == b.nValueCA &&
                 a.scriptPubKey == b.scriptPubKey);
     }
 
@@ -305,6 +284,21 @@ public:
 
     std::string ToString() const;
 };
+
+/** An copy of CTxOut.  It contains a CA SerializationOp.*/
+class CCaOut : public CTxOut
+{
+public:
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action) {
+        READWRITE(nValue);
+        READWRITE(scriptPubKey);
+        READWRITE(nAsset);
+        READWRITE(nValueCA);
+        READWRITE(nNonce);
+    }
+};
+
 
 struct CMutableTransaction;
 
@@ -327,64 +321,55 @@ struct CMutableTransaction;
  */
 template<typename Stream, typename TxType>
 inline void UnserializeTransaction(TxType& tx, Stream& s) {
+    const bool fAllowWitness = !(s.GetVersion() & SERIALIZE_TRANSACTION_NO_WITNESS);
 
     s >> tx.nVersion;
     unsigned char flags = 0;
     tx.vin.clear();
     tx.vout.clear();
-    tx.witness.SetNull();
-
-    // Witness serialization is different between CA and Core.
-    // See code comments in SerializeTransaction for details about the differences.
-    if (g_con_elementsmode) {
+    /* Try to read the vin. In case the dummy is there, this will be read as an empty vector. */
+    s >> tx.vin;
+    if (tx.vin.size() == 0 && fAllowWitness) {
+        /* We read a dummy or an empty vin. */
         s >> flags;
-        s >> tx.vin;
-        s >> tx.vout;
-        s >> tx.nLockTime;
-        if (flags & 1) {
-            /* The witness flag is present. */
-            flags ^= 1;
-            const_cast<CTxWitness*>(&tx.witness)->vtxinwit.resize(tx.vin.size());
-            const_cast<CTxWitness*>(&tx.witness)->vtxoutwit.resize(tx.vout.size());
-            s >> tx.witness;
-            if (!tx.HasWitness()) {
-                /* It's illegal to encode witnesses when all witness stacks are empty. */
-                throw std::ios_base::failure("Superfluous witness record");
-            }
+        if (flags != 0) {
+            s >> tx.vin;
+            s >> tx.vout;
         }
     } else {
-        const bool fAllowWitness = !(s.GetVersion() & SERIALIZE_TRANSACTION_NO_WITNESS);
-
-        /* Try to read the vin. In case the dummy is there, this will be read as an empty vector. */
-        s >> tx.vin;
-        if (tx.vin.size() == 0 && fAllowWitness) {
-            /* We read a dummy or an empty vin. */
-            s >> flags;
-            if (flags != 0) {
-                s >> tx.vin;
-                s >> tx.vout;
-            }
-        } else {
+        if (tx.nVersion == CTransaction::CONFIDENTIAL_VERSION){
+            std::vector<CCaOut> voutCA;
+            s >> voutCA;
+            tx.vout.assign(voutCA.begin(), voutCA.end());
+        }else{
             /* We read a non-empty vin. Assume a normal vout follows. */
             s >> tx.vout;
         }
 
-        if ((flags & 1) && fAllowWitness) {
-            /* The witness flag is present. */
-            flags ^= 1;
-            const_cast<CTxWitness*>(&tx.witness)->vtxinwit.resize(tx.vin.size());
-            const_cast<CTxWitness*>(&tx.witness)->vtxoutwit.resize(tx.vout.size());
-            for (size_t i = 0; i < tx.vin.size(); i++) {
-                s >> tx.witness.vtxinwit[i].scriptWitness.stack;
-            }
+    }
+    if ((flags & 1) && fAllowWitness) {
+        /* The witness flag is present, and we support witnesses. */
+        for (size_t i = 0; i < tx.vin.size(); i++) {
+            s >> tx.vin[i].scriptWitness.stack;
         }
-        s >> tx.nLockTime;
+    }
+    if ((flags & 2) && fAllowWitness) {
+        /* The CA proof flag is present, and we support CA proof. */
+        for (size_t i = 0; i < tx.vin.size(); i++) {
+            s >> tx.vin[i].vchIssuanceAmountRangeproof.stack;
+            s >> tx.vin[i].vchInflationKeysRangeproof.stack;
+        }
+        for (size_t i = 0; i < tx.vout.size(); i++) {
+            s >> tx.vout[i].vchSurjectionproof.stack;
+            s >> tx.vout[i].vchRangeproof.stack;
+        }
     }
 
-    if (flags) {
+    if (flags > 3) {
         /* Unknown flag in the serialization */
         throw std::ios_base::failure("Unknown transaction optional data");
     }
+    s >> tx.nLockTime;
 }
 
 template<typename Stream, typename TxType>
@@ -392,53 +377,53 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
     const bool fAllowWitness = !(s.GetVersion() & SERIALIZE_TRANSACTION_NO_WITNESS);
 
     s << tx.nVersion;
-
-    // Consistency check
-    assert(tx.witness.vtxinwit.size() <= tx.vin.size());
-    assert(tx.witness.vtxoutwit.size() <= tx.vout.size());
-
-    // Check whether witnesses need to be serialized.
     unsigned char flags = 0;
-    if (fAllowWitness && tx.HasWitness()) {
-        flags |= 1;
+    // Consistency check
+    if (fAllowWitness) {
+        /* Check whether witnesses need to be serialized. */
+        if (tx.HasWitness()) {
+            flags |= 1;
+        }
+        /* Check whether CA proof need to be serialized. */
+        if (tx.HasCAProof()) {
+            flags |= 2;
+        }
     }
-
-    // Witness serialization is different between CA and Core.
-    if (g_con_elementsmode) {
-        // In CA-style serialization, all normal data is serialized first and the
-        // witnesses all in the end.
+    if (flags) {
+        /* Use extended format in case witnesses are to be serialized. */
+        std::vector<CTxIn> vinDummy;
+        s << vinDummy;
         s << flags;
-        s << tx.vin;
-        s << tx.vout;
-        s << tx.nLockTime;
-        if (flags & 1) {
-            const_cast<CTxWitness*>(&tx.witness)->vtxinwit.resize(tx.vin.size());
-            const_cast<CTxWitness*>(&tx.witness)->vtxoutwit.resize(tx.vout.size());
-            s << tx.witness;
-        }
-    } else {
-        // In Core-style serialization, we encode the input dummy and the witnesses
-        // follow the outputs before the nLockTime.
-
-        if (flags) {
-            /* Use extended format in case witnesses are to be serialized. */
-            std::vector<CTxIn> vinDummy;
-            s << vinDummy;
-            s << flags;
-        }
-        s << tx.vin;
-        s << tx.vout;
-        if (flags & 1) {
-            const_cast<CTxWitness*>(&tx.witness)->vtxinwit.resize(tx.vin.size());
-            const_cast<CTxWitness*>(&tx.witness)->vtxoutwit.resize(tx.vout.size());
-            for (size_t i = 0; i < tx.vin.size(); i++) {
-                s << tx.witness.vtxinwit[i].scriptWitness.stack;
-            }
-        }
-        s << tx.nLockTime;
     }
-}
+    s << tx.vin;
+    
+    if (tx.nVersion == CTransaction::CONFIDENTIAL_VERSION){
+        std::vector<CCaOut> voutCA;
+        voutCA.assign(tx.vout.begin(), tx.vout.end());
+        s << voutCA;
+    }else{
+        s << tx.vout;
+    }
 
+    if (flags & 1) {
+        for (size_t i = 0; i < tx.vin.size(); i++) {
+            s << tx.vin[i].scriptWitness.stack;
+        }
+    }
+    if (flags & 2) {
+        /* The CA proof flag is present, and we support CA proof. */
+        for (size_t i = 0; i < tx.vin.size(); i++) {
+            s << tx.vin[i].vchIssuanceAmountRangeproof.stack;
+            s << tx.vin[i].vchInflationKeysRangeproof.stack;
+        }
+        for (size_t i = 0; i < tx.vout.size(); i++) {
+            s << tx.vout[i].vchSurjectionproof.stack;
+            s << tx.vout[i].vchRangeproof.stack;
+        }
+    }
+
+    s << tx.nLockTime;
+}
 
 /** The basic transaction that is broadcasted on the network and contained in
  * blocks.  A transaction can contain multiple inputs and outputs.
@@ -500,8 +485,6 @@ public:
 
     const uint256& GetHash() const { return hash; }
     const uint256& GetWitnessHash() const { return m_witness_hash; };
-    // CA: the witness only hash used in CA witness roots
-    uint256 GetWitnessOnlyHash() const;
 
     // Return sum of txouts.
     CAmount GetValueOut() const;
@@ -536,6 +519,21 @@ public:
     {
         for (size_t i = 0; i < vin.size(); i++) {
             if (!vin[i].scriptWitness.IsNull()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool HasCAProof() const
+    {
+        for (size_t n = 0; n < vin.size(); n++) {
+            if (!vin[n].vchIssuanceAmountRangeproof.empty() || !vin[n].vchInflationKeysRangeproof.empty()) {
+                return true;
+            }
+        }
+        for (size_t n = 0; n < vout.size(); n++) {
+            if (!vout[n].vchSurjectionproof.empty() || !vout[n].vchRangeproof.empty()) {
                 return true;
             }
         }
@@ -583,6 +581,20 @@ struct CMutableTransaction
     {
         for (size_t i = 0; i < vin.size(); i++) {
             if (!vin[i].scriptWitness.IsNull()) {
+                return true;
+            }
+        }
+        return false;
+    }
+    bool HasCAProof() const
+    {
+        for (size_t n = 0; n < vin.size(); n++) {
+            if (!vin[n].vchIssuanceAmountRangeproof.empty() || !vin[n].vchInflationKeysRangeproof.empty()) {
+                return true;
+            }
+        }
+        for (size_t n = 0; n < vout.size(); n++) {
+            if (!vout[n].vchSurjectionproof.empty() || !vout[n].vchRangeproof.empty()) {
                 return true;
             }
         }
