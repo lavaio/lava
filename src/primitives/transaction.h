@@ -220,8 +220,6 @@ public:
     std::string ToString() const;
 };
 
-struct CCaOut;
-
 /** An output of a transaction.  It contains the public key that the next input
  * must be able to sign with to claim it.
  */
@@ -230,7 +228,7 @@ class CTxOut
 public:
     CAmount nValue;
     CScript scriptPubKey;
-
+    unsigned char flags = 0;
     CConfidentialAsset nAsset;
     CConfidentialValue nValueCA;
     CConfidentialNonce nNonce;
@@ -245,6 +243,7 @@ public:
     CTxOut(const CAmount& nValueIn, CScript scriptPubKeyIn);
 
     CTxOut(const CConfidentialAsset& nAssetIn, const CConfidentialValue& nValueIn, CScript scriptPubKeyIn);
+    CTxOut(const CAmount& nValueIn, CScript scriptPubKeyIn, const CConfidentialAsset& nAssetIn, const CConfidentialValue& nValueCAIn, const CConfidentialNonce& nNonceIn, unsigned char flagsIn);
     
     ADD_SERIALIZE_METHODS;
 
@@ -285,17 +284,24 @@ public:
     std::string ToString() const;
 };
 
-/** An copy of CTxOut.  It contains a CA SerializationOp.*/
+/** A sub class of CTxOut.  It contains a CA SerializationOp.*/
 class CCaOut : public CTxOut
 {
 public:
+    CCaOut();
+    CCaOut(const CTxOut& txout) : CTxOut(txout.nValue,  txout.scriptPubKey, txout.nAsset, txout.nValueCA, txout.nNonce, txout.flags){}
+    ADD_SERIALIZE_METHODS;
+
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action) {
         READWRITE(nValue);
         READWRITE(scriptPubKey);
-        READWRITE(nAsset);
-        READWRITE(nValueCA);
-        READWRITE(nNonce);
+        READWRITE(flags);
+        if (flags == 1){
+            READWRITE(nAsset);
+            READWRITE(nValueCA);
+            READWRITE(nNonce);
+        }
     }
 };
 
@@ -356,12 +362,12 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
     if ((flags & 2) && fAllowWitness) {
         /* The CA proof flag is present, and we support CA proof. */
         for (size_t i = 0; i < tx.vin.size(); i++) {
-            s >> tx.vin[i].vchIssuanceAmountRangeproof.stack;
-            s >> tx.vin[i].vchInflationKeysRangeproof.stack;
+            s >> tx.vin[i].vchIssuanceAmountRangeproof;
+            s >> tx.vin[i].vchInflationKeysRangeproof;
         }
         for (size_t i = 0; i < tx.vout.size(); i++) {
-            s >> tx.vout[i].vchSurjectionproof.stack;
-            s >> tx.vout[i].vchRangeproof.stack;
+            s >> tx.vout[i].vchSurjectionproof;
+            s >> tx.vout[i].vchRangeproof;
         }
     }
 
@@ -413,12 +419,12 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
     if (flags & 2) {
         /* The CA proof flag is present, and we support CA proof. */
         for (size_t i = 0; i < tx.vin.size(); i++) {
-            s << tx.vin[i].vchIssuanceAmountRangeproof.stack;
-            s << tx.vin[i].vchInflationKeysRangeproof.stack;
+            s << tx.vin[i].vchIssuanceAmountRangeproof;
+            s << tx.vin[i].vchInflationKeysRangeproof;
         }
         for (size_t i = 0; i < tx.vout.size(); i++) {
-            s << tx.vout[i].vchSurjectionproof.stack;
-            s << tx.vout[i].vchRangeproof.stack;
+            s << tx.vout[i].vchSurjectionproof;
+            s << tx.vout[i].vchRangeproof;
         }
     }
 

@@ -55,9 +55,20 @@ CTxOut::CTxOut(const CAmount& nValueIn, CScript scriptPubKeyIn)
 CTxOut::CTxOut(const CConfidentialAsset& nAssetIn, const CConfidentialValue& nValueIn, CScript scriptPubKeyIn)
 {
     nValue = 0;
+    flags = 1;
     nAsset = nAssetIn;
     nValueCA = nValueIn;
     scriptPubKey = scriptPubKeyIn;
+}
+
+CTxOut::CTxOut(const CAmount& nValueIn, CScript scriptPubKeyIn, const CConfidentialAsset& nAssetIn, const CConfidentialValue& nValueCAIn, const CConfidentialNonce& nNonceIn, unsigned char flagsIn)
+{
+    nValue = nValueIn;
+    scriptPubKey = scriptPubKeyIn;
+    flags = flagsIn;
+    nAsset = nAssetIn;
+    nValueCA = nValueCAIn;
+    nNonce = nNonceIn;
 }
 
 std::string CTxOut::ToString() const
