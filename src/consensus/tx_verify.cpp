@@ -205,7 +205,7 @@ bool CheckTransaction(const CTransaction& tx, CValidationState &state, bool fChe
     return true;
 }
 
-bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, int nSpendHeight, CAmount& txfee)
+bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, int nSpendHeight, CAmount& txfee, std::vector<CCheck*> *pvChecks, const bool cacheStore, bool fScriptChecks)
 {
     // are the actual inputs available?
     if (!inputs.HaveInputs(tx)) {
@@ -213,6 +213,8 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
                          strprintf("%s: inputs missing/spent", __func__));
     }
 
+    auto hasCA = tx.HasCAOut();
+    std::vector<CTxOut> spent_inputs;
     CAmount nValueIn = 0;
     std::vector<CTxOut> spent_inputs;
     for (unsigned int i = 0; i < tx.vin.size(); ++i) {
@@ -232,18 +234,17 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
         if (!MoneyRange(coin.out.nValue) || !MoneyRange(nValueIn)) {
             return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputvalues-outofrange");
         }
+
+        if (hasCA)
+            spent_inputs.push_back(coin.out);
     }
 
-    if (tx.nVersion == CTransaction::CONFIDENTIAL_VERSION) {
-        // This is a tx including confidential asset
+    if (hasCA) {
         // Verify that amounts add up.
-        // As those lava origin vouts' asset value is zero,
-        // So we need not to pick up the CA-vins from tx's vins.
-        if (!VerifyAmounts(spent_inputs, tx, NULL, true)) {
+        if (fScriptChecks && !VerifyAmounts(spent_inputs, tx, pvChecks, cacheStore)) {
             return state.DoS(100, false, REJECT_INVALID, "bad-txns-in-ne-out", false, "value in != value out");
         }
     }
-
     const CAmount value_out = tx.GetValueOut();
     if (nValueIn < value_out) {
         return state.DoS(100, false, REJECT_INVALID, "bad-txns-in-belowout", false,

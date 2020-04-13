@@ -551,6 +551,15 @@ public:
         return false;
     }
 
+    bool HasCAOut() const
+    {
+        for (const auto& out : vout) {
+            if (out.IsCA())
+                return true;
+        }
+        return false;
+    }
+
     bool IsTicketTx() const;
 
     CTicketRef Ticket() const;
@@ -608,6 +617,15 @@ struct CMutableTransaction
             if (!vout[n].vchSurjectionproof.empty() || !vout[n].vchRangeproof.empty()) {
                 return true;
             }
+        }
+        return false;
+    }
+
+    bool HasCAOut() const
+    {
+        for (const auto& out : vout) {
+            if (out.IsCA())
+                return true;
         }
         return false;
     }
