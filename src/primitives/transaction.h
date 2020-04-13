@@ -267,6 +267,11 @@ public:
         return (nValue == -1) && nAsset.IsNull() && nValueCA.IsNull() && nNonce.IsNull() && scriptPubKey.empty();
     }
 
+    bool IsCA() const
+    {
+        return !nAsset.IsNull() && !nValueCA.IsNull();
+    }
+
     friend bool operator==(const CTxOut& a, const CTxOut& b)
     {
         return (a.nAsset == b.nAsset &&

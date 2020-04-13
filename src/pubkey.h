@@ -22,6 +22,12 @@ class CKeyID : public uint160
 public:
     CKeyID() : uint160() {}
     explicit CKeyID(const uint160& in) : uint160(in) {}
+    explicit CKeyID(const CPubKey& pubkey) : uint160(pubkey.GetID()) {}
+    explicit CKeyID(const CPubKey& pubkey, const CPubKey& blinding_pubkey_in) : uint160(pubkey.GetID()), blinding_pubkey(blinding_pubkey_in) {}
+    explicit CKeyID(const uint160& hash, const CPubKey& blinding_pubkey_in) : uint160(hash), blinding_pubkey(blinding_pubkey_in) {}
+
+    using uint160::uint160;
+    CPubKey blinding_pubkey;
 
     uint64_t GetPlotID() const
     {

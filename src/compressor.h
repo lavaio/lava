@@ -105,6 +105,32 @@ public:
         }
         CScriptCompressor cscript(REF(txout.scriptPubKey));
         READWRITE(cscript);
+
+        // CA:
+        // TODO FIXME
+        if (!ser_action.ForRead()) {
+            if (txout.nValueCA.IsExplicit()) {
+                uint8_t b = 0;
+                READWRITE(b);
+                uint64_t nVal = CompressAmount(txout.nValueCA.GetAmount());
+                READWRITE(VARINT(nVal));
+            } else {
+                uint8_t b = 1;
+                READWRITE(b);
+                READWRITE(txout.nValueCA);
+            }
+        } else {
+            uint8_t type = 0;
+            READWRITE(type);
+            if (type == 0) {
+                uint64_t nVal = 0;
+                READWRITE(VARINT(nVal));
+                txout.nValueCA = DecompressAmount(nVal);
+            } else {
+                READWRITE(txout.nValueCA);
+            }
+        }
+        READWRITE(txout.nAsset);
     }
 };
 

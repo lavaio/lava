@@ -11,6 +11,7 @@
 #include <util/system.h>
 #include <util/strencodings.h>
 
+#include <chainparams.h>
 
 typedef std::vector<unsigned char> valtype;
 
@@ -18,11 +19,20 @@ bool fAcceptDatacarrier = DEFAULT_ACCEPT_DATACARRIER;
 unsigned nMaxDatacarrierBytes = MAX_OP_RETURN_RELAY;
 
 CScriptID::CScriptID(const CScript& in) : uint160(Hash160(in.begin(), in.end())) {}
+CScriptID::CScriptID(const CScript& in, const CPubKey& blinding_pubkey_in) : uint160(Hash160(in.begin(), in.end())), blinding_pubkey(blinding_pubkey_in) {}
+CScriptID::CScriptID(const uint160& hash, const CPubKey& blinding_pubkey_in) : uint160(hash), blinding_pubkey(blinding_pubkey_in) {}
 
 WitnessV0ScriptHash::WitnessV0ScriptHash(const CScript& in)
 {
     CSHA256().Write(in.data(), in.size()).Finalize(begin());
 }
+
+WitnessV0ScriptHash::WitnessV0ScriptHash(const CScript& in, const CPubKey& blinding_pubkey_in)
+{
+    CSHA256().Write(in.data(), in.size()).Finalize(begin());
+    blinding_pubkey = blinding_pubkey_in;
+}
+
 
 const char* GetTxnOutputType(txnouttype t)
 {
@@ -157,6 +167,11 @@ bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet)
     std::vector<valtype> vSolutions;
     txnouttype whichType = Solver(scriptPubKey, vSolutions);
 
+    if (whichType == TX_NULL_DATA) {
+        // This is data, not addresses
+        return false;
+    }
+
     if (whichType == TX_PUBKEY) {
         CPubKey pubKey(vSolutions[0]);
         if (!pubKey.IsValid())
@@ -280,6 +295,16 @@ public:
     {
         script->clear();
         *script << CScript::EncodeOP_N(id.version) << std::vector<unsigned char>(id.program, id.program + id.length);
+        return true;
+    }
+
+    bool operator()(const NullData& id) const
+    {
+        script->clear();
+        *script << OP_RETURN;
+        for (const auto& push : id.null_data) {
+            *script << push;
+        }
         return true;
     }
 };
