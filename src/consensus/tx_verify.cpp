@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <consensus/tx_verify.h>
-
+#include <confidential_validation.h>
 #include <consensus/consensus.h>
 #include <primitives/transaction.h>
 #include <script/interpreter.h>
@@ -214,11 +214,12 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
     }
 
     CAmount nValueIn = 0;
+    std::vector<CTxOut> spent_inputs;
     for (unsigned int i = 0; i < tx.vin.size(); ++i) {
         const COutPoint &prevout = tx.vin[i].prevout;
         const Coin& coin = inputs.AccessCoin(prevout);
         assert(!coin.IsSpent());
-
+        spent_inputs.push_back(coin.out);
         // If prev is coinbase, check that it's matured
         if (coin.IsCoinBase() && nSpendHeight - coin.nHeight < COINBASE_MATURITY) {
             return state.Invalid(false,
@@ -230,6 +231,16 @@ bool Consensus::CheckTxInputs(const CTransaction& tx, CValidationState& state, c
         nValueIn += coin.out.nValue;
         if (!MoneyRange(coin.out.nValue) || !MoneyRange(nValueIn)) {
             return state.DoS(100, false, REJECT_INVALID, "bad-txns-inputvalues-outofrange");
+        }
+    }
+
+    if (tx.nVersion == CTransaction::CONFIDENTIAL_VERSION) {
+        // This is a tx including confidential asset
+        // Verify that amounts add up.
+        // As those lava origin vouts' asset value is zero,
+        // So we need not to pick up the CA-vins from tx's vins.
+        if (!VerifyAmounts(spent_inputs, tx, NULL, true)) {
+            return state.DoS(100, false, REJECT_INVALID, "bad-txns-in-ne-out", false, "value in != value out");
         }
     }
 
