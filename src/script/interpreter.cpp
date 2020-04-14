@@ -1150,6 +1150,10 @@ public:
             ::Serialize(s, (int)0);
         else
             ::Serialize(s, txTo.vin[nInput].nSequence);
+        // Serialize the asset issuance object
+        if (!txTo.vin[nInput].assetIssuance.IsNull()) {
+            ::Serialize(s, txTo.vin[nInput].assetIssuance);
+        }
     }
 
     /** Serialize an output of txTo */
@@ -1203,6 +1207,19 @@ uint256 GetSequenceHash(const T& txTo)
 }
 
 template <class T>
+uint256 GetIssuanceHash(const T& txTo)
+{
+    CHashWriter ss(SER_GETHASH, 0);
+    for (const auto& txin : txTo.vin) {
+        if (txin.assetIssuance.IsNull())
+            ss << (unsigned char)0;
+        else
+            ss << txin.assetIssuance;
+    }
+    return ss.GetHash();
+}
+
+template <class T>
 uint256 GetOutputsHash(const T& txTo)
 {
     CHashWriter ss(SER_GETHASH, 0);
@@ -1221,6 +1238,7 @@ PrecomputedTransactionData::PrecomputedTransactionData(const T& txTo)
     if (txTo.HasWitness()) {
         hashPrevouts = GetPrevoutHash(txTo);
         hashSequence = GetSequenceHash(txTo);
+        hashIssuance = GetIssuanceHash(txTo);
         hashOutputs = GetOutputsHash(txTo);
         ready = true;
     }
@@ -1231,13 +1249,14 @@ template PrecomputedTransactionData::PrecomputedTransactionData(const CTransacti
 template PrecomputedTransactionData::PrecomputedTransactionData(const CMutableTransaction& txTo);
 
 template <class T>
-uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn, int nHashType, const CAmount& amount, SigVersion sigversion, const PrecomputedTransactionData* cache)
+uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn, int nHashType, const CConfidentialValue& amount, bool isCA, SigVersion sigversion, const PrecomputedTransactionData* cache)
 {
     assert(nIn < txTo.vin.size());
 
     if (sigversion == SigVersion::WITNESS_V0) {
         uint256 hashPrevouts;
         uint256 hashSequence;
+        uint256 hashIssuance;
         uint256 hashOutputs;
         const bool cacheready = cache && cache->ready;
 
@@ -1249,6 +1268,9 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
             hashSequence = cacheready ? cache->hashSequence : GetSequenceHash(txTo);
         }
 
+        if (!(nHashType & SIGHASH_ANYONECANPAY)) {
+            hashIssuance = cacheready ? cache->hashIssuance : GetIssuanceHash(txTo);
+        }
 
         if ((nHashType & 0x1f) != SIGHASH_SINGLE && (nHashType & 0x1f) != SIGHASH_NONE) {
             hashOutputs = cacheready ? cache->hashOutputs : GetOutputsHash(txTo);
@@ -1264,13 +1286,24 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
         // Input prevouts/nSequence (none/all, depending on flags)
         ss << hashPrevouts;
         ss << hashSequence;
+        if (isCA) {
+            ss << hashIssuance;
+        }
         // The input being signed (replacing the scriptSig with scriptCode + amount)
         // The prevout may already be contained in hashPrevout, and the nSequence
         // may already be contain in hashSequence.
         ss << txTo.vin[nIn].prevout;
         ss << scriptCode;
-        ss << amount;
+        if (isCA) {
+            ss << amount;
+        } else {
+            ss << amount.GetAmount();
+        }
         ss << txTo.vin[nIn].nSequence;
+        if (!txTo.vin[nIn].assetIssuance.IsNull()) {
+            assert(isCA);
+            ss << txTo.vin[nIn].assetIssuance;
+        }
         // Outputs (none/one/all, depending on flags)
         ss << hashOutputs;
         // Locktime
@@ -1320,7 +1353,7 @@ bool GenericTransactionSignatureChecker<T>::CheckSig(const std::vector<unsigned 
     int nHashType = vchSig.back();
     vchSig.pop_back();
 
-    uint256 sighash = SignatureHash(scriptCode, *txTo, nIn, nHashType, amount, sigversion, this->txdata);
+    uint256 sighash = SignatureHash(scriptCode, *txTo, nIn, nHashType, amount, isCA, sigversion, this->txdata);
 
     if (!VerifySignature(vchSig, pubkey, sighash))
         return false;
