@@ -6,13 +6,18 @@
 #define BITCOIN_WALLET_COINSELECTION_H
 
 #include <amount.h>
+#include <chainparams.h>
 #include <primitives/transaction.h>
+#include <primitives/bitcoin/transaction.h>
 #include <random.h>
 
 //! target minimum change amount
 static constexpr CAmount MIN_CHANGE{COIN / 100};
 //! final minimum change amount after paying for fees
 static const CAmount MIN_FINAL_CHANGE = MIN_CHANGE/2;
+
+class CWalletTx;
+class uint256;
 
 class CInputCoin {
 public:
@@ -33,9 +38,59 @@ public:
         m_input_bytes = input_bytes;
     }
 
+    CInputCoin(const CWalletTx* wtx, unsigned int i) {
+        if (!wtx || !wtx->tx)
+            throw std::invalid_argument("tx should not be null");
+        if (i >= wtx->tx->vout.size())
+            throw std::out_of_range("The output index is out of range");
+
+        outpoint = COutPoint(wtx->tx->GetHash(), i);
+        txout = wtx->tx->vout[i];
+        effective_value = txout_in.nValue;
+        if (! txout.IsCA())
+            return;
+        effective_value = std::max<CAmount>(0, wtx->GetOutputValueOut(i));
+        value = wtx->GetOutputValueOut(i);
+        asset = wtx->GetOutputAsset(i);
+        bf_value = wtx->GetOutputAmountBlindingFactor(i);
+        bf_asset = wtx->GetOutputAssetBlindingFactor(i);
+    }
+
+
+    CInputCoin(const CWalletTx* wtx, unsigned int i, int input_bytes) : CInputCoin(wtx, i)
+    {
+        m_input_bytes = input_bytes;
+    }
+
+    CInputCoin(const COutPoint& outpoint_in, const CTxOut& txout_in)
+    {
+        outpoint = outpoint_in;
+        txout = txout_in;
+        effective_value = txout_in.nValue;
+        if (! txout.IsCA())
+            return;
+        if (txout.nValueCA.IsExplicit()) {
+            effective_value = txout_in.nValueCA.GetAmount();
+            value = txout.nValueCA.GetAmount();
+            asset = txout.nAsset.GetAsset();
+        } else {
+            effective_value = 0;
+        }
+    }
+
+    CInputCoin(const COutPoint& outpoint_in, const CTxOut& txout_in, int input_bytes) : CInputCoin(outpoint_in, txout_in)
+    {
+        m_input_bytes = input_bytes;
+    }
+
     COutPoint outpoint;
     CTxOut txout;
     CAmount effective_value;
+    // CA:
+    CAmount value;
+    CAsset asset;
+    uint256 bf_value;
+    uint256 bf_asset;
 
     /** Pre-computed estimated size of this output as a fully-signed input in a transaction. Can be -1 if it could not be calculated */
     int m_input_bytes{-1};
@@ -97,5 +152,9 @@ bool SelectCoinsBnB(std::vector<OutputGroup>& utxo_pool, const CAmount& target_v
 
 // Original coin selection algorithm as a fallback
 bool KnapsackSolver(const CAmount& nTargetValue, std::vector<OutputGroup>& groups, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet);
+
+// CA:
+// Knapsack that delegates for every asset individually.
+bool KnapsackSolver(const CAmountMap& mapTargetValue, std::vector<OutputGroup>& groups, std::set<CInputCoin>& setCoinsRet, CAmountMap& mapValueRet);
 
 #endif // BITCOIN_WALLET_COINSELECTION_H
