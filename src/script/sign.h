@@ -103,12 +103,12 @@ class MutableTransactionSignatureCreator : public BaseSignatureCreator {
     const CMutableTransaction* txTo;
     unsigned int nIn;
     int nHashType;
-    bool isCA = 0;
+    bool isCA = false;
     CConfidentialValue amount;
     const MutableTransactionSignatureChecker checker;
 
 public:
-    MutableTransactionSignatureCreator(const CMutableTransaction* txToIn, unsigned int nInIn, const CConfidentialValue& amountIn, bool isCAIn, int nHashTypeIn = SIGHASH_ALL);
+    MutableTransactionSignatureCreator(const CMutableTransaction* txToIn, unsigned int nInIn, const CConfidentialValue& amountIn, int nHashTypeIn = SIGHASH_ALL, bool isCAIn = false);
     const BaseSignatureChecker& Checker() const override { return checker; }
     bool CreateSig(const SigningProvider& provider, std::vector<unsigned char>& vchSig, const CKeyID& keyid, const CScript& scriptCode, SigVersion sigversion) const override;
 };
