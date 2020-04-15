@@ -824,9 +824,9 @@ static UniValue getblockheader(const JSONRPCRequest& request)
     const CBlockIndex* pblockindex;
     const CBlockIndex* tip;
     {
-    LOCK(cs_main);
-    pblockindex = LookupBlockIndex(hash);
-    tip = chainActive.Tip();
+        LOCK(cs_main);
+        pblockindex = LookupBlockIndex(hash);
+        tip = chainActive.Tip();
     }
 
     if (!pblockindex) {
@@ -976,7 +976,14 @@ static void ApplyStats(CCoinsStats &stats, CHashWriter& ss, const uint256& hash,
         ss << output.second.out.scriptPubKey;
         ss << VARINT(output.second.out.nValue, VarIntMode::NONNEGATIVE_SIGNED);
         stats.nTransactionOutputs++;
-        stats.nTotalAmount += output.second.out.nValue;
+        if (output.second.out.IsCA()) {
+            ss << output.second.out.nValue;
+            ss << output.second.out.nAsset;
+            ss << output.second.out.nNonce;
+            if (output.second.out.nValueCA.IsExplicit()) {
+                stats.nTotalAmount += output.second.out.nValueCA.GetAmount();
+            }
+        }
         stats.nBogoSize += 32 /* txid */ + 4 /* vout index */ + 4 /* height + coinbase */ + 8 /* amount */ +
                            2 /* scriptPubKey len */ + output.second.out.scriptPubKey.size() /* scriptPubKey */;
     }
@@ -1190,7 +1197,22 @@ UniValue gettxout(const JSONRPCRequest& request)
     } else {
         ret.pushKV("confirmations", (int64_t)(pindex->nHeight - coin.nHeight + 1));
     }
-    ret.pushKV("value", ValueFromAmount(coin.out.nValue));
+    if (coin.out.IsCA()) {
+        if (coin.out.nValueCA.IsExplicit()) {
+            ret.pushKV("value", ValueFromAmount(coin.out.nValueCA.GetAmount()));
+        } else {
+            ret.pushKV("valuecommitment", coin.out.nValueCA.GetHex());
+        }
+        if (coin.out.nAsset.IsExplicit()) {
+            ret.pushKV("asset", coin.out.nAsset.GetAsset().GetHex());
+        } else {
+            ret.pushKV("assetcommitment", coin.out.nAsset.GetHex());
+        }
+
+        ret.pushKV("commitmentnonce", coin.out.nNonce.GetHex());
+    } else {
+        ret.pushKV("value", ValueFromAmount(coin.out.nValue));
+    }
     UniValue o(UniValue::VOBJ);
     ScriptPubKeyToUniv(coin.out.scriptPubKey, o, true);
     ret.pushKV("scriptPubKey", o);
@@ -1820,7 +1842,9 @@ static constexpr size_t PER_UTXO_OVERHEAD = sizeof(COutPoint) + sizeof(uint32_t)
 
 static UniValue getblockstats(const JSONRPCRequest& request)
 {
-    const RPCHelpMan help{"getblockstats",
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 4) {
+        throw std::runtime_error(
+            RPCHelpMan{"getblockstats",
                 "\nCompute per block statistics for a given window. All amounts are in satoshis.\n"
                 "It won't work for some heights with pruning.\n"
                 "It won't work without -txindex for utxo_size_inc, *fee or *feerate stats.\n",
@@ -1876,9 +1900,7 @@ static UniValue getblockstats(const JSONRPCRequest& request)
                     HelpExampleCli("getblockstats", "1000 '[\"minfeerate\",\"avgfeerate\"]'")
             + HelpExampleRpc("getblockstats", "1000 '[\"minfeerate\",\"avgfeerate\"]'")
                 },
-    };
-    if (request.fHelp || !help.IsValidNumArgs(request.params.size())) {
-        throw std::runtime_error(help.ToString());
+            }.ToString());
     }
 
     LOCK(cs_main);
@@ -2326,7 +2348,20 @@ UniValue scantxoutset(const JSONRPCRequest& request)
             unspent.pushKV("vout", (int32_t)outpoint.n);
             unspent.pushKV("scriptPubKey", HexStr(txo.scriptPubKey.begin(), txo.scriptPubKey.end()));
             unspent.pushKV("desc", descriptors[txo.scriptPubKey]);
-            unspent.pushKV("amount", ValueFromAmount(txo.nValue));
+            if (txo.IsCA()) {
+                if (txo.nValueCA.IsExplicit()) {
+                    unspent.pushKV("amount", ValueFromAmount(txo.nValueCA.GetAmount()));
+                } else {
+                    unspent.pushKV("amountcommitment", HexStr(txo.nValueCA.vchCommitment));
+                }
+                if (txo.nAsset.IsExplicit()) {
+                    unspent.pushKV("asset", txo.nAsset.GetAsset().GetHex());
+                } else {
+                    unspent.pushKV("assetcommitment", HexStr(txo.nAsset.vchCommitment));
+                }
+            } else {
+                unspent.pushKV("amount", ValueFromAmount(txo.nValue));
+            }
             unspent.pushKV("height", (int32_t)coin.nHeight);
 
             unspents.push_back(unspent);

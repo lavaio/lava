@@ -52,7 +52,11 @@ static UniValue validateaddress(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() != 1)
         throw std::runtime_error(
             RPCHelpMan{"validateaddress",
-                "\nReturn information about the given bitcoin address.\n",
+                "\nReturn information about the given bitcoin address.\n"
+                "DEPRECATION WARNING: Parts of this command have been deprecated and moved to getaddressinfo. Clients must\n"
+                "transition to using getaddressinfo to access this information before upgrading to v0.18. The following deprecated\n"
+                "fields have moved to getaddressinfo and will only be shown here with -deprecatedrpc=validateaddress: ismine, iswatchonly,\n"
+                "script, hex, pubkeys, sigsrequired, pubkey, addresses, embedded, iscompressed, account, timestamp, hdkeypath, kdmasterkeyid.\n",
                 {
                     {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The bitcoin address to validate"},
                 },
@@ -65,6 +69,13 @@ static UniValue validateaddress(const JSONRPCRequest& request)
             "  \"iswitness\" : true|false,     (boolean) If the address is a witness address\n"
             "  \"witness_version\" : version   (numeric, optional) The version number of the witness program\n"
             "  \"witness_program\" : \"hex\"     (string, optional) The hex value of the witness program\n"
+            "  \"confidential_key\" : \"hex\", (string) The hex value of the raw blinding public key for that address, if any. \"\" if none.\n"
+            "  \"unconfidential\" : \"address\", (string) The address without confidentiality key.\n"
+            "   {\n"
+            "       \"address\" : \"address\",\n"
+            "       \"scriptPubKey\" : \"hex\",\n"
+            "       ...\n"
+            "   }\n"
             "}\n"
                 },
                 RPCExamples{
@@ -88,6 +99,8 @@ static UniValue validateaddress(const JSONRPCRequest& request)
 
         UniValue detail = DescribeAddress(dest);
         ret.pushKVs(detail);
+        UniValue blind_detail = DescribeBlindAddress(dest);
+        ret.pushKVs(blind_detail);
     }
     return ret;
 }
@@ -776,7 +789,94 @@ static UniValue echo(const JSONRPCRequest& request)
     return request.params;
 }
 
+class BlindingPubkeyAdderVisitor : public boost::static_visitor<>
+{
+public:
+    CPubKey blind_key;
+    explicit BlindingPubkeyAdderVisitor(const CPubKey& blind_key_in) : blind_key(blind_key_in) {}
+
+    void operator()(const CNoDestination& dest) const {}
+
+    void operator()(CKeyID& keyID) const
+    {
+        keyID.blinding_pubkey = blind_key;
+    }
+
+    void operator()(CScriptID& scriptID) const
+    {
+        scriptID.blinding_pubkey = blind_key;
+    }
+
+    void operator()(WitnessV0KeyHash& id) const
+    {
+        id.blinding_pubkey = blind_key;
+    }
+
+    void operator()(WitnessV0ScriptHash& id) const
+    {
+        id.blinding_pubkey = blind_key;
+    }
+
+    void operator()(WitnessUnknown& id) const
+    {
+        id.blinding_pubkey = blind_key;
+    }
+
+    void operator()(const NullData& id) const {}
+};
+
+
+UniValue createblindedaddress(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() != 2)
+        throw std::runtime_error(
+            RPCHelpMan{"createblindedaddress",
+                "\nCreates a blinded address using the provided blinding key.\n",
+                {
+                    {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The unblinded address to be blinded."},
+                    {"blinding_key", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The blinding public key. This can be obtained for a given address using `validateaddress`."},
+                },
+                RPCResult{
+            "\"blinded_address\"   (string) The blinded address.\n"
+                },
+                RPCExamples{
+            "\nCreate a multisig address from 2 addresses\n"
+            + HelpExampleCli("createblindedaddress", "HEZk3iQi1jC49bxUriTtynnXgWWWdAYx16 ec09811118b6febfa5ebe68642e5091c418fbace07e655da26b4a845a691fc2d") +
+            "\nAs a json rpc call\n"
+            + HelpExampleRpc("createblindedaddress", "HEZk3iQi1jC49bxUriTtynnXgWWWdAYx16, ec09811118b6febfa5ebe68642e5091c418fbace07e655da26b4a845a691fc2d")
+                },
+            }.ToString());
+
+    CTxDestination address = DecodeDestination(request.params[0].get_str());
+    if (!IsValidDestination(address)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Bitcoin address or script");
+    }
+    if (IsBlindDestination(address)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Not an unblinded address");
+    }
+
+    if (!IsHex(request.params[1].get_str())) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid hexadecimal for key");
+    }
+    std::vector<unsigned char> keydata = ParseHex(request.params[1].get_str());
+    if (keydata.size() != 33) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid hexadecimal key length, must be length 66.");
+    }
+
+    CPubKey key;
+    key.Set(keydata.begin(), keydata.end());
+
+    // Append blinding key and return
+    boost::apply_visitor(BlindingPubkeyAdderVisitor(key), address);
+    return EncodeDestination(address);
+}
+
+
+// END CA CALLS
+//
+
 // clang-format off
+
 static const CRPCCommand commands[] =
 { //  category              name                      actor (function)         argNames
   //  --------------------- ------------------------  -----------------------  ----------
@@ -791,6 +891,8 @@ static const CRPCCommand commands[] =
     { "util",               "createhtlcaddress",      &createhtlcaddress,      {"seller_key","refund_key","hash","lockheight"} },
     { "util",               "sendrawbtctx",           &sendrawbtctx,           {"host","tx"} },
     { "util",               "getimage",               &getimage,               {"preimage"} },
+    // CA:
+    { "util",               "createblindedaddress",   &createblindedaddress,   {"address", "blinding_key"}},
 
     /* Not shown in help */
     { "hidden",             "setmocktime",            &setmocktime,            {"timestamp"}},

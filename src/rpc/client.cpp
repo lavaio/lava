@@ -176,6 +176,14 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "spendhtlcwithwallet", 9, "isrefund" }, 
     { "cleanfstx",0,"slotindex"},
     { "listfstx",0,"slotindex"},
+    //
+    // CA:
+    { "issueasset", 0, "assetamount" },
+    { "issueasset", 1, "tokenamount" },
+    { "issueasset", 2, "blind" },
+    { "reissueasset", 1, "assetamount" },
+    { "destroyamount", 1, "amount" },
+
 };
 // clang-format on
 
