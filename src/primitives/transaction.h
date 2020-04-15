@@ -15,10 +15,7 @@
 #include <primitives/confidential.h>
 
 static const int SERIALIZE_TRANSACTION_NO_WITNESS = 0x40000000;
-
-// CA:
-// Globals to avoid circular dependencies.
-extern bool g_con_elementsmode;
+class CTransaction;
 
 /** An outpoint - a combination of a transaction hash and an index n into its vout */
 class COutPoint
@@ -348,7 +345,7 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
             s >> tx.vout;
         }
     } else {
-        if (tx.nVersion == CTransaction::CONFIDENTIAL_VERSION){
+        if (tx.nVersion == TxType::CONFIDENTIAL_VERSION){
             std::vector<CCaOut> voutCA;
             s >> voutCA;
             tx.vout.assign(voutCA.begin(), voutCA.end());
@@ -408,7 +405,7 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
     }
     s << tx.vin;
     
-    if (tx.nVersion == CTransaction::CONFIDENTIAL_VERSION){
+    if (tx.nVersion == TxType::CONFIDENTIAL_VERSION){
         std::vector<CCaOut> voutCA;
         voutCA.assign(tx.vout.begin(), tx.vout.end());
         s << voutCA;
@@ -568,6 +565,8 @@ public:
 /** A mutable version of CTransaction. */
 struct CMutableTransaction
 {
+    static const int32_t CONFIDENTIAL_VERSION=3;
+    
     std::vector<CTxIn> vin;
     std::vector<CTxOut> vout;
     int32_t nVersion;

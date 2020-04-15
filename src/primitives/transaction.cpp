@@ -174,7 +174,7 @@ bool CTransaction::IsTicketTx() const
     CScriptID scriptID;
     CScript scriptzero;
     bool HasTicketVout = false;
-    for (auto i=0; i<vout.size();i++){
+    for (size_t i = 0; i < vout.size(); i++){
         if (vout[i].nValue == 0){
             // from 0 value vout's script decode the redeemScript.
             CScript script = vout[i].scriptPubKey;
@@ -210,7 +210,7 @@ CTicketRef CTransaction::Ticket() const
         return ticket;
     CScript redeemScript;
     CScript ticketScript;
-    for (int i = 0; i < vout.size(); i++) {
+    for (size_t i = 0; i < vout.size(); i++) {
         auto out = vout[i];
         if (out.nValue == 0) { // op_return script
             if (!GetRedeemFromScript(out.scriptPubKey, redeemScript)) {
@@ -220,7 +220,7 @@ CTicketRef CTransaction::Ticket() const
             ticketScript << OP_HASH160 << ToByteVector(CScriptID(redeemScript)) << OP_EQUAL;
         } 
     }
-    for (int i = 0; i < vout.size(); i++) {
+    for (size_t i = 0; i < vout.size(); i++) {
         auto out = vout[i];
         if (out.nValue != 0 && ticketScript == out.scriptPubKey) {
             ticket.reset(new CTicket(COutPoint(hash, i), out.nValue, redeemScript, ticketScript));

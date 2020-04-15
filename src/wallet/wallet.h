@@ -394,7 +394,7 @@ public:
      *                         2014 (removed in commit 93a18a3)
      */
     mutable mapValue_t mapValue;
-    std::vector<BlindingDataInfo> blindingData;
+    mutable std::vector<BlindingDataInfo> blindingData;
     std::vector<std::pair<std::string, std::string> > vOrderForm;
     unsigned int fTimeReceivedIsTxTime;
     unsigned int nTimeReceived; //!< time received by this node
@@ -927,7 +927,7 @@ public:
     interfaces::Chain& chain() const { return m_chain; }
 
     // Master derivation blinding key
-    uint256 blinding_derivation_key;
+    mutable uint256 blinding_derivation_key;
     const CWalletTx* GetWalletTx(const uint256& hash) const;
 
     //! check whether we are allowed to upgrade (or already support) to the named feature
@@ -978,7 +978,7 @@ public:
      * Generate a new key
      */
     CPubKey GenerateNewKey(WalletBatch& batch, bool internal = false) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
-    CKey GenerateMasterBlindingKey();
+    CKey GenerateMasterBlindingKey() const;
     //! Adds a key to the store, and saves it to disk.
     bool AddKeyPubKey(const CKey& key, const CPubKey &pubkey) override EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     bool AddKeyPubKeyWithDB(WalletBatch &batch,const CKey& key, const CPubKey &pubkey) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);

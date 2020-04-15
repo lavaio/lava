@@ -9,6 +9,7 @@
 #include <amount.h>
 #include <primitives/transaction.h>
 #include <script/sign.h>
+#include <script/standard.h>
 #include <wallet/db.h>
 #include <key.h>
 

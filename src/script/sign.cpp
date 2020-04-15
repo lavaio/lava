@@ -27,7 +27,7 @@ bool MutableTransactionSignatureCreator::CreateSig(const SigningProvider& provid
     if (sigversion == SigVersion::WITNESS_V0 && !key.IsCompressed())
         return false;
 
-    uint256 hash = SignatureHash(scriptCode, *txTo, nIn, nHashType, amount, isCA, sigversion);
+    uint256 hash = SignatureHash(scriptCode, *txTo, nIn, nHashType, amount, sigversion, isCA);
     if (!key.Sign(hash, vchSig))
         return false;
     vchSig.push_back((unsigned char)nHashType);
@@ -396,15 +396,7 @@ bool SignSignature(const SigningProvider &provider, const CTransaction& txFrom, 
     assert(txin.prevout.n < txFrom.vout.size());
     const CTxOut& txout = txFrom.vout[txin.prevout.n];
 
-    CConfidentialValue ValueConf;
-    if (txout.flags == 1){
-        ValueConf = txout.nValueCA;
-    }else{
-        if (txout.flags == 0){
-            ValueConf.SetToAmount(txout.nValue);
-        }
-    }
-    return SignSignature(provider, txout.scriptPubKey, txTo, nIn, ValueConf, nHashType, txout.flags);
+    return SignSignature(provider, txout.scriptPubKey, txTo, nIn, txout.IsCA() ? txout.nValueCA : txout.nValue, nHashType, txout.IsCA());
 }
 
 namespace {

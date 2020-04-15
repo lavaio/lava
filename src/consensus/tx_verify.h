@@ -5,6 +5,7 @@
 #ifndef BITCOIN_CONSENSUS_TX_VERIFY_H
 #define BITCOIN_CONSENSUS_TX_VERIFY_H
 
+#include <confidential_validation.h>
 #include <amount.h>
 
 #include <stdint.h>

@@ -101,20 +101,11 @@ static int verify_script(const unsigned char *scriptPubKey, unsigned int scriptP
     }
 }
 
-int bitcoinconsensus_verify_script_with_amount(const unsigned char *scriptPubKey, unsigned int scriptPubKeyLen,
-                                    const unsigned char *amount, unsigned int amountLen,
+int bitcoinconsensus_verify_script_with_amount(const unsigned char *scriptPubKey, unsigned int scriptPubKeyLen, CConfidentialValue amount,
                                     const unsigned char *txTo        , unsigned int txToLen,
                                     unsigned int nIn, unsigned int flags, bitcoinconsensus_error* err)
 {
-    try {
-        TxInputStream stream(SER_NETWORK, PROTOCOL_VERSION, amount, amountLen);
-        CConfidentialValue am;
-        stream >> am;
-
-        return ::verify_script(scriptPubKey, scriptPubKeyLen, am, txTo, txToLen, nIn, flags, err);
-    } catch (const std::exception&) {
-        return set_error(err, bitcoinconsensus_ERR_TX_DESERIALIZE); // Error deserializing
-    }
+    return ::verify_script(scriptPubKey, scriptPubKeyLen, amount, txTo, txToLen, nIn, flags, err);
 }
 
 

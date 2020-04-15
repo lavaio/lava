@@ -27,11 +27,6 @@ bool HasValidFee(const CTransaction& tx) {
     return false;
 }
 
-CAmountMap GetFeeMap(const CTransaction& tx) {
-    CAmountMap fee;
-    return fee;
-}
-
 bool CRangeCheck::operator()() {
     if (val->IsExplicit()) {
         return true;

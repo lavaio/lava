@@ -8,7 +8,6 @@
 #include <amount.h>
 #include <chainparams.h>
 #include <primitives/transaction.h>
-#include <primitives/bitcoin/transaction.h>
 #include <random.h>
 
 //! target minimum change amount
@@ -38,23 +37,7 @@ public:
         m_input_bytes = input_bytes;
     }
 
-    CInputCoin(const CWalletTx* wtx, unsigned int i) {
-        if (!wtx || !wtx->tx)
-            throw std::invalid_argument("tx should not be null");
-        if (i >= wtx->tx->vout.size())
-            throw std::out_of_range("The output index is out of range");
-
-        outpoint = COutPoint(wtx->tx->GetHash(), i);
-        txout = wtx->tx->vout[i];
-        effective_value = txout_in.nValue;
-        if (! txout.IsCA())
-            return;
-        effective_value = std::max<CAmount>(0, wtx->GetOutputValueOut(i));
-        value = wtx->GetOutputValueOut(i);
-        asset = wtx->GetOutputAsset(i);
-        bf_value = wtx->GetOutputAmountBlindingFactor(i);
-        bf_asset = wtx->GetOutputAssetBlindingFactor(i);
-    }
+    CInputCoin(const CWalletTx* wtx, unsigned int i);
 
 
     CInputCoin(const CWalletTx* wtx, unsigned int i, int input_bytes) : CInputCoin(wtx, i)

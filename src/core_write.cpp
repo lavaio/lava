@@ -290,7 +290,7 @@ void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry,
             int mantissa;
             uint64_t minv;
             uint64_t maxv;
-            if (txout->vchRangeproof.size() && secp256k1_rangeproof_info(secp256k1_blind_context, &exp, &mantissa, &minv, &maxv, &txout.vchRangeproof[0], txout.vchRangeproof.size())) {
+            if (txout.vchRangeproof.size() && secp256k1_rangeproof_info(secp256k1_blind_context, &exp, &mantissa, &minv, &maxv, &txout.vchRangeproof[0], txout.vchRangeproof.size())) {
                 if (exp == -1) {
                     out.pushKV("value", ValueFromAmount((CAmount)minv));
                 } else {

@@ -97,7 +97,7 @@ Result CreateTransaction(const CWallet* wallet, const uint256& txid, const CCoin
     // if there was no change output or multiple change outputs, fail
     int nOutput = -1;
     for (size_t i = 0; i < wtx.tx->vout.size(); ++i) {
-        if (wtx.tx->vout[i].isCA()) {
+        if (wtx.tx->vout[i].IsCA()) {
             continue;
         }
 

@@ -280,10 +280,10 @@ int BlindTransaction(std::vector<uint256 >& input_value_blinding_factors, const 
 
         // Create target generators for issuances
         CAssetIssuance& issuance = tx.vin[i].assetIssuance;
-        uint256 entropy;
-        CAsset asset;
-        CAsset token;
         if (!issuance.IsNull()) {
+            uint256 entropy;
+            CAsset asset;
+            CAsset token;
             if (issuance.nAmount.IsCommitment() || issuance.nInflationKeys.IsCommitment()) {
                 return -1;
             }

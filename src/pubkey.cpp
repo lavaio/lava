@@ -4,6 +4,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <pubkey.h>
+#include <script/standard.h>
 
 #include <secp256k1.h>
 #include <secp256k1_recovery.h>
@@ -164,6 +165,10 @@ static int ecdsa_signature_parse_der_lax(const secp256k1_context* ctx, secp256k1
         secp256k1_ecdsa_signature_parse_compact(ctx, sig, tmpsig);
     }
     return 1;
+}
+
+CKeyID CPubKey::GetID() const {
+    return CKeyID(Hash160(vch, vch + size()));
 }
 
 bool CPubKey::Verify(const uint256 &hash, const std::vector<unsigned char>& vchSig) const {

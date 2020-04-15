@@ -232,7 +232,7 @@ CPubKey CWallet::GenerateNewKey(WalletBatch &batch, bool internal)
     return pubkey;
 }
 
-CKey CWallet::GenerateMasterBlindingKey()
+CKey CWallet::GenerateMasterBlindingKey() const
 {
     assert(blinding_derivation_key.IsNull());
     assert(IsHDEnabled());
@@ -1671,32 +1671,28 @@ int64_t CWalletTx::GetTxTime() const
 
 // Helper for producing a max-sized low-S low-R signature (eg 71 bytes)
 // or a max-sized low-S signature (e.g. 72 bytes) if use_max_sig is true
-static bool DummySignInput(const SigningProvider* provider, CMutableTransaction& tx, const size_t nIn, const CTxOut& txout, bool use_max_sig)
+bool CWallet::DummySignInput(CTxIn &tx_in, const CTxOut &txout, bool use_max_sig) const
 {
     // Fill in dummy signatures for fee calculation.
     const CScript& scriptPubKey = txout.scriptPubKey;
     SignatureData sigdata;
 
-    if (!ProduceSignature(*provider, use_max_sig ? DUMMY_MAXIMUM_SIGNATURE_CREATOR : DUMMY_SIGNATURE_CREATOR, scriptPubKey, sigdata)) {
+    if (!ProduceSignature(*this, use_max_sig ? DUMMY_MAXIMUM_SIGNATURE_CREATOR : DUMMY_SIGNATURE_CREATOR, scriptPubKey, sigdata)) {
         return false;
     }
-    UpdateTransaction(tx, nIn, sigdata);
+    UpdateInput(tx_in, sigdata);
     return true;
 }
 
 // Helper for producing a bunch of max-sized low-S low-R signatures (eg 71 bytes)
-bool CWallet::DummySignTx(CMutableTransaction &txNew, const std::vector<CTxOut> &txouts, const CCoinControl* coin_control) const
+bool CWallet::DummySignTx(CMutableTransaction &txNew, const std::vector<CTxOut> &txouts, bool use_max_sig) const
 {
     // Fill in dummy signatures for fee calculation.
     int nIn = 0;
     for (const auto& txout : txouts)
     {
-        // Use max sig if watch only inputs were used or if this particular input is an external input
-        bool use_max_sig = coin_control && (coin_control->fAllowWatchOnly || (coin_control && coin_control->IsExternalSelected(txNew.vin[nIn].prevout)));
-        if (!DummySignInput(this, txNew, nIn, txout, use_max_sig)) {
-            if (!coin_control || !DummySignInput(&coin_control->m_external_provider, txNew, nIn, txout, use_max_sig)) {
-                return false;
-            }
+        if (!DummySignInput(txNew.vin[nIn], txout, use_max_sig)) {
+            return false;
         }
 
         nIn++;
@@ -1755,7 +1751,7 @@ void CWalletTx::GetAmounts(std::list<COutputEntry>& listReceived,
     if (mapDebit > CAmountMap()) // debit>0 means we signed/sent this transaction
     {
         CAmount nValueOut = tx->GetValueOut();
-        nFee = nDebit - nValueOut;
+        nFee = mapDebit[::policyAsset] - nValueOut;
     }
 
     // Sent/received.
@@ -1793,7 +1789,7 @@ void CWalletTx::GetAmounts(std::list<COutputEntry>& listReceived,
         if (txout.IsCA()) {
             output.asset = GetOutputAsset(i);
             output.asset_blinding_factor = GetOutputAmountBlindingFactor(i);
-            output.amount_blinding_factor = output.asseGetOutputAssetBlindingFactor(i)
+            output.amount_blinding_factor = GetOutputAssetBlindingFactor(i);
         }
 
         // If we are debited by the transaction, add the output as a "sent" entry
@@ -2413,7 +2409,7 @@ CAmountMap CWallet::GetLegacyBalance(const isminefilter& filter, int minDepth) c
                     }
                     debit[wtx.GetOutputAsset(i)] -= amt;
                 } else
-                    debit[::policyAsset] -= amt;
+                    debit[::policyAsset] -= out.nValue;
             } else if (IsMine(out) & filter && depth >= minDepth) {
                 if (out.IsCA()) {
                     CAmount amt = wtx.GetOutputValueOut(i);
@@ -2422,7 +2418,7 @@ CAmountMap CWallet::GetLegacyBalance(const isminefilter& filter, int minDepth) c
                     }
                     balance[wtx.GetOutputAsset(i)] += amt;
                 } else
-                    balance[::policyAsset] += amt;
+                    balance[::policyAsset] += out.nValue;
             }
         }
 
@@ -2452,7 +2448,7 @@ CAmountMap CWallet::GetAvailableBalance(const CCoinControl* coinControl) const
                 }
                 balance[out.tx->GetOutputAsset(out.i)] += amt;
             } else
-                balance += out.tx->tx->vout[out.i].nValue;
+                balance[::policyAsset] += out.tx->tx->vout[out.i].nValue;
         }
     }
     return balance;
@@ -2835,8 +2831,6 @@ bool CWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, int& nC
         CTxOut txout;
         if (it != mapWallet.end()) {
             setAssets.insert(it->second.GetOutputAsset(presetInput.n));
-        } else if (coinControl.GetExternalOutput(presetInput, txout)) {
-            setAssets.insert(txout.nAsset.GetAsset());
         }
     }
 
@@ -2854,22 +2848,9 @@ bool CWallet::FundTransaction(CMutableTransaction& tx, CAmount& nFeeRet, int& nC
 
     // Wipe outputs and output witness and re-add one by one
     tx.vout.clear();
-    tx.witness.vtxoutwit.clear();
     for (unsigned int i = 0; i < tx_new->vout.size(); i++) {
         const CTxOut& out = tx_new->vout[i];
         tx.vout.push_back(out);
-        if (tx_new->witness.vtxoutwit.size() > i) {
-            // We want to re-add previously existing outwitnesses
-            // even though we don't create any new ones
-            const CTxOutWitness& outwit = tx_new->witness.vtxoutwit[i];
-            tx.witness.vtxoutwit.push_back(outwit);
-        }
-    }
-
-    // Copy output sizes from new transaction; they may have had the fee
-    // subtracted from them.
-    for (unsigned int idx = 0; idx < tx.vout.size(); idx++) {
-        tx.vout[idx].nValue = tx_new->vout[idx].nValue;
     }
 
     // Add new txins while keeping original txin scriptSig/order.
@@ -4977,9 +4958,8 @@ void CWalletTx::GetBlindingData(const unsigned int map_index, const std::vector<
 void CWalletTx::GetNonIssuanceBlindingData(const unsigned int output_index, CPubKey* blinding_pubkey_out, CAmount* value_out, uint256* value_factor_out, CAsset* asset_out, uint256* asset_factor_out) const {
     assert(output_index < tx->vout.size());
     const CTxOut& out = tx->vout[output_index];
-    const CTxWitness& wit = tx->witness;
     if (out.IsCA()) {
-        GetBlindingData(output_index, wit.vtxoutwit.size() <= output_index ? std::vector<unsigned char>() : wit.vtxoutwit[output_index].vchRangeproof, out.nValue, out.nAsset, out.nNonce, out.scriptPubKey,
+        GetBlindingData(output_index, out.vchRangeproof, out.nValue, out.nAsset, out.nNonce, out.scriptPubKey,
             blinding_pubkey_out, value_out, value_factor_out, asset_out, asset_factor_out);
     } else {
         if (value_out) *value_out = out.nValue;
@@ -5059,12 +5039,11 @@ uint256 CWalletTx::GetIssuanceBlindingFactor(unsigned int input_index, bool reis
     assert(input_index < tx->vin.size());
     CAsset asset;
     const CAssetIssuance& issuance = tx->vin[input_index].assetIssuance;
-    const CTxWitness& wit = tx->witness;
     GetIssuanceAssets(input_index, reissuance_token ? nullptr : &asset, reissuance_token ? &asset : nullptr);
     if (asset.IsNull()) {
         return uint256();
     }
-    const std::vector<unsigned char>& rangeproof = wit.vtxinwit.size() <= input_index ? std::vector<unsigned char>() : (reissuance_token ? wit.vtxinwit[input_index].vchInflationKeysRangeproof : wit.vtxinwit[input_index].vchIssuanceAmountRangeproof);
+    const std::vector<unsigned char>& rangeproof =(reissuance_token ? tx->vin[input_index].vchInflationKeysRangeproof : tx->vin[input_index].vchIssuanceAmountRangeproof);
     unsigned int mapValueInd = GetPseudoInputOffset(input_index, reissuance_token)+tx->vout.size();
 
     uint256 ret;
@@ -5077,13 +5056,12 @@ CAmount CWalletTx::GetIssuanceAmount(unsigned int input_index, bool reissuance_t
     assert(input_index < tx->vin.size());
     CAsset asset;
     const CAssetIssuance& issuance = tx->vin[input_index].assetIssuance;
-    const CTxWitness& wit = tx->witness;
     GetIssuanceAssets(input_index, reissuance_token ? nullptr : &asset, reissuance_token ? &asset : nullptr);
     if (asset.IsNull()) {
         return -1;
     }
     unsigned int mapValueInd = GetPseudoInputOffset(input_index, reissuance_token)+tx->vout.size();
-    const std::vector<unsigned char>& rangeproof = wit.vtxinwit.size() <= input_index ? std::vector<unsigned char>() : (reissuance_token ? wit.vtxinwit[input_index].vchInflationKeysRangeproof : wit.vtxinwit[input_index].vchIssuanceAmountRangeproof);
+    const std::vector<unsigned char>& rangeproof = (reissuance_token ? tx->vin[input_index].vchInflationKeysRangeproof : tx->vin[input_index].vchIssuanceAmountRangeproof);
 
     CAmount ret;
     CScript blindingScript(CScript() << OP_RETURN << std::vector<unsigned char>(tx->vin[input_index].prevout.hash.begin(), tx->vin[input_index].prevout.hash.end()) << tx->vin[input_index].prevout.n);

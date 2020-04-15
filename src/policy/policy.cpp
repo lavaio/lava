@@ -56,7 +56,7 @@ bool IsDust(const CTxOut& txout, const CFeeRate& dustRelayFeeIn)
     if (!txout.IsCA())
         return (txout.nValue < GetDustThreshold(txout, dustRelayFeeIn));
 
-    if (!txout.nValue.IsExplicit())
+    if (!txout.nValueCA.IsExplicit())
         return false; // FIXME
     if (!txout.nAsset.IsExplicit())
         return false;

@@ -63,6 +63,23 @@ struct {
 
 static const size_t TOTAL_TRIES = 100000;
 
+CInputCoin::CInputCoin(const CWalletTx* wtx, unsigned int i) {
+    if (!wtx || !wtx->tx)
+        throw std::invalid_argument("tx should not be null");
+    if (i >= wtx->tx->vout.size())
+        throw std::out_of_range("The output index is out of range");
+
+    outpoint = COutPoint(wtx->tx->GetHash(), i);
+    txout = wtx->tx->vout[i];
+    effective_value = txout.nValue;
+    if (! txout.IsCA())
+        return;
+    effective_value = std::max<CAmount>(0, wtx->GetOutputValueOut(i));
+    value = wtx->GetOutputValueOut(i);
+    asset = wtx->GetOutputAsset(i);
+    bf_value = wtx->GetOutputAmountBlindingFactor(i);
+    bf_asset = wtx->GetOutputAssetBlindingFactor(i);
+}
 bool SelectCoinsBnB(std::vector<OutputGroup>& utxo_pool, const CAmount& target_value, const CAmount& cost_of_change, std::set<CInputCoin>& out_set, CAmount& value_ret, CAmount not_input_fees)
 {
     out_set.clear();
