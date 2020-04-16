@@ -299,10 +299,11 @@ public:
         READWRITE(nValue);
         READWRITE(scriptPubKey);
         READWRITE(flags);
-        assert(flags == 1);
-        READWRITE(nAsset);
-        READWRITE(nValueCA);
-        READWRITE(nNonce);
+        if (flags == 1){
+            READWRITE(nAsset);
+            READWRITE(nValueCA);
+            READWRITE(nNonce);
+        }
     }
 };
 

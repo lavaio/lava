@@ -1478,6 +1478,24 @@ static bool UndoReadFromDisk(CBlockUndo& blockundo, const CBlockIndex* pindex)
     if (pos.IsNull()) {
         return error("%s: no undo data available", __func__);
     }
+    
+    CDiskBlockPos posheader = pos;
+    posheader.nPos = posheader.nPos - 8;
+    CAutoFile fileheader(OpenUndoFile(posheader, true), SER_DISK, CLIENT_VERSION);
+    CMessageHeader::MessageStartChars pchMessageStartHeader;
+    fileheader >> pchMessageStartHeader;
+    if (pchMessageStartHeader == Params().MessageStart()){
+        //old format undo block header read
+        blockundo.version = 0;
+        for (auto iter = blockundo.vtxundo.begin(); iter != blockundo.vtxundo.end(); ++iter){
+            iter->version = 0;
+        }
+    }else{
+        blockundo.version = 1;
+        for (auto iter = blockundo.vtxundo.begin(); iter != blockundo.vtxundo.end(); ++iter){
+            iter->version = 1;
+        }
+    }
 
     // Open history file to read
     CAutoFile filein(OpenUndoFile(pos, true), SER_DISK, CLIENT_VERSION);
@@ -1640,7 +1658,7 @@ static bool WriteUndoDataForBlock(const CBlockUndo& blockundo, CValidationState&
         CDiskBlockPos _pos;
         if (!FindUndoPos(state, pindex->nFile, _pos, ::GetSerializeSize(blockundo, CLIENT_VERSION) + 40))
             return error("ConnectBlock(): FindUndoPos failed");
-        if (!UndoWriteToDisk(blockundo, _pos, pindex->pprev->GetBlockHash(), chainparams.MessageStart()))
+        if (!UndoWriteToDisk(blockundo, _pos, pindex->pprev->GetBlockHash(), chainparams.MessageStartForDisk()))
             return AbortNode(state, "Failed to write undo data");
 
         // update nUndoPos in block index
@@ -3565,7 +3583,7 @@ static CDiskBlockPos SaveBlockToDisk(const CBlock& block, int nHeight, const CCh
         return CDiskBlockPos();
     }
     if (dbp == nullptr) {
-        if (!WriteBlockToDisk(block, blockPos, chainparams.MessageStart())) {
+        if (!WriteBlockToDisk(block, blockPos, chainparams.MessageStartForDisk())) {
             AbortNode("Failed to write block");
             return CDiskBlockPos();
         }

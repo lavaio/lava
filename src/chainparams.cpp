@@ -109,6 +109,12 @@ public:
         pchMessageStart[1] = 0xb4;
         pchMessageStart[2] = 0xbe;
         pchMessageStart[3] = 0xf9;
+
+        pchMessageStartToDisk[0] = 0xd9;
+        pchMessageStartToDisk[1] = 0xb4;
+        pchMessageStartToDisk[2] = 0xbe;
+        pchMessageStartToDisk[3] = 0xfa;
+
         nDefaultPort = 6868;
         nPruneAfterHeight = 100000;
         m_assumed_blockchain_size = 240;
@@ -219,6 +225,11 @@ public:
         pchMessageStart[2] = 0x11;
         pchMessageStart[3] = 0x0b;
         
+        pchMessageStartToDisk[0] = 0x07;
+        pchMessageStartToDisk[1] = 0x09;
+        pchMessageStartToDisk[2] = 0x11;
+        pchMessageStartToDisk[3] = 0x0c;
+
         nDefaultPort = 16868;
         nPruneAfterHeight = 1000;
         m_assumed_blockchain_size = 30;
@@ -314,6 +325,11 @@ public:
         pchMessageStart[1] = 0xbf;
         pchMessageStart[2] = 0xb5;
         pchMessageStart[3] = 0xda;
+
+        pchMessageStartToDisk[0] = 0xfa;
+        pchMessageStartToDisk[1] = 0xbf;
+        pchMessageStartToDisk[2] = 0xb5;
+        pchMessageStartToDisk[3] = 0xdb;
         nDefaultPort = 18444;
         nPruneAfterHeight = 1000;
         m_assumed_blockchain_size = 0;
