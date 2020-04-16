@@ -696,11 +696,16 @@ UniValue DescribeBlindAddress(const CTxDestination& dest)
 // Attaches labeled balance reports to UniValue obj with asset filter
 // "" displays *all* assets as VOBJ pairs, while named assets must have
 // been entered via -assetdir configuration argument and are returned as VNUM.
-UniValue AmountMapToUniv(const CAmountMap& balanceOrig, std::string strasset)
+UniValue AmountMapToUniv(const CAmountMap& balanceOrig, const CAsset& asset)
 {
-    // Make sure the policyAsset is always present in the balance map.
+   // Make sure the policyAsset is always present in the balance map.
     CAmountMap balance = balanceOrig;
     balance[::policyAsset] += 0;
+
+    // If we don't do assets or a specific asset is given, we filter out once asset.
+    if (!asset.IsNull()) {
+        return ValueFromAmount(balance[asset]);
+    }
 
     UniValue obj(UniValue::VOBJ);
     for(std::map<CAsset, CAmount>::const_iterator it = balance.begin(); it != balance.end(); ++it) {
@@ -708,6 +713,7 @@ UniValue AmountMapToUniv(const CAmountMap& balanceOrig, std::string strasset)
         if (it->first.IsNull())
             continue;
         UniValue pair(UniValue::VOBJ);
+        std::string label = (it->first == ::policyAsset) ? "LV" : it->first.GetHex();
         obj.pushKV(it->first.GetHex(), ValueFromAmount(it->second));
     }
     return obj;

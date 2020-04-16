@@ -266,7 +266,7 @@ public:
 
     bool IsCA() const
     {
-        return !nAsset.IsNull() && !nValueCA.IsNull();
+        return flags == 1;
     }
 
     friend bool operator==(const CTxOut& a, const CTxOut& b)
@@ -299,11 +299,10 @@ public:
         READWRITE(nValue);
         READWRITE(scriptPubKey);
         READWRITE(flags);
-        if (flags == 1){
-            READWRITE(nAsset);
-            READWRITE(nValueCA);
-            READWRITE(nNonce);
-        }
+        assert(flags == 1);
+        READWRITE(nAsset);
+        READWRITE(nValueCA);
+        READWRITE(nNonce);
     }
 };
 
@@ -526,7 +525,12 @@ public:
     bool HasWitness() const
     {
         for (size_t i = 0; i < vin.size(); i++) {
-            if (!vin[i].scriptWitness.IsNull()) {
+            if (!vin[i].scriptWitness.IsNull() || vin[i].vchIssuanceAmountRangeproof.size() || vin[i].vchInflationKeysRangeproof.size()) {
+                return true;
+            }
+        }
+        for (size_t i = 0; i< vout.size(); i++) {
+            if (vout[i].vchRangeproof.size() || vout[i].vchSurjectionproof.size()) {
                 return true;
             }
         }
@@ -555,6 +559,12 @@ public:
                 return true;
         }
         return false;
+    }
+
+    bool IsVersionCA() const
+    {
+        assert(nVersion == CTransaction::CONFIDENTIAL_VERSION || nVersion == CTransaction::CURRENT_VERSION);
+        return nVersion == CTransaction::CONFIDENTIAL_VERSION;
     }
 
     bool IsTicketTx() const;
@@ -596,10 +606,27 @@ struct CMutableTransaction
      */
     uint256 GetHash() const;
 
+    void ClearWitness() {
+        for (size_t i = 0; i < vin.size(); i++) {
+            vin[i].scriptWitness.SetNull();
+            vin[i].vchInflationKeysRangeproof.clear();
+            vin[i].vchIssuanceAmountRangeproof.clear();
+        }
+        for (size_t i = 0; i< vout.size(); i++) {
+            vout[i].vchRangeproof.clear();
+            vout[i].vchSurjectionproof.clear();
+        }
+    }
+
     bool HasWitness() const
     {
         for (size_t i = 0; i < vin.size(); i++) {
-            if (!vin[i].scriptWitness.IsNull()) {
+            if (!vin[i].scriptWitness.IsNull() || vin[i].vchIssuanceAmountRangeproof.size() || vin[i].vchInflationKeysRangeproof.size()) {
+                return true;
+            }
+        }
+        for (size_t i = 0; i< vout.size(); i++) {
+            if (vout[i].vchRangeproof.size() || vout[i].vchSurjectionproof.size()) {
                 return true;
             }
         }
@@ -627,6 +654,12 @@ struct CMutableTransaction
                 return true;
         }
         return false;
+    }
+
+    bool IsVersionCA() const
+    {
+        assert(nVersion == CTransaction::CONFIDENTIAL_VERSION || nVersion == CTransaction::CURRENT_VERSION);
+        return nVersion == CTransaction::CONFIDENTIAL_VERSION;
     }
 };
 

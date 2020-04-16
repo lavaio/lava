@@ -6,7 +6,7 @@
 #include <interfaces/chain.h>
 #include <wallet/coinselection.h>
 #include <wallet/wallet.h>
-
+#include <policy/policy.h>
 #include <set>
 
 static void addCoin(const CAmount& nValue, const CWallet& wallet, std::vector<std::unique_ptr<CWalletTx>>& wtxs)
@@ -52,9 +52,11 @@ static void CoinSelection(benchmark::State& state)
         std::set<CInputCoin> setCoinsRet;
         CAmount nValueRet;
         bool bnb_used;
-        bool success = wallet.SelectCoinsMinConf(1003 * COIN, filter_standard, groups, setCoinsRet, nValueRet, coin_selection_params, bnb_used);
+        CAmountMap mapTargetValue = { {::policyAsset, 1003 * COIN} };
+        CAmountMap mapValueRet;
+        bool success = wallet.SelectCoinsMinConf(mapTargetValue, filter_standard, groups, setCoinsRet, mapValueRet, coin_selection_params, bnb_used);
         assert(success);
-        assert(nValueRet == 1003 * COIN);
+        assert(mapValueRet[::policyAsset] == 1003 * COIN);
         assert(setCoinsRet.size() == 2);
     }
 }
