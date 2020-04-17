@@ -20,48 +20,10 @@ class uint256;
 
 class CInputCoin {
 public:
-    CInputCoin(const CTransactionRef& tx, unsigned int i)
-    {
-        if (!tx)
-            throw std::invalid_argument("tx should not be null");
-        if (i >= tx->vout.size())
-            throw std::out_of_range("The output index is out of range");
-
-        outpoint = COutPoint(tx->GetHash(), i);
-        txout = tx->vout[i];
-        effective_value = txout.nValue;
-    }
-
-    CInputCoin(const CTransactionRef& tx, unsigned int i, int input_bytes) : CInputCoin(tx, i)
-    {
-        m_input_bytes = input_bytes;
-    }
-
     CInputCoin(const CWalletTx* wtx, unsigned int i);
 
 
     CInputCoin(const CWalletTx* wtx, unsigned int i, int input_bytes) : CInputCoin(wtx, i)
-    {
-        m_input_bytes = input_bytes;
-    }
-
-    CInputCoin(const COutPoint& outpoint_in, const CTxOut& txout_in)
-    {
-        outpoint = outpoint_in;
-        txout = txout_in;
-        effective_value = txout_in.nValue;
-        if (! txout.IsCA())
-            return;
-        if (txout.nValueCA.IsExplicit()) {
-            effective_value = txout_in.nValueCA.GetAmount();
-            value = txout.nValueCA.GetAmount();
-            asset = txout.nAsset.GetAsset();
-        } else {
-            effective_value = 0;
-        }
-    }
-
-    CInputCoin(const COutPoint& outpoint_in, const CTxOut& txout_in, int input_bytes) : CInputCoin(outpoint_in, txout_in)
     {
         m_input_bytes = input_bytes;
     }

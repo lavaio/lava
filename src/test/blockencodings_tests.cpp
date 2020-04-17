@@ -39,9 +39,9 @@ static CBlock BuildBlockTestCase() {
     std::vector<unsigned char> vcBuf;
     block.genSign = uint256S(gensig);
 
-    block.nPlotID = 17198236084242158338;
+    block.nPlotID = 17198236084242158338ULL;
     auto height = 1;
-    block.nNonce = 5356951956265808924;
+    block.nNonce = 5356951956265808924ULL;
     block.nBaseTarget = 18325193796;
     block.nDeadline = 24 * block.nBaseTarget;
 
@@ -312,9 +312,9 @@ BOOST_AUTO_TEST_CASE(EmptyBlockRoundTripTest)
     std::string gensig = "99466d8ea6fba32897893434161c841b1341f5307bdcba71e208b3bca922e9cb";
     block.genSign = uint256S(gensig);
 
-    block.nPlotID = 17198236084242158338;
+    block.nPlotID = 17198236084242158338ULL;
     auto height = 1;
-    block.nNonce = 5356951956265808924;
+    block.nNonce = 5356951956265808924ULL;
     block.nBaseTarget = 18325193796;
     block.nDeadline = 24 * block.nBaseTarget;
     auto params = Params();

@@ -50,7 +50,6 @@ static void CoinSelection(benchmark::State& state)
     const CoinSelectionParams coin_selection_params(true, 34, 148, CFeeRate(0), 0);
     while (state.KeepRunning()) {
         std::set<CInputCoin> setCoinsRet;
-        CAmount nValueRet;
         bool bnb_used;
         CAmountMap mapTargetValue = { {::policyAsset, 1003 * COIN} };
         CAmountMap mapValueRet;

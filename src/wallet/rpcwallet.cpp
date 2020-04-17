@@ -258,9 +258,9 @@ static UniValue getmineraddress(const JSONRPCRequest& request)
 
     std::map<CTxDestination, int64_t> mapKeyBirth;
     auto locked_chain = pwallet->chain().lock();
-    pwallet->GetKeyBirthTimes(*locked_chain, mapKeyBirth);
-
     LOCK(pwallet->cs_wallet);
+
+    pwallet->GetKeyBirthTimes(*locked_chain, mapKeyBirth);
 
     if (!pwallet->CanGetAddresses()) {
         throw JSONRPCError(RPC_WALLET_ERROR, "Error: This wallet has no available keys");
@@ -3341,7 +3341,7 @@ bool GetTicketList(CWallet * const pwallet, CChain& chainActive, bool include_un
 	LOCK(pwallet->cs_wallet);
 
 	std::vector<uint256> hashSet;
-	for (int i=0; i<vecOutputs.size(); i++) {
+	for (size_t i=0; i<vecOutputs.size(); i++) {
 		// scan the vout to find ticket tx.
 		auto out = vecOutputs[i];
 		auto tx = out.tx->tx;
@@ -3444,7 +3444,6 @@ static UniValue getfirestone(const JSONRPCRequest& request)
 		int height = ticket->LockTime();
 		auto keyid = ticket->KeyID();
         auto out = ticket->out;
-		uint256 tickethash = out->hash;
 		if (keyid.size() == 0 || height == 0)
 			continue;
 		std::string state;
@@ -3540,7 +3539,6 @@ static UniValue listslotfs(const JSONRPCRequest& request)
         auto ticket = (*iter);
         int height = ticket->LockTime();
         auto keyid = ticket->KeyID();
-        uint256 tickethash = ticket->out->hash;
         if (keyid.size() == 0 || height == 0)
             continue;
         std::string state;
@@ -3959,7 +3957,7 @@ CTransactionRef CreateHTLCSpendTx(CWallet* const pwallet, uint256 htlctxid, std:
         }
     }
     CTransaction tx(mtx);
-    return std::move(MakeTransactionRef(tx));
+    return MakeTransactionRef(tx);
 }
 
 UniValue spendhtlcwithwallet(const JSONRPCRequest& request){
@@ -5436,7 +5434,7 @@ CTransactionRef CreateTicketAllSpendTx(CWallet* const pwallet, std::map<uint256,
 	  mtx.vout[0].nValue -= nFeeNeeded;
 	}
 
-	int nIn = 0;
+	size_t nIn = 0;
 	for(auto iter=txScriptInputs.begin(); iter!=txScriptInputs.end(); iter++){
 		CScript redeemScript = iter->second.second;
 		CMutableTransaction txcopy(mtx); 
@@ -5446,7 +5444,7 @@ CTransactionRef CreateTicketAllSpendTx(CWallet* const pwallet, std::map<uint256,
 		::Serialize(ss, txcopy.nVersion);
 		// Serialize vin
 		::WriteCompactSize(ss, txcopy.vin.size());
-		for (unsigned int nInput = 0; nInput < txcopy.vin.size(); nInput++){
+		for (size_t nInput = 0; nInput < txcopy.vin.size(); nInput++){
 			::Serialize(ss, txcopy.vin[nInput].prevout);
 			// Serialize the script
 			if (nInput != nIn){
@@ -5576,7 +5574,7 @@ UniValue freefirestone(const JSONRPCRequest& request){
     }
     
     std::vector<CTicketRef> tickets;
-    for(auto i=0;i<alltickets.size();i++){
+    for(size_t i=0; i<alltickets.size(); i++){
         auto ticket = alltickets[i];
         auto out = *(ticket->out);
         if (!pcoinsTip->AccessCoin(out).IsSpent() && !mempool.isSpent(out)){
@@ -5678,7 +5676,6 @@ uint256 SendAction(CWallet *const pwallet, const CAction& action, const CKey &ke
     if (!pwallet->SignTransaction(mtx)) {
         throw JSONRPCError(RPC_WALLET_ERROR, "sign error");
     }
-    const CAmount highfee{ actionFee };
     uint256 txid;
     std::string err_string;
     auto tx = MakeTransactionRef(CTransaction(mtx));

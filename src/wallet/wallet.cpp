@@ -2623,7 +2623,7 @@ const CTxOut& CWallet::FindNonChangeParentOutput(const CTransaction& tx, int out
     return ptx->vout[n];
 }
 
-bool CWallet::SelectCoinsMinConf(const CAmountMap& mapTargetValue, const CoinEligibilityFilter& eligibility_filter, std::vector<OutputGroup> groups,
+bool CWallet::SelectCoinsMinConf(const CAmountMap& mapTargetValue, const CoinEligibilityFilter& eligibility_filter, const std::vector<OutputGroup>& groups,
                                  std::set<CInputCoin>& setCoinsRet, CAmountMap& mapValueRet, const CoinSelectionParams& coin_selection_params, bool& bnb_used) const
 {
     setCoinsRet.clear();
@@ -2754,7 +2754,7 @@ bool CWallet::SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAm
                 mapValueFromPresetInputs[pcoin->GetOutputAsset(outpoint.n)] += amt;
             } else {
                 mapValueFromPresetInputs[::policyAsset] += pcoin->tx->vout[outpoint.n].nValue;
-                setPresetCoins.insert(CInputCoin(pcoin->tx, outpoint.n));
+                setPresetCoins.insert(CInputCoin(pcoin, outpoint.n));
             }
         } else
             return false; // TODO: Allow non-wallet inputs
@@ -3560,7 +3560,7 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
                     }
                 }
 
-                nBytes = CalculateMaximumSignedTxSize(CTransaction(txNew), this, &coin_control.fAllowWatchOnly);
+                nBytes = CalculateMaximumSignedTxSize(CTransaction(txNew), this, coin_control.fAllowWatchOnly);
                 if (nBytes < 0) {
                     strFailReason = _("Missing solving data for estimating transaction size");
                     return false;

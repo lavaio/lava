@@ -72,6 +72,7 @@ CInputCoin::CInputCoin(const CWalletTx* wtx, unsigned int i) {
     outpoint = COutPoint(wtx->tx->GetHash(), i);
     txout = wtx->tx->vout[i];
     effective_value = txout.nValue;
+    value = txout.nValue;
     if (! txout.IsCA())
         return;
     effective_value = std::max<CAmount>(0, wtx->GetOutputValueOut(i));
