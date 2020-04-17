@@ -9,6 +9,7 @@
 #include <tinyformat.h>
 #include <util/strencodings.h>
 #include <script/standard.h>
+#include <policy/policy.h>
 
 std::string COutPoint::ToString() const
 {
@@ -59,6 +60,11 @@ CTxOut::CTxOut(const CConfidentialAsset& nAssetIn, const CConfidentialValue& nVa
     nAsset = nAssetIn;
     nValueCA = nValueIn;
     scriptPubKey = scriptPubKeyIn;
+    if(nAssetIn == ::policyAsset)
+    {
+        nValue = nValueIn;
+        flags = 0;
+    }
 }
 
 CTxOut::CTxOut(const CAmount& nValueIn, CScript scriptPubKeyIn, const CConfidentialAsset& nAssetIn, const CConfidentialValue& nValueCAIn, const CConfidentialNonce& nNonceIn, unsigned char flagsIn)
