@@ -131,7 +131,12 @@ public:
 
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action) {
-
+        if (s.GetExtra() == 0) {
+            READWRITE(prevout);
+            READWRITE(scriptSig);
+            READWRITE(nSequence);
+            return;
+        }
         //
         // CA:
 
@@ -248,6 +253,14 @@ public:
     inline void SerializationOp(Stream& s, Operation ser_action) {
         READWRITE(nValue);
         READWRITE(scriptPubKey);
+        if (s.GetExtra()) {
+            READWRITE(flags);
+            if (flags == 1){
+                READWRITE(nAsset);
+                READWRITE(nValueCA);
+                READWRITE(nNonce);
+            }
+        }
     }
 
     void SetNull()
@@ -332,6 +345,10 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
     const bool fAllowWitness = !(s.GetVersion() & SERIALIZE_TRANSACTION_NO_WITNESS);
 
     s >> tx.nVersion;
+    if (tx.nVersion == TxType::CONFIDENTIAL_VERSION) {
+        s.SetExtra(1);
+    }
+    
     unsigned char flags = 0;
     tx.vin.clear();
     tx.vout.clear();
@@ -345,15 +362,8 @@ inline void UnserializeTransaction(TxType& tx, Stream& s) {
             s >> tx.vout;
         }
     } else {
-        if (tx.nVersion == TxType::CONFIDENTIAL_VERSION){
-            std::vector<CCaOut> voutCA;
-            s >> voutCA;
-            tx.vout.assign(voutCA.begin(), voutCA.end());
-        }else{
-            /* We read a non-empty vin. Assume a normal vout follows. */
-            s >> tx.vout;
-        }
-
+        /* We read a non-empty vin. Assume a normal vout follows. */
+        s >> tx.vout;
     }
     if ((flags & 1) && fAllowWitness) {
         /* The witness flag is present, and we support witnesses. */
@@ -405,13 +415,10 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
     }
     s << tx.vin;
     
-    if (tx.nVersion == TxType::CONFIDENTIAL_VERSION){
-        std::vector<CCaOut> voutCA;
-        voutCA.assign(tx.vout.begin(), tx.vout.end());
-        s << voutCA;
-    }else{
-        s << tx.vout;
+    if (tx.nVersion == TxType::CONFIDENTIAL_VERSION) {
+        s.SetExtra(1);
     }
+    s << tx.vout;
 
     if (flags & 1) {
         for (size_t i = 0; i < tx.vin.size(); i++) {

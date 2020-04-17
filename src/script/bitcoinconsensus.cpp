@@ -48,11 +48,14 @@ public:
 
     int GetVersion() const { return m_version; }
     int GetType() const { return m_type; }
+    void SetExtra(int n) { nExtra = n; }
+    int GetExtra() const { return nExtra; }
 private:
     const int m_type;
     const int m_version;
     const unsigned char* m_data;
     size_t m_remaining;
+    int nExtra;
 };
 
 inline int set_error(bitcoinconsensus_error* ret, bitcoinconsensus_error serror)

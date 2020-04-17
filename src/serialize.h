@@ -902,6 +902,7 @@ protected:
     size_t nSize;
 
     const int nVersion;
+    int nExtra{0};
 public:
     explicit CSizeComputer(int nVersionIn) : nSize(0), nVersion(nVersionIn) {}
 
@@ -928,6 +929,8 @@ public:
     }
 
     int GetVersion() const { return nVersion; }
+    void SetExtra(int n) { nExtra = n; }
+    int GetExtra() const { return nExtra; }
 };
 
 template<typename Stream>
