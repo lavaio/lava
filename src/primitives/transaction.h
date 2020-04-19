@@ -299,28 +299,6 @@ public:
     std::string ToString() const;
 };
 
-/** A sub class of CTxOut.  It contains a CA SerializationOp.*/
-class CCaOut : public CTxOut
-{
-public:
-    CCaOut() : CTxOut(){}
-    CCaOut(const CTxOut& txout) : CTxOut(txout.nValue,  txout.scriptPubKey, txout.nAsset, txout.nValueCA, txout.nNonce, txout.flags){}
-    ADD_SERIALIZE_METHODS;
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action) {
-        READWRITE(nValue);
-        READWRITE(scriptPubKey);
-        READWRITE(flags);
-        if (flags == 1){
-            READWRITE(nAsset);
-            READWRITE(nValueCA);
-            READWRITE(nNonce);
-        }
-    }
-};
-
-
 struct CMutableTransaction;
 
 /**
@@ -395,6 +373,9 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
     const bool fAllowWitness = !(s.GetVersion() & SERIALIZE_TRANSACTION_NO_WITNESS);
 
     s << tx.nVersion;
+    if (tx.nVersion == TxType::CONFIDENTIAL_VERSION) {
+        s.SetExtra(1);
+    }
     unsigned char flags = 0;
     // Consistency check
     if (fAllowWitness) {
@@ -414,10 +395,6 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
         s << flags;
     }
     s << tx.vin;
-    
-    if (tx.nVersion == TxType::CONFIDENTIAL_VERSION) {
-        s.SetExtra(1);
-    }
     s << tx.vout;
 
     if (flags & 1) {

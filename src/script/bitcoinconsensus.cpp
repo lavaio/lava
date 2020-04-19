@@ -55,7 +55,7 @@ private:
     const int m_version;
     const unsigned char* m_data;
     size_t m_remaining;
-    int nExtra;
+    int nExtra{0};
 };
 
 inline int set_error(bitcoinconsensus_error* ret, bitcoinconsensus_error serror)
