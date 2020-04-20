@@ -25,7 +25,7 @@
 
 static void DuplicateInputs(benchmark::State& state)
 {
-    const CScript SCRIPT_PUB{CScript(OP_TRUE)};
+    const CScript SCRIPT_PUB{ CScript() << OP_DUP << OP_HASH160 << ToByteVector(CKeyID()) << OP_EQUALVERIFY << OP_CHECKSIG };
 
     // Switch to regtest so we can mine faster
     // Also segwit is active, so we can include witness transactions

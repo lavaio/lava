@@ -29,6 +29,7 @@
     <ClCompile Include="..\..\src\bench\checkqueue.cpp" />
     <ClCompile Include="..\..\src\bench\coin_selection.cpp" />
     <ClCompile Include="..\..\src\bench\crypto_hash.cpp" />
+    <ClCompile Include="..\..\src\bench\duplicate_inputs.cpp" />
     <ClCompile Include="..\..\src\bench\examples.cpp" />
     <ClCompile Include="..\..\src\bench\lockedpool.cpp" />
     <ClCompile Include="..\..\src\bench\mempool_eviction.cpp" />
