@@ -510,12 +510,7 @@ public:
     bool HasWitness() const
     {
         for (size_t i = 0; i < vin.size(); i++) {
-            if (!vin[i].scriptWitness.IsNull() || vin[i].vchIssuanceAmountRangeproof.size() || vin[i].vchInflationKeysRangeproof.size()) {
-                return true;
-            }
-        }
-        for (size_t i = 0; i< vout.size(); i++) {
-            if (vout[i].vchRangeproof.size() || vout[i].vchSurjectionproof.size()) {
+            if (!vin[i].scriptWitness.IsNull()) {
                 return true;
             }
         }
@@ -606,17 +601,13 @@ struct CMutableTransaction
     bool HasWitness() const
     {
         for (size_t i = 0; i < vin.size(); i++) {
-            if (!vin[i].scriptWitness.IsNull() || vin[i].vchIssuanceAmountRangeproof.size() || vin[i].vchInflationKeysRangeproof.size()) {
-                return true;
-            }
-        }
-        for (size_t i = 0; i< vout.size(); i++) {
-            if (vout[i].vchRangeproof.size() || vout[i].vchSurjectionproof.size()) {
+            if (!vin[i].scriptWitness.IsNull()) {
                 return true;
             }
         }
         return false;
     }
+
     bool HasCAProof() const
     {
         for (size_t n = 0; n < vin.size(); n++) {
