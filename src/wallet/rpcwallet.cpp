@@ -491,7 +491,7 @@ static CTransactionRef SendMoney(interfaces::Chain::Lock& locked_chain, CWallet 
     int nChangePosRet = -1;
     BlindDetails* blind_details = nullptr;
     if (asset == ::policyAsset) {
-        CRecipient recipient = {scriptPubKey, nValue, fSubtractFeeFromAmount};
+        CRecipient recipient = {scriptPubKey, nValue, fSubtractFeeFromAmount, ::policyAsset};
         vecSend.push_back(recipient);
     } else {
         CRecipient recipient = {scriptPubKey, nValue, fSubtractFeeFromAmount, asset, GetDestinationBlindingKey(address)};
@@ -602,8 +602,6 @@ static UniValue sendtoaddress(const JSONRPCRequest& request)
     }
 
     CAsset asset = AssetFromReqParam(request.params, 8);
-    if (asset.IsNull())
-        throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Invalid param, asset is empty"));
 
     bool ignore_blind_fail = true;
     if (request.params.size() > 9) {
@@ -1134,7 +1132,7 @@ static UniValue sendmany(const JSONRPCRequest& request)
                 fSubtractFeeFromAmount = true;
         }
 
-        CRecipient recipient = {scriptPubKey, nAmount, fSubtractFeeFromAmount};
+        CRecipient recipient = {scriptPubKey, nAmount, fSubtractFeeFromAmount, ::policyAsset};
         vecSend.push_back(recipient);
     }
 
@@ -5103,7 +5101,7 @@ static CTransactionRef SendMoneyWithOpRet(interfaces::Chain::Lock& locked_chain,
     std::string strError;
     std::vector<CRecipient> vecSend;
     int nChangePosRet = -1;
-    CRecipient recipient = { scriptPubKey, nValue, fSubtractFeeFromAmount };
+    CRecipient recipient = { scriptPubKey, nValue, fSubtractFeeFromAmount, ::policyAsset };
     vecSend.push_back(recipient);
     vecSend.push_back(CRecipient{optScritp, 0, false});
     CTransactionRef tx;
@@ -5145,9 +5143,7 @@ UniValue buyfirestone(const JSONRPCRequest& request)
                     HelpExampleCli("buyfirestone", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" \"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\"")},
             }
     .ToString());
-    if (IsInitialBlockDownload()) {
-        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Block chain downloading...");
-    }
+
     pwallet->BlockUntilSyncedToCurrentChain();
 
     auto locked_chain = pwallet->chain().lock();
@@ -5606,7 +5602,7 @@ uint256 SendAction(CWallet *const pwallet, const CAction& action, const CKey &ke
     auto actionFee = Params().GetConsensus().nActionFee;
 
     std::vector<CRecipient> vecSend;
-    vecSend.push_back(CRecipient{ GetScriptForDestination(destChange), actionFee, false });
+    vecSend.push_back(CRecipient{ GetScriptForDestination(destChange), actionFee, false, ::policyAsset});
     auto newTx = MakeTransactionRef();
     std::vector<std::unique_ptr<CReserveKey>> reservekeys;
     reservekeys.push_back(std::unique_ptr<CReserveKey>(new CReserveKey(pwallet)));
