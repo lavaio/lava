@@ -60,7 +60,7 @@ CTxOut::CTxOut(const CConfidentialAsset& nAssetIn, const CConfidentialValue& nVa
     nAsset = nAssetIn;
     nValueCA = nValueIn;
     scriptPubKey = scriptPubKeyIn;
-    if(nAssetIn.IsExplicit() && nAssetIn.GetAsset() == ::policyAsset)
+    if(nAssetIn.IsExplicit() && (nAssetIn.GetAsset().IsNull() || nAssetIn.GetAsset() == ::policyAsset))
     {
         assert(nValueIn.IsExplicit());
         nValue = nValueIn.GetAmount();
