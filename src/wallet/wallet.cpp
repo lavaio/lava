@@ -3766,7 +3766,7 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
                 if (i > 0) {
                     summary += "     ";
                 }
-                CTxOut unblinded = blind_details->tx_unblinded_unsigned.vout[i];
+                CTxOut& unblinded = blind_details->tx_unblinded_unsigned.vout[i];
                 summary += strprintf("#%d: %s [%s] (%s [%s])\n", i,
                     unblinded.nValueCA.GetAmount(),
                     txNew.vout[i].nValueCA.IsExplicit() ? "explicit" : "blinded",

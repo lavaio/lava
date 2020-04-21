@@ -153,6 +153,20 @@ static std::string LabelFromValue(const UniValue& value)
     return label;
 }
 
+static CAsset AssetFromReqParam(const UniValue& params, int index)
+{
+    CAsset asset;
+    if (params.size() > index && params[index].isStr()) {
+        const auto& strasset = params[index].get_str();
+        if (strasset.size() == 64 && IsHex(strasset)) {
+            asset = CAsset(uint256S(strasset));
+        }
+    } else {
+        asset = ::policyAsset;
+    }
+    return asset;
+}
+
 static UniValue getnewaddress(const JSONRPCRequest& request)
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
@@ -587,17 +601,9 @@ static UniValue sendtoaddress(const JSONRPCRequest& request)
         }
     }
 
-    CAsset asset;
-    if (request.params.size() > 8 && request.params[8].isStr() && !request.params[8].get_str().empty()) {
-        const auto& strasset = request.params[8].get_str();
-        if (strasset.size() == 64 && IsHex(strasset))
-            asset = CAsset(uint256S(strasset));
-    } else {
-        asset = ::policyAsset;
-    }
-    if (asset.IsNull()) {
-        throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Unknown label and invalid asset hex: %s", asset.GetHex()));
-    }
+    CAsset asset = AssetFromReqParam(request.params, 8);
+    if (asset.IsNull())
+        throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Invalid param, asset is empty"));
 
     bool ignore_blind_fail = true;
     if (request.params.size() > 9) {
@@ -823,17 +829,7 @@ static UniValue getreceivedbyaddress(const JSONRPCRequest& request)
         }
     }
 
-    CAsset asset;
-    if (request.params.size() > 2 && request.params[2].isStr() && !request.params[2].get_str().empty()) {
-        const auto& strasset = request.params[2].get_str();
-        if (strasset.size() == 64 && IsHex(strasset))
-            asset = CAsset(uint256S(strasset));
-    } else {
-        asset = ::policyAsset;
-    }
-    if (asset.IsNull()) {
-        throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Unknown label and invalid asset hex: %s", asset.GetHex()));
-    }
+    CAsset asset = AssetFromReqParam(request.params, 2);
 
     return AmountMapToUniv(amounts, asset);
 }
@@ -916,17 +912,7 @@ static UniValue getreceivedbylabel(const JSONRPCRequest& request)
         }
     }
 
-    CAsset asset;
-    if (request.params.size() > 2 && request.params[2].isStr() && !request.params[2].get_str().empty()) {
-        const auto& strasset = request.params[2].get_str();
-        if (strasset.size() == 64 && IsHex(strasset))
-            asset = CAsset(uint256S(strasset));
-    } else {
-        asset = ::policyAsset;
-    }
-    if (asset.IsNull()) {
-        throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Unknown label and invalid asset hex: %s", asset.GetHex()));
-    }
+    CAsset asset = AssetFromReqParam(request.params, 2);
 
     return AmountMapToUniv(amounts, asset);
 }
@@ -987,17 +973,7 @@ static UniValue getbalance(const JSONRPCRequest& request)
         filter = filter | ISMINE_WATCH_ONLY;
     }
 
-    CAsset asset;
-    if (request.params.size() > 3 && request.params[3].isStr() && !request.params[3].get_str().empty()) {
-        const auto& strasset = request.params[3].get_str();
-        if (strasset.size() == 64 && IsHex(strasset))
-            asset = CAsset(uint256S(strasset));
-    } else {
-        asset = ::policyAsset;
-    }
-    if (asset.IsNull()) {
-        throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Unknown label and invalid asset hex: %s", asset.GetHex()));
-    }
+    CAsset asset = AssetFromReqParam(request.params, 3);
 
     return AmountMapToUniv(pwallet->GetBalance(filter, min_depth), asset);
 }
@@ -1011,7 +987,7 @@ static UniValue getunconfirmedbalance(const JSONRPCRequest &request)
         return NullUniValue;
     }
 
-    if (request.fHelp || request.params.size() > 0)
+    if (request.fHelp || request.params.size() > 1)
         throw std::runtime_error(
             RPCHelpMan{"getunconfirmedbalance",
                 "Returns the server's total unconfirmed balance\n",
@@ -1020,6 +996,8 @@ static UniValue getunconfirmedbalance(const JSONRPCRequest &request)
                 RPCExamples{""},
             }.ToString());
 
+    CAsset asset = AssetFromReqParam(request.params, 0);
+
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
@@ -1027,7 +1005,7 @@ static UniValue getunconfirmedbalance(const JSONRPCRequest &request)
     auto locked_chain = pwallet->chain().lock();
     LOCK(pwallet->cs_wallet);
 
-    return AmountMapToUniv(pwallet->GetUnconfirmedBalance(), CAsset());
+    return AmountMapToUniv(pwallet->GetUnconfirmedBalance(), asset);
 }
 
 
@@ -1369,17 +1347,7 @@ static UniValue ListReceived(interfaces::Chain::Lock& locked_chain, CWallet * co
         has_filtered_address = true;
     }
 
-    CAsset asset;
-    if (params.size() > 4 && params[4].isStr() && !params[4].get_str().empty()) {
-        const auto& strasset = params[4].get_str();
-        if (strasset.size() == 64 && IsHex(strasset))
-            asset = CAsset(uint256S(strasset));
-    } else {
-        asset = ::policyAsset;
-    }
-    if (asset.IsNull()) {
-        throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Unknown label and invalid asset hex: %s", asset.GetHex()));
-    }
+    CAsset asset = AssetFromReqParam(params, 4);
 
     // Tally
     std::map<CTxDestination, tallyitem> mapTally;
@@ -1501,7 +1469,7 @@ static UniValue ListReceived(interfaces::Chain::Lock& locked_chain, CWallet * co
             UniValue obj(UniValue::VOBJ);
             if (entry.second.fIsWatchonly)
                 obj.pushKV("involvesWatchonly", true);
-            obj.pushKV("amount",        AmountMapToUniv(mapAmount, CAsset()));
+            obj.pushKV("amount",        AmountMapToUniv(mapAmount, asset));
             obj.pushKV("confirmations", (nConf == std::numeric_limits<int>::max() ? 0 : nConf));
             obj.pushKV("label",         entry.first);
             ret.push_back(obj);
@@ -1651,7 +1619,7 @@ static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* con
             MaybePushAddress(entry, s.destination);
             entry.pushKV("category", "send");
             entry.pushKV("amount", ValueFromAmount(-s.amount));
-            if (s.asset != ::policyAsset) {
+            if (!s.asset.IsNull() && s.asset != ::policyAsset) {
                 entry.pushKV("amountblinder", s.amount_blinding_factor.GetHex());
                 entry.pushKV("asset", s.asset.GetHex());
                 entry.pushKV("assetblinder", s.asset_blinding_factor.GetHex());
@@ -1699,7 +1667,7 @@ static void ListTransactions(interfaces::Chain::Lock& locked_chain, CWallet* con
                 entry.pushKV("category", "receive");
             }
             entry.pushKV("amount", ValueFromAmount(r.amount));
-            if (r.asset != ::policyAsset) {
+            if (!r.asset.IsNull() && r.asset != ::policyAsset) {
                 entry.pushKV("amountblinder", r.amount_blinding_factor.GetHex());
                 entry.pushKV("asset", r.asset.GetHex());
                 entry.pushKV("assetblinder", r.asset_blinding_factor.GetHex());
@@ -2069,17 +2037,7 @@ static UniValue gettransaction(const JSONRPCRequest& request)
         if(request.params[1].get_bool())
             filter = filter | ISMINE_WATCH_ONLY;
 
-    CAsset asset;
-    if (request.params.size() > 2 && request.params[2].isStr() && !request.params[2].get_str().empty()) {
-        const auto& strasset = request.params[2].get_str();
-        if (strasset.size() == 64 && IsHex(strasset))
-            asset = CAsset(uint256S(strasset));
-    } else {
-        asset = ::policyAsset;
-    }
-    if (asset.IsNull()) {
-        throw JSONRPCError(RPC_WALLET_ERROR, strprintf("Unknown label and invalid asset hex: %s", asset.GetHex()));
-    }
+    CAsset asset = AssetFromReqParam(request.params, 2);
 
     UniValue entry(UniValue::VOBJ);
     auto it = pwallet->mapWallet.find(hash);
@@ -2731,7 +2689,7 @@ static UniValue getwalletinfo(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (request.fHelp || request.params.size() != 0)
+    if (request.fHelp || request.params.size() > 1)
         throw std::runtime_error(
             RPCHelpMan{"getwalletinfo",
                 "Returns an object containing various wallet state info.\n",
@@ -2759,6 +2717,8 @@ static UniValue getwalletinfo(const JSONRPCRequest& request)
                 },
             }.ToString());
 
+    CAsset asset = AssetFromReqParam(request.params, 0);
+
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
@@ -2771,9 +2731,9 @@ static UniValue getwalletinfo(const JSONRPCRequest& request)
     size_t kpExternalSize = pwallet->KeypoolCountExternalKeys();
     obj.pushKV("walletname", pwallet->GetName());
     obj.pushKV("walletversion", pwallet->GetVersion());
-    obj.pushKV("balance",       AmountMapToUniv(pwallet->GetBalance(), CAsset()));
-    obj.pushKV("unconfirmed_balance", AmountMapToUniv(pwallet->GetUnconfirmedBalance(), CAsset()));
-    obj.pushKV("immature_balance",    AmountMapToUniv(pwallet->GetImmatureBalance(), CAsset()));
+    obj.pushKV("balance",       AmountMapToUniv(pwallet->GetBalance(), asset));
+    obj.pushKV("unconfirmed_balance", AmountMapToUniv(pwallet->GetUnconfirmedBalance(), asset));
+    obj.pushKV("immature_balance",    AmountMapToUniv(pwallet->GetImmatureBalance(), asset));
     obj.pushKV("txcount",       (int)pwallet->mapWallet.size());
     obj.pushKV("keypoololdest", pwallet->GetOldestKeyPoolTime());
     obj.pushKV("keypoolsize", (int64_t)kpExternalSize);
@@ -6826,8 +6786,8 @@ static const CRPCCommand commands[] =
     { "wallet",             "getreceivedbyaddress",             &getreceivedbyaddress,          {"address","minconf","assetlabel"} },
     { "wallet",             "getreceivedbylabel",               &getreceivedbylabel,            {"label","minconf","assetlabel"} },
     { "wallet",             "gettransaction",                   &gettransaction,                {"txid","include_watchonly","assetlabel"} },
-    { "wallet",             "getunconfirmedbalance",            &getunconfirmedbalance,         {} },
-    { "wallet",             "getwalletinfo",                    &getwalletinfo,                 {} },
+    { "wallet",             "getunconfirmedbalance",            &getunconfirmedbalance,         {"assetlabel"} },
+    { "wallet",             "getwalletinfo",                    &getwalletinfo,                 {"assetlabel"} },
     { "wallet",             "importaddress",                    &importaddress,                 {"address","label","rescan","p2sh"} },
     { "wallet",             "importmulti",                      &importmulti,                   {"requests","options"} },
     { "wallet",             "importprivkey",                    &importprivkey,                 {"privkey","label","rescan"} },

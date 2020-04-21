@@ -17,6 +17,7 @@
 #include <checkpoints.h>
 #include <compat/sanity.h>
 #include <consensus/validation.h>
+#include <issuance.h>
 #include <fs.h>
 #include <httpserver.h>
 #include <httprpc.h>
@@ -1304,6 +1305,11 @@ bool AppInitMain(InitInterfaces& interfaces)
 #if ENABLE_ZMQ
     RegisterZMQRPCCommands(tableRPC);
 #endif
+
+    uint256 entropy;
+    const auto& genesis = chainparams.GenesisBlock();
+    GenerateAssetEntropy(entropy,  COutPoint(uint256(genesis.vtx[0]->GetHash()), 0), genesis.GetHash());
+    CalculateAsset(policyAsset, entropy);
 
     /* Start the RPC server already.  It will be started in "warmup" mode
      * and not really process calls already (but it will signify connections

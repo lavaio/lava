@@ -55,14 +55,15 @@ CTxOut::CTxOut(const CAmount& nValueIn, CScript scriptPubKeyIn)
 
 CTxOut::CTxOut(const CConfidentialAsset& nAssetIn, const CConfidentialValue& nValueIn, CScript scriptPubKeyIn)
 {
-    nValue = -1;
+    nValue = 0;
     flags = 1;
     nAsset = nAssetIn;
     nValueCA = nValueIn;
     scriptPubKey = scriptPubKeyIn;
-    if(nAssetIn == ::policyAsset)
+    if(nAssetIn.IsExplicit() && nAssetIn.GetAsset() == ::policyAsset)
     {
-        nValue = nValueIn;
+        assert(nValueIn.IsExplicit());
+        nValue = nValueIn.GetAmount();
         flags = 0;
     }
 }
@@ -79,10 +80,12 @@ CTxOut::CTxOut(const CAmount& nValueIn, CScript scriptPubKeyIn, const CConfident
 
 std::string CTxOut::ToString() const
 {
+    if (!flags)
+        return strprintf("CTxOut(nValue=%d.%08d, scriptPubKey=%s)", nValue / COIN, nValue % COIN, HexStr(scriptPubKey).substr(0, 30));
     std::string strAsset;
     if (nAsset.IsExplicit())
         strAsset = strprintf("nAsset=%s, ", nAsset.GetAsset().GetHex());
-    if (nAsset.IsCommitment())
+    else if (nAsset.IsCommitment())
         strAsset = std::string("nAsset=CONFIDENTIAL, ");
     return strprintf("CTxOut(%snValue=%s, scriptPubKey=%s)", strAsset, (nValueCA.IsExplicit() ? strprintf("%d.%08d", nValueCA.GetAmount() / COIN, nValueCA.GetAmount() % COIN) : std::string("CONFIDENTIAL")), HexStr(scriptPubKey).substr(0, 30));
 }
