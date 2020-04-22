@@ -1223,6 +1223,7 @@ template <class T>
 uint256 GetOutputsHash(const T& txTo)
 {
     CHashWriter ss(SER_GETHASH, 0);
+    ss.SetExtra(txTo.IsVersionCA());
     for (const auto& txout : txTo.vout) {
         ss << txout;
     }
@@ -1249,7 +1250,7 @@ template PrecomputedTransactionData::PrecomputedTransactionData(const CTransacti
 template PrecomputedTransactionData::PrecomputedTransactionData(const CMutableTransaction& txTo);
 
 template <class T>
-uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn, int nHashType, const CConfidentialValue& amount, SigVersion sigversion, bool isCA, const PrecomputedTransactionData* cache)
+uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn, int nHashType, const CConfidentialValue& amount, SigVersion sigversion, const PrecomputedTransactionData* cache)
 {
     assert(nIn < txTo.vin.size());
 
@@ -1276,6 +1277,7 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
             hashOutputs = cacheready ? cache->hashOutputs : GetOutputsHash(txTo);
         } else if ((nHashType & 0x1f) == SIGHASH_SINGLE && nIn < txTo.vout.size()) {
             CHashWriter ss(SER_GETHASH, 0);
+            ss.SetExtra(txTo.IsVersionCA());
             ss << txTo.vout[nIn];
             hashOutputs = ss.GetHash();
         }
@@ -1286,7 +1288,7 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
         // Input prevouts/nSequence (none/all, depending on flags)
         ss << hashPrevouts;
         ss << hashSequence;
-        if (isCA) {
+        if (txTo.IsVersionCA()) {
             ss << hashIssuance;
         }
         // The input being signed (replacing the scriptSig with scriptCode + amount)
@@ -1294,14 +1296,14 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
         // may already be contain in hashSequence.
         ss << txTo.vin[nIn].prevout;
         ss << scriptCode;
-        if (isCA) {
+        if (! amount.IsExplicit()) {
             ss << amount;
         } else {
             ss << amount.GetAmount();
         }
         ss << txTo.vin[nIn].nSequence;
         if (!txTo.vin[nIn].assetIssuance.IsNull()) {
-            assert(isCA);
+            assert(txTo.IsVersionCA());
             ss << txTo.vin[nIn].assetIssuance;
         }
         // Outputs (none/one/all, depending on flags)
@@ -1353,7 +1355,7 @@ bool GenericTransactionSignatureChecker<T>::CheckSig(const std::vector<unsigned 
     int nHashType = vchSig.back();
     vchSig.pop_back();
 
-    uint256 sighash = SignatureHash(scriptCode, *txTo, nIn, nHashType, amount, sigversion, isCA, this->txdata);
+    uint256 sighash = SignatureHash(scriptCode, *txTo, nIn, nHashType, amount, sigversion, this->txdata);
 
     if (!VerifySignature(vchSig, pubkey, sighash))
         return false;

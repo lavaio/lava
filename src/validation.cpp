@@ -1315,15 +1315,7 @@ bool CScriptCheck::operator()()
     const CScript& scriptSig = ptxTo->vin[nIn].scriptSig;
     const CScriptWitness* witness = &ptxTo->vin[nIn].scriptWitness;
 
-    CConfidentialValue ValueConf;
-    if (m_tx_out.flags == 1){
-        ValueConf = m_tx_out.nValueCA;
-    }else{
-        if (m_tx_out.flags == 0){
-            ValueConf.SetToAmount(m_tx_out.nValue);
-        }
-    }
-    return VerifyScript(scriptSig, m_tx_out.scriptPubKey, witness, nFlags, CachingTransactionSignatureChecker(ptxTo, nIn, ValueConf, cacheStore, *txdata, m_tx_out.flags), &error);
+    return VerifyScript(scriptSig, m_tx_out.scriptPubKey, witness, nFlags, CachingTransactionSignatureChecker(ptxTo, nIn, m_tx_out.IsCA() ? m_tx_out.nValueCA : m_tx_out.nValue , cacheStore, *txdata), &error);
 }
 
 int GetSpendHeight(const CCoinsViewCache& inputs)

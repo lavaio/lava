@@ -15,7 +15,8 @@
 
 typedef std::vector<unsigned char> valtype;
 
-MutableTransactionSignatureCreator::MutableTransactionSignatureCreator(const CMutableTransaction* txToIn, unsigned int nInIn, const CConfidentialValue& amountIn, int nHashTypeIn, bool isCAIn) : txTo(txToIn), nIn(nInIn), nHashType(nHashTypeIn), amount(amountIn), checker(txTo, nIn, amountIn, isCAIn) {}
+MutableTransactionSignatureCreator::MutableTransactionSignatureCreator(const CMutableTransaction* txToIn, unsigned int nInIn, const CConfidentialValue& amountIn, int nHashTypeIn)
+    : txTo(txToIn), nIn(nInIn), nHashType(nHashTypeIn), amount(amountIn), checker(txTo, nIn, amountIn) {}
 
 bool MutableTransactionSignatureCreator::CreateSig(const SigningProvider& provider, std::vector<unsigned char>& vchSig, const CKeyID& address, const CScript& scriptCode, SigVersion sigversion) const
 {
@@ -27,7 +28,7 @@ bool MutableTransactionSignatureCreator::CreateSig(const SigningProvider& provid
     if (sigversion == SigVersion::WITNESS_V0 && !key.IsCompressed())
         return false;
 
-    uint256 hash = SignatureHash(scriptCode, *txTo, nIn, nHashType, amount, sigversion, isCA);
+    uint256 hash = SignatureHash(scriptCode, *txTo, nIn, nHashType, amount, sigversion);
     if (!key.Sign(hash, vchSig))
         return false;
     vchSig.push_back((unsigned char)nHashType);
@@ -291,15 +292,7 @@ SignatureData DataFromTransaction(const CMutableTransaction& tx, unsigned int nI
     Stacks stack(data);
 
     // Get signatures
-    CConfidentialValue ValueConf;
-    if (txout.flags == 1){
-        ValueConf = txout.nValueCA;
-    }else{
-        if (txout.flags == 0){
-            ValueConf.SetToAmount(txout.nValue);
-        }
-    }
-    MutableTransactionSignatureChecker tx_checker(&tx, nIn, ValueConf, txout.flags);
+    MutableTransactionSignatureChecker tx_checker(&tx, nIn, txout.IsCA() ? txout.nValueCA : txout.nValue);
     SignatureExtractorChecker extractor_checker(data, tx_checker);
     if (VerifyScript(data.scriptSig, txout.scriptPubKey, &data.scriptWitness, STANDARD_SCRIPT_VERIFY_FLAGS, extractor_checker)) {
         data.complete = true;
@@ -377,15 +370,15 @@ void SignatureData::MergeSignatureData(SignatureData sigdata)
     signatures.insert(std::make_move_iterator(sigdata.signatures.begin()), std::make_move_iterator(sigdata.signatures.end()));
 }
 
-bool SignSignature(const SigningProvider &provider, const CScript& fromPubKey, CMutableTransaction& txTo, unsigned int nIn, const CConfidentialValue& amount, int nHashType, bool isCAIn)
+bool SignSignature(const SigningProvider &provider, const CScript& fromPubKey, CMutableTransaction& txTo, unsigned int nIn, const CConfidentialValue& amount, int nHashType)
 {
     assert(nIn < txTo.vin.size());
 
-    MutableTransactionSignatureCreator creator(&txTo, nIn, amount, nHashType, isCAIn);
+    MutableTransactionSignatureCreator creator(&txTo, nIn, amount, nHashType);
 
     SignatureData sigdata;
     bool ret = ProduceSignature(provider, creator, fromPubKey, sigdata);
-    UpdateInput(txTo.vin.at(nIn), sigdata);
+    UpdateInput(txTo.vin[nIn], sigdata);
     return ret;
 }
 
@@ -396,7 +389,7 @@ bool SignSignature(const SigningProvider &provider, const CTransaction& txFrom, 
     assert(txin.prevout.n < txFrom.vout.size());
     const CTxOut& txout = txFrom.vout[txin.prevout.n];
 
-    return SignSignature(provider, txout.scriptPubKey, txTo, nIn, txout.IsCA() ? txout.nValueCA : txout.nValue, nHashType, txout.IsCA());
+    return SignSignature(provider, txout.scriptPubKey, txTo, nIn, txout.IsCA() ? txout.nValueCA : txout.nValue, nHashType);
 }
 
 namespace {
