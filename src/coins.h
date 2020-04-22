@@ -58,9 +58,10 @@ public:
     template<typename Stream>
     void Serialize(Stream &s) const {
         assert(!IsSpent());
+        s.SetExtra(1);
         uint32_t code = nHeight * 2 + fCoinBase;
         ::Serialize(s, VARINT(code));
-        ::Serialize(s, CTxOutCompressor(REF(out),1));
+        ::Serialize(s, CTxOutCompressor(REF(out)));
     }
 
     template<typename Stream>

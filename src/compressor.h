@@ -87,10 +87,9 @@ class CTxOutCompressor
 {
 private:
     CTxOut &txout;
-    int version = 0;
 
 public:
-    explicit CTxOutCompressor(CTxOut &txoutIn, int versionIn = 0) : txout(txoutIn), version(versionIn) { }
+    explicit CTxOutCompressor(CTxOut &txoutIn, int versionIn = 0) : txout(txoutIn){ }
 
     ADD_SERIALIZE_METHODS;
 
@@ -107,7 +106,7 @@ public:
         CScriptCompressor cscript(REF(txout.scriptPubKey));
         READWRITE(cscript);
 
-        if (version == 0){
+        if (s.GetExtra() == 0){
             return;
         }
 

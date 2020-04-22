@@ -23,7 +23,6 @@
 class TxInUndoSerializer
 {
     const Coin* txout;
-    int version = 0;
 
 public:
     template<typename Stream>
@@ -33,16 +32,15 @@ public:
             // Required to maintain compatibility with older undo format.
             ::Serialize(s, (unsigned char)0);
         }
-        ::Serialize(s, CTxOutCompressor(REF(txout->out), version));
+        ::Serialize(s, CTxOutCompressor(REF(txout->out)));
     }
 
-    explicit TxInUndoSerializer(const Coin* coin, int versionIn = 0) : txout(coin), version(versionIn) {}
+    explicit TxInUndoSerializer(const Coin* coin, int versionIn = 0) : txout(coin) {}
 };
 
 class TxInUndoDeserializer
 {
     Coin* txout;
-    int version;
 public:
     template<typename Stream>
     void Unserialize(Stream &s) {
@@ -57,10 +55,10 @@ public:
             unsigned int nVersionDummy;
             ::Unserialize(s, VARINT(nVersionDummy));
         }
-        ::Unserialize(s, CTxOutCompressor(REF(txout->out), version));
+        ::Unserialize(s, CTxOutCompressor(REF(txout->out)));
     }
 
-    explicit TxInUndoDeserializer(Coin* coin, int versionIn = 0) : txout(coin), version(versionIn) {}
+    explicit TxInUndoDeserializer(Coin* coin, int versionIn = 0) : txout(coin) {}
 };
 
 static const size_t MIN_TRANSACTION_INPUT_WEIGHT = WITNESS_SCALE_FACTOR * ::GetSerializeSize(CTxIn(), PROTOCOL_VERSION);
@@ -72,14 +70,13 @@ class CTxUndo
 public:
     // undo information for all txins
     std::vector<Coin> vprevout;
-    int version = 0;
     template <typename Stream>
     void Serialize(Stream& s) const {
         // TODO: avoid reimplementing vector serializer
         uint64_t count = vprevout.size();
         ::Serialize(s, COMPACTSIZE(REF(count)));
         for (const auto& prevout : vprevout) {
-            ::Serialize(s, TxInUndoSerializer(&prevout, version));
+            ::Serialize(s, TxInUndoSerializer(&prevout));
         }
     }
 
@@ -103,7 +100,6 @@ class CBlockUndo
 {
 public:
     std::vector<CTxUndo> vtxundo; // for all but the coinbase
-    int version = 0;
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

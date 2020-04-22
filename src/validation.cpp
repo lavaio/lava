@@ -1109,7 +1109,7 @@ bool ReadRawBlockFromDisk(std::vector<uint8_t>& block, const CDiskBlockPos& pos,
 
         filein >> blk_start >> blk_size;
 
-        if (memcmp(blk_start, message_start, CMessageHeader::MESSAGE_START_SIZE)) {
+        if (memcmp(blk_start, message_start, CMessageHeader::MESSAGE_START_SIZE) && memcmp(blk_start, Params().MessageStartForDisk(), CMessageHeader::MESSAGE_START_SIZE)) {
             return error("%s: Block magic mismatch for %s: %s versus expected %s", __func__, pos.ToString(),
                 HexStr(blk_start, blk_start + CMessageHeader::MESSAGE_START_SIZE),
                 HexStr(message_start, message_start + CMessageHeader::MESSAGE_START_SIZE));
@@ -1447,7 +1447,7 @@ bool UndoWriteToDisk(const CBlockUndo& blockundo, CDiskBlockPos& pos, const uint
     // Write index header
     unsigned int nSize = GetSerializeSize(blockundo, fileout.GetVersion());
     fileout << messageStart << nSize;
-
+    fileout.SetExtra(1);
     // Write undo data
     long fileOutPos = ftell(fileout.Get());
     if (fileOutPos < 0)
@@ -1457,6 +1457,7 @@ bool UndoWriteToDisk(const CBlockUndo& blockundo, CDiskBlockPos& pos, const uint
 
     // calculate & write checksum
     CHashWriter hasher(SER_GETHASH, PROTOCOL_VERSION);
+    hasher.SetExtra(1);
     hasher << hashBlock;
     hasher << blockundo;
     fileout << hasher.GetHash();
@@ -1476,18 +1477,6 @@ static bool UndoReadFromDisk(CBlockUndo& blockundo, const CBlockIndex* pindex)
     CAutoFile fileheader(OpenUndoFile(posheader, true), SER_DISK, CLIENT_VERSION);
     CMessageHeader::MessageStartChars pchMessageStartHeader;
     fileheader >> pchMessageStartHeader;
-    if (pchMessageStartHeader == Params().MessageStart()){
-        //old format undo block header read
-        blockundo.version = 0;
-        for (auto iter = blockundo.vtxundo.begin(); iter != blockundo.vtxundo.end(); ++iter){
-            iter->version = 0;
-        }
-    }else{
-        blockundo.version = 1;
-        for (auto iter = blockundo.vtxundo.begin(); iter != blockundo.vtxundo.end(); ++iter){
-            iter->version = 1;
-        }
-    }
 
     // Open history file to read
     CAutoFile filein(OpenUndoFile(pos, true), SER_DISK, CLIENT_VERSION);
@@ -1498,6 +1487,12 @@ static bool UndoReadFromDisk(CBlockUndo& blockundo, const CBlockIndex* pindex)
     uint256 hashChecksum;
     CHashVerifier<CAutoFile> verifier(&filein); // We need a CHashVerifier as reserializing may lose data
     try {
+        if (!memcmp(pchMessageStartHeader, Params().MessageStart(), CMessageHeader::MESSAGE_START_SIZE)) {
+            verifier.SetExtra(0);
+        }else{
+            verifier.SetExtra(1);
+        }
+
         verifier << pindex->pprev->GetBlockHash();
         verifier >> blockundo;
         filein >> hashChecksum;
@@ -1648,7 +1643,7 @@ static bool WriteUndoDataForBlock(const CBlockUndo& blockundo, CValidationState&
     // Write undo information to disk
     if (pindex->GetUndoPos().IsNull()) {
         CDiskBlockPos _pos;
-        if (!FindUndoPos(state, pindex->nFile, _pos, ::GetSerializeSize(blockundo, CLIENT_VERSION) + 40))
+        if (!FindUndoPos(state, pindex->nFile, _pos, ::GetSerializeSize(blockundo, CLIENT_VERSION, 1) + 40))
             return error("ConnectBlock(): FindUndoPos failed");
         if (!UndoWriteToDisk(blockundo, _pos, pindex->pprev->GetBlockHash(), chainparams.MessageStartForDisk()))
             return AbortNode(state, "Failed to write undo data");
@@ -4637,7 +4632,7 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                 blkdat.FindByte(chainparams.MessageStart()[0]);
                 nRewind = blkdat.GetPos() + 1;
                 blkdat >> buf;
-                if (memcmp(buf, chainparams.MessageStart(), CMessageHeader::MESSAGE_START_SIZE))
+                if (memcmp(buf, chainparams.MessageStart(), CMessageHeader::MESSAGE_START_SIZE) && memcmp(buf, chainparams.MessageStartForDisk(), CMessageHeader::MESSAGE_START_SIZE))
                     continue;
                 // read size
                 blkdat >> nSize;
