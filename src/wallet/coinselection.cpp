@@ -4,7 +4,7 @@
 
 #include <wallet/coinselection.h>
 #include <wallet/wallet.h>
-
+#include <policy/policy.h>
 #include <util/system.h>
 #include <util/moneystr.h>
 
@@ -74,7 +74,7 @@ CInputCoin::CInputCoin(const CWalletTx* wtx, unsigned int i) {
     effective_value = txout.nValue;
     value = txout.nValue;
     if (! txout.IsCA()){
-        asset = wtx->GetOutputAsset(i);
+        asset = ::policyAsset;
         return;
     }
     effective_value = std::max<CAmount>(0, wtx->GetOutputValueOut(i));

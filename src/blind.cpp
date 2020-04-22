@@ -376,6 +376,8 @@ int BlindTransaction(std::vector<uint256 >& input_value_blinding_factors, const 
     for (size_t nOut = 0; nOut < output_pubkeys.size(); nOut++) {
         if (output_pubkeys[nOut].IsValid()) {
             // Keys must be valid and outputs completely unblinded or else call fails
+            if (!tx.vout[nOut].IsCA())
+                continue;
             if (!output_pubkeys[nOut].IsFullyValid() ||
                 (!tx.vout[nOut].nValueCA.IsExplicit() || !tx.vout[nOut].nAsset.IsExplicit()) ||
                 (!tx.vout[nOut].vchRangeproof.empty() || !tx.vout[nOut].vchSurjectionproof.empty())) {
@@ -468,12 +470,14 @@ int BlindTransaction(std::vector<uint256 >& input_value_blinding_factors, const 
     for (size_t nOut = 0; nOut < output_pubkeys.size(); nOut++) {
         if (output_pubkeys[nOut].IsFullyValid()) {
             CTxOut& out = tx.vout[nOut];
+            if (!out.IsCA())
+                continue;
             num_blind_attempts++;
             CConfidentialAsset& conf_asset = out.nAsset;
             CConfidentialValue& conf_value = out.nValueCA;
             CAmount amount = conf_value.GetAmount();
             asset = out.nAsset.GetAsset();
-            blinded_amounts.push_back(conf_value.GetAmount());
+            blinded_amounts.push_back(amount);
 
             GetStrongRandBytes(&blind[num_blind_attempts-1][0], 32);
             GetStrongRandBytes(&asset_blind[num_blind_attempts-1][0], 32);

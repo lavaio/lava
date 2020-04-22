@@ -3061,7 +3061,7 @@ bool fillBlindDetails(BlindDetails* det, CWallet* wallet, CMutableTransaction& t
         det->o_amount_blinds.push_back(uint256());
         det->o_asset_blinds.push_back(uint256());
         det->o_assets.push_back(txNew.vout[nOut].nAsset.GetAsset());
-        det->o_amounts.push_back(txNew.vout[nOut].nValueCA.GetAmount());
+        det->o_amounts.push_back(txNew.vout[nOut].IsCA() ? txNew.vout[nOut].nValueCA.GetAmount() : txNew.vout[nOut].nValue);
     }
 
     // There are a few edge-cases of blinding we need to take care of
@@ -3311,7 +3311,7 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
 
                     if (recipient.fSubtractFeeFromAmount)
                     {
-                        if (!recipient.asset.IsNull()) {
+                        if (!recipient.asset.IsNull() || recipient.asset != policyAsset) {
                             strFailReason = strprintf("Wallet does not support more than one type of fee at a time, therefore can not subtract fee from address amount, which is of a different asset id. fee asset: %s recipient asset: %s", policyAsset.GetHex(), recipient.asset.GetHex());
                             return false;
                         }
@@ -3436,12 +3436,14 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
                         if (blind_details) {
                             CPubKey blind_pub = GetBlindingPubKey(itScript->second.second);
                             blind_details->o_pubkeys.insert(blind_details->o_pubkeys.begin() + vChangePosInOut[assetChange.first], blind_pub);
-                            assert(blind_pub.IsFullyValid());
-                            blind_details->num_to_blind++;
-                            blind_details->change_to_blind++;
-                            blind_details->only_change_pos = vChangePosInOut[assetChange.first];
-                            // Place the blinding pubkey here in case of fundraw calls
-                            newTxOut.nNonce.vchCommitment = std::vector<unsigned char>(blind_pub.begin(), blind_pub.end());
+                            if (newTxOut.IsCA()) {
+                                assert(blind_pub.IsFullyValid());
+                                blind_details->num_to_blind++;
+                                blind_details->change_to_blind++;
+                                blind_details->only_change_pos = vChangePosInOut[assetChange.first];
+                                // Place the blinding pubkey here in case of fundraw calls
+                                newTxOut.nNonce.vchCommitment = std::vector<unsigned char>(blind_pub.begin(), blind_pub.end());
+                            }
                         }
                         txNew.vout.insert(position, newTxOut);
                     }
@@ -3501,7 +3503,8 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
                         CScript blindingScript(CScript() << OP_RETURN << std::vector<unsigned char>(txNew.vin[0].prevout.hash.begin(), txNew.vin[0].prevout.hash.end()) << txNew.vin[0].prevout.n);
                         // We're making asset outputs, fill out asset type and issuance input
                         if (asset_index != -1) {
-                            txNew.vin[0].assetIssuance.nAmount = txNew.vout[asset_index].nValue;
+                            assert(txNew.vout[asset_index].nValue == 0 && txNew.vout[asset_index].nValueCA.IsExplicit());
+                            txNew.vin[0].assetIssuance.nAmount = txNew.vout[asset_index].nValueCA.GetAmount();
 
                             txNew.vout[asset_index].nAsset = asset;
                             if (issuance_details->blind_issuance && blind_details) {
@@ -3511,7 +3514,8 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
                         }
                         // We're making reissuance token outputs
                         if (token_index != -1) {
-                            txNew.vin[0].assetIssuance.nInflationKeys = txNew.vout[token_index].nValue;
+                            assert(txNew.vout[token_index].nValue == 0 && txNew.vout[token_index].nValueCA.IsExplicit());
+                            txNew.vin[0].assetIssuance.nInflationKeys = txNew.vout[token_index].nValueCA.GetAmount();
                             txNew.vout[token_index].nAsset = token;
                             if (issuance_details->blind_issuance && blind_details) {
                                 issuance_token_keys.push_back(GetBlindingKey(&blindingScript));
@@ -3534,9 +3538,10 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
 
                         // Fill in issuance
                         // Blinding revealing underlying asset
+                        assert(txNew.vout[asset_index].nValue == 0 && txNew.vout[asset_index].nValueCA.IsExplicit());
                         txNew.vin[reissuance_index].assetIssuance.assetBlindingNonce = token_blinding;
                         txNew.vin[reissuance_index].assetIssuance.assetEntropy = issuance_details->entropy;
-                        txNew.vin[reissuance_index].assetIssuance.nAmount = txNew.vout[asset_index].nValue;
+                        txNew.vin[reissuance_index].assetIssuance.nAmount = txNew.vout[asset_index].nValueCA.GetAmount();
 
                         // If blinded token derivation, blind the issuance
                         CAsset temp_token;
@@ -3621,12 +3626,11 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
                         if (blind_details) {
                             txNew = blind_details->tx_unblinded_unsigned;
                             std::vector<CTxOut>::iterator change_position = txNew.vout.begin() + nChangePosInOut;
-                            change_position->nValue = change_position->nValueCA.GetAmount() + extraFeePaid;
-                            blind_details->o_amounts[nChangePosInOut] = change_position->nValueCA.GetAmount();
+                            assert(! change_position->IsCA());
+                            change_position->nValue = change_position->nValue + extraFeePaid;
+                            blind_details->o_amounts[nChangePosInOut] = change_position->nValue;
 
                             nFeeRet -= extraFeePaid;
-                            txNew.vout.back().nValue = nFeeRet; // update fee output
-                            blind_details->o_amounts.back() = nFeeRet;
 
                             // Wipe output blinding factors and start over
                             blind_details->o_amount_blinds.clear();
@@ -3643,6 +3647,7 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
                             }
                         } else {
                             std::vector<CTxOut>::iterator change_position = txNew.vout.begin() + nChangePosInOut;
+                            assert(! change_position->IsCA());
                             change_position->nValue += extraFeePaid;
                             nFeeRet -= extraFeePaid;
                         }
@@ -3666,14 +3671,13 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
                     if (blind_details) {
                         txNew = blind_details->tx_unblinded_unsigned;
                         std::vector<CTxOut>::iterator change_position = txNew.vout.begin() + nChangePosInOut;
+                        assert(! change_position->IsCA());
                         // Only reduce change if remaining amount is still a large enough output.
-                        if (change_position->nValueCA.GetAmount() >= MIN_FINAL_CHANGE + additionalFeeNeeded) {
-                            change_position->nValue = change_position->nValueCA.GetAmount() - additionalFeeNeeded;
-                            blind_details->o_amounts[nChangePosInOut] = change_position->nValueCA.GetAmount();
+                        if (change_position->nValue >= MIN_FINAL_CHANGE + additionalFeeNeeded) {
+                            change_position->nValue -= additionalFeeNeeded;
+                            blind_details->o_amounts[nChangePosInOut] = change_position->nValue;
 
                             nFeeRet += additionalFeeNeeded;
-                            txNew.vout.back().nValue = nFeeRet; // update fee output
-                            blind_details->o_amounts.back() = nFeeRet; // update change details
                             // Wipe output blinding factors and start over
                             blind_details->o_amount_blinds.clear();
 
@@ -3757,9 +3761,9 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
                 }
                 summary += strprintf("#%d: %s [%s] (%s [%s])\n", i,
                     selected_coins[i].value,
-                    selected_coins[i].txout.nValueCA.IsExplicit() ? "explicit" : "blinded",
+                    !selected_coins[i].txout.IsCA() || selected_coins[i].txout.nValueCA.IsExplicit() ? "explicit" : "blinded",
                     selected_coins[i].asset.GetHex(),
-                    selected_coins[i].txout.nAsset.IsExplicit() ? "explicit" : "blinded"
+                    !selected_coins[i].txout.IsCA() || selected_coins[i].txout.nAsset.IsExplicit() ? "explicit" : "blinded"
                 );
             }
             summary += "OUT: ";
@@ -3768,11 +3772,12 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
                     summary += "     ";
                 }
                 CTxOut& unblinded = blind_details->tx_unblinded_unsigned.vout[i];
+                assert(unblinded.IsCA() == txNew.vout[i].IsCA());
                 summary += strprintf("#%d: %s [%s] (%s [%s])\n", i,
-                    unblinded.nValueCA.GetAmount(),
-                    txNew.vout[i].nValueCA.IsExplicit() ? "explicit" : "blinded",
+                    unblinded.IsCA() ? unblinded.nValueCA.GetAmount() : unblinded.nValue,
+                    !unblinded.IsCA() || txNew.vout[i].nValueCA.IsExplicit() ? "explicit" : "blinded",
                     unblinded.nAsset.GetAsset().GetHex(),
-                    txNew.vout[i].nAsset.IsExplicit() ? "explicit" : "blinded"
+                    !unblinded.IsCA() || txNew.vout[i].nAsset.IsExplicit() ? "explicit" : "blinded"
                 );
             }
             WalletLogPrintf(summary+"\n");
@@ -5376,7 +5381,7 @@ void CWalletTx::GetNonIssuanceBlindingData(const unsigned int output_index, CPub
     assert(output_index < tx->vout.size());
     const CTxOut& out = tx->vout[output_index];
     if (out.IsCA()) {
-        GetBlindingData(output_index, out.vchRangeproof, out.nValue, out.nAsset, out.nNonce, out.scriptPubKey,
+        GetBlindingData(output_index, out.vchRangeproof, out.nValueCA, out.nAsset, out.nNonce, out.scriptPubKey,
             blinding_pubkey_out, value_out, value_factor_out, asset_out, asset_factor_out);
     } else {
         if (value_out) *value_out = out.nValue;
