@@ -384,7 +384,7 @@ inline void SerializeTransaction(const TxType& tx, Stream& s) {
             flags |= 1;
         }
         /* Check whether CA proof need to be serialized. */
-        if (tx.HasCAProof()) {
+        if (tx.IsVersionCA()) {
             flags |= 2;
         }
     }
@@ -514,7 +514,7 @@ public:
                 return true;
             }
         }
-        return false;
+        return HasCAProof();
     }
 
     bool HasCAProof() const
@@ -605,7 +605,7 @@ struct CMutableTransaction
                 return true;
             }
         }
-        return false;
+        return HasCAProof();
     }
 
     bool HasCAProof() const
