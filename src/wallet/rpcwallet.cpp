@@ -5948,7 +5948,7 @@ UniValue createfstxwithwallet(const JSONRPCRequest& request){
     auto fstx = MakeTransactionRef();
     if (fs) {
         // make fstx with the firestone above
-        fstx = makeSpentTicketTx(fs, fs->LockTime(), CTxDestination(receiverKeyID), Key);
+        fstx = makeSpentTicketTx(fs, fs->LockTime() + 1, CTxDestination(receiverKeyID), Key);
     }else{
         throw JSONRPCError(RPC_MISC_ERROR, "the address has no firestone.");
     }
