@@ -285,7 +285,7 @@ void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry,
         out.pushKV("value", ValueFromAmount(txout.nValue));
         out.pushKV("n", (int64_t)i);
 
-        if (txout.IsCA()) {
+        if (txout.IsCA() && !txout.nValueCA.IsExplicit()) {
             int exp;
             int mantissa;
             uint64_t minv;
@@ -315,6 +315,8 @@ void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry,
             out.pushKV("commitmentnonce", txout.nNonce.GetHex());
             CPubKey pubkey(txout.nNonce.vchCommitment);
             out.pushKV("commitmentnonce_fully_valid", pubkey.IsFullyValid());
+        } else if(txout.IsCA()) {
+            out.pushKV("value", ValueFromAmount(txout.nValueCA.GetAmount()));
         }
 
         UniValue o(UniValue::VOBJ);

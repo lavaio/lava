@@ -714,7 +714,7 @@ UniValue AmountMapToUniv(const CAmountMap& balanceOrig, const CAsset& asset)
             continue;
         UniValue pair(UniValue::VOBJ);
         std::string label = (it->first == ::policyAsset) ? "LV" : it->first.GetHex();
-        obj.pushKV(it->first.GetHex(), ValueFromAmount(it->second));
+        obj.pushKV(label, ValueFromAmount(it->second));
     }
     return obj;
 }

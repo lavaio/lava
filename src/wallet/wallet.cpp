@@ -3311,7 +3311,7 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
 
                     if (recipient.fSubtractFeeFromAmount)
                     {
-                        if (!recipient.asset.IsNull() || recipient.asset != policyAsset) {
+                        if (!recipient.asset.IsNull() && recipient.asset != policyAsset) {
                             strFailReason = strprintf("Wallet does not support more than one type of fee at a time, therefore can not subtract fee from address amount, which is of a different asset id. fee asset: %s recipient asset: %s", policyAsset.GetHex(), recipient.asset.GetHex());
                             return false;
                         }

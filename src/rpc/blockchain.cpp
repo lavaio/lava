@@ -872,7 +872,7 @@ static UniValue getblock(const JSONRPCRequest& request)
                 "If verbosity is 1, returns an Object with information about block <hash>.\n"
                 "If verbosity is 2, returns an Object with information about block <hash> and information about each transaction. \n",
                 {
-                    {"blockhash", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The block hash"},
+                    {"blockhash", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The block hash or height"},
                     {"verbosity", RPCArg::Type::NUM, /* default */ "1", "0 for hex-encoded data, 1 for a json object, and 2 for json object with transaction data"},
                 },
                 {
@@ -923,8 +923,6 @@ static UniValue getblock(const JSONRPCRequest& request)
 
     LOCK(cs_main);
 
-    uint256 hash(ParseHashV(request.params[0], "blockhash"));
-
     int verbosity = 1;
     if (!request.params[1].isNull()) {
         if(request.params[1].isNum())
@@ -933,7 +931,18 @@ static UniValue getblock(const JSONRPCRequest& request)
             verbosity = request.params[1].get_bool() ? 1 : 0;
     }
 
-    const CBlockIndex* pblockindex = LookupBlockIndex(hash);
+    const CBlockIndex* pblockindex{nullptr};
+    try {
+        uint256 hash(ParseHashV(request.params[0], "blockhash"));
+        pblockindex = LookupBlockIndex(hash);
+    } catch(...) {
+        int nHeight = std::stol(request.params[0].get_str());
+        if (nHeight < 0 || nHeight > chainActive.Height())
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Block height out of range");
+
+        pblockindex = chainActive[nHeight];
+    }
+
     if (!pblockindex) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
     }
