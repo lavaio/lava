@@ -285,26 +285,30 @@ void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry,
         out.pushKV("value", ValueFromAmount(txout.nValue));
         out.pushKV("n", (int64_t)i);
 
-        if (txout.IsCA() && !txout.nValueCA.IsExplicit()) {
-            int exp;
-            int mantissa;
-            uint64_t minv;
-            uint64_t maxv;
-            if (txout.vchRangeproof.size() && secp256k1_rangeproof_info(secp256k1_blind_context, &exp, &mantissa, &minv, &maxv, &txout.vchRangeproof[0], txout.vchRangeproof.size())) {
-                if (exp == -1) {
-                    out.pushKV("value", ValueFromAmount((CAmount)minv));
-                } else {
-                    out.pushKV("value-minimum", ValueFromAmount((CAmount)minv));
-                    out.pushKV("value-maximum", ValueFromAmount((CAmount)maxv));
+        if (txout.IsCA()) {
+            if (txout.nValueCA.IsExplicit()) {
+                out.pushKV("value", ValueFromAmount(txout.nValueCA.GetAmount()));
+            } else {
+                int exp;
+                int mantissa;
+                uint64_t minv;
+                uint64_t maxv;
+                if (txout.vchRangeproof.size() && secp256k1_rangeproof_info(secp256k1_blind_context, &exp, &mantissa, &minv, &maxv, &txout.vchRangeproof[0], txout.vchRangeproof.size())) {
+                    if (exp == -1) {
+                        out.pushKV("value", ValueFromAmount((CAmount)minv));
+                    } else {
+                        out.pushKV("value-minimum", ValueFromAmount((CAmount)minv));
+                        out.pushKV("value-maximum", ValueFromAmount((CAmount)maxv));
+                    }
+                    out.pushKV("ct-exponent", exp);
+                    out.pushKV("ct-bits", mantissa);
                 }
-                out.pushKV("ct-exponent", exp);
-                out.pushKV("ct-bits", mantissa);
-            }
 
-            if (txout.vchSurjectionproof.size()) {
-                out.pushKV("surjectionproof", HexStr(txout.vchSurjectionproof));
+                if (txout.vchSurjectionproof.size()) {
+                    out.pushKV("surjectionproof", HexStr(txout.vchSurjectionproof));
+                }
+                out.pushKV("valuecommitment", txout.nValueCA.GetHex());
             }
-            out.pushKV("valuecommitment", txout.nValueCA.GetHex());
 
             if (txout.nAsset.IsExplicit()) {
                 out.pushKV("asset", txout.nAsset.GetAsset().GetHex());
@@ -315,8 +319,6 @@ void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry,
             out.pushKV("commitmentnonce", txout.nNonce.GetHex());
             CPubKey pubkey(txout.nNonce.vchCommitment);
             out.pushKV("commitmentnonce_fully_valid", pubkey.IsFullyValid());
-        } else if(txout.IsCA()) {
-            out.pushKV("value", ValueFromAmount(txout.nValueCA.GetAmount()));
         }
 
         UniValue o(UniValue::VOBJ);

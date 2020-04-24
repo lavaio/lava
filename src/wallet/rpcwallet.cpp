@@ -1345,7 +1345,7 @@ static UniValue ListReceived(interfaces::Chain::Lock& locked_chain, CWallet * co
         has_filtered_address = true;
     }
 
-    CAsset asset = AssetFromReqParam(params, 4);
+    CAsset asset_filter = AssetFromReqParam(params, 4);
 
     // Tally
     std::map<CTxDestination, tallyitem> mapTally;
@@ -1374,20 +1374,15 @@ static UniValue ListReceived(interfaces::Chain::Lock& locked_chain, CWallet * co
             if(!(mine & filter))
                 continue;
 
-            CAmount amt = txout.nValue;
-            CAsset asset = ::policyAsset;
-            if (txout.IsCA()) {
-                amt = wtx.GetOutputValueOut(index);
-                if (amt < 0) {
-                    continue;
-                }
-                if (wtx.GetOutputAsset(index) != asset) {
-                    continue;
-                }
-                asset = wtx.GetOutputAsset(index);
+            CAmount amt = wtx.GetOutputValueOut(index);
+            if (amt < 0) {
+                continue;
+            }
+            if (!asset_filter.IsNull() && wtx.GetOutputAsset(index) != asset_filter) {
+                continue;
             }
             tallyitem& item = mapTally[address];
-            item.mapAmount[asset] += amt;
+            item.mapAmount[wtx.GetOutputAsset(index)] += amt;
             item.nConf = std::min(item.nConf, nDepth);
             item.txids.push_back(wtx.GetHash());
             if (mine & ISMINE_WATCH_ONLY)
@@ -1442,7 +1437,7 @@ static UniValue ListReceived(interfaces::Chain::Lock& locked_chain, CWallet * co
             if(fIsWatchonly)
                 obj.pushKV("involvesWatchonly", true);
             obj.pushKV("address",       EncodeDestination(address));
-            obj.pushKV("amount",        AmountMapToUniv(mapAmount, asset));
+            obj.pushKV("amount",        AmountMapToUniv(mapAmount, asset_filter));
             obj.pushKV("confirmations", (nConf == std::numeric_limits<int>::max() ? 0 : nConf));
             obj.pushKV("label", label);
             UniValue transactions(UniValue::VARR);
@@ -1467,7 +1462,7 @@ static UniValue ListReceived(interfaces::Chain::Lock& locked_chain, CWallet * co
             UniValue obj(UniValue::VOBJ);
             if (entry.second.fIsWatchonly)
                 obj.pushKV("involvesWatchonly", true);
-            obj.pushKV("amount",        AmountMapToUniv(mapAmount, asset));
+            obj.pushKV("amount",        AmountMapToUniv(mapAmount, asset_filter));
             obj.pushKV("confirmations", (nConf == std::numeric_limits<int>::max() ? 0 : nConf));
             obj.pushKV("label",         entry.first);
             ret.push_back(obj);
@@ -3145,8 +3140,12 @@ static UniValue listunspent(const JSONRPCRequest& request)
     }
 
     CAsset asset_filter;
-    if (asset_str.size() == 64 && IsHex(asset_str))
-        asset_filter = CAsset(uint256S(asset_str));
+    if (!asset_str.empty()) {
+        if (asset_str.size() == 64 && IsHex(asset_str))
+            asset_filter = CAsset(uint256S(asset_str));
+    } else {
+        asset_filter = ::policyAsset;
+    }
 
     // Make sure the results are valid at least up to the most recent block
     // the user could have gotten from another RPC command prior to now
@@ -3171,18 +3170,15 @@ static UniValue listunspent(const JSONRPCRequest& request)
             continue;
 
         const CTxOut& tx_out = out.tx->tx->vout[out.i];
-        CAmount amount = tx_out.nValue;
-        if (tx_out.IsCA()) {
-            amount = out.tx->GetOutputValueOut(out.i);
-            CAsset assetid = out.tx->GetOutputAsset(out.i);
-            // Only list known outputs that match optional filter
-            if (tx_out.IsCA() && (amount < 0 || assetid.IsNull())) {
-                wallet->WalletLogPrintf("Unable to unblind output: %s:%d\n", out.tx->tx->GetHash().GetHex(), out.i);
-                continue;
-            }
-            if (!asset_str.empty() && asset_filter != assetid) {
-                continue;
-            }
+        CAmount amount = out.tx->GetOutputValueOut(out.i);
+        CAsset assetid = out.tx->GetOutputAsset(out.i);
+        // Only list known outputs that match optional filter
+        if (tx_out.IsCA() && (amount < 0 || assetid.IsNull())) {
+            wallet->WalletLogPrintf("Unable to unblind output: %s:%d\n", out.tx->tx->GetHash().GetHex(), out.i);
+            continue;
+        }
+        if (!asset_filter.IsNull() && asset_filter != assetid) {
+            continue;
         }
 
         UniValue entry(UniValue::VOBJ);
@@ -6518,10 +6514,9 @@ UniValue reissueasset(const JSONRPCRequest& request)
     auto locked_chain = pwallet->chain().lock();
     LOCK(pwallet->cs_wallet);
 
-    std::string assetstr = request.params[0].get_str();
-    if (assetstr.size() == 64 && IsHex(assetstr))
+    auto asset = AssetFromReqParam(request.params, 0);
+    if (asset.IsNull() || asset == ::policyAsset)
         throw JSONRPCError(RPC_TYPE_ERROR, "reissueasset invalid param asset");
-    auto asset = CAsset(uint256S(assetstr));
 
     CAmount nAmount = AmountFromValue(request.params[1]);
     if (nAmount <= 0) {
@@ -6627,14 +6622,7 @@ UniValue listissuances(const JSONRPCRequest& request)
     auto locked_chain = pwallet->chain().lock();
     LOCK(pwallet->cs_wallet);
 
-    std::string assetstr;
-    CAsset asset_filter;
-    if (request.params.size() > 0) {
-        assetstr = request.params[0].get_str();
-        if (assetstr.size() == 64 && IsHex(assetstr))
-            throw JSONRPCError(RPC_TYPE_ERROR, "listissuances invalid param asset");
-        asset_filter = CAsset(uint256S(assetstr));
-    }
+    auto asset_filter = AssetFromReqParam(request.params, 0);
 
     UniValue issuancelist(UniValue::VARR);
     for (const auto& it : pwallet->mapWallet) {
@@ -6712,10 +6700,9 @@ UniValue destroyamount(const JSONRPCRequest& request)
     auto locked_chain = pwallet->chain().lock();
     LOCK(pwallet->cs_wallet);
 
-    std::string assetstr = request.params[0].get_str();
-    if (assetstr.size() == 64 && IsHex(assetstr))
-        throw JSONRPCError(RPC_TYPE_ERROR, "listissuances invalid param asset");
-    CAsset asset = CAsset(uint256S(assetstr));
+    auto asset = AssetFromReqParam(request.params, 0);
+    if (asset.IsNull())
+        throw JSONRPCError(RPC_TYPE_ERROR, "destroyamount invalid param asset");
 
     CAmount nAmount = AmountFromValue(request.params[1]);
     if (nAmount <= 0) {
