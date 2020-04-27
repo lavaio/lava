@@ -3219,11 +3219,10 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
 
             CTxOut change_prototype_txout(mapScriptChange.begin()->first, 0, mapScriptChange.begin()->second.second);
             // TODO CA: Set this for each change output
-            coin_selection_params.change_output_size = GetSerializeSize(change_prototype_txout);
+            coin_selection_params.change_output_size = GetSerializeSize(change_prototype_txout, 0, change_prototype_txout.IsCA());
             if (isCA) {
                 // Assume blinded output for coin selection purposes. Over-paying is ok!
                 change_prototype_txout.nAsset.vchCommitment.resize(33);
-                coin_selection_params.change_output_size = GetSerializeSize(change_prototype_txout);
                 coin_selection_params.change_output_size += DEFAULT_RANGEPROOF_SIZE/WITNESS_SCALE_FACTOR;
                 coin_selection_params.change_output_size += SURJECTION_PROOF_SIZE/WITNESS_SCALE_FACTOR;
             }
@@ -3290,7 +3289,7 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
                         }
                     }
                     // Include the fee cost for outputs. Note this is only used for BnB right now
-                    coin_selection_params.tx_noinputs_size += ::GetSerializeSize(txout, PROTOCOL_VERSION);
+                    coin_selection_params.tx_noinputs_size += ::GetSerializeSize(txout, PROTOCOL_VERSION, txout.IsCA());
 
                     if (recipient.asset.IsNull() && IsDust(txout, ::dustRelayFee))
                     {

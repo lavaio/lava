@@ -501,7 +501,7 @@ static CTransactionRef SendMoney(interfaces::Chain::Lock& locked_chain, CWallet 
     CTransactionRef tx;
     if (blind_details) blind_details->ignore_blind_failure = ignore_blind_fail;
     if (!pwallet->CreateTransaction(locked_chain, vecSend, tx, reserveKeys, nFeeRequired, nChangePosRet, strError, coin_control, true, blind_details)) {
-        if (!fSubtractFeeFromAmount && nValue + nFeeRequired > curBalance[policyAsset])
+        if (!fSubtractFeeFromAmount && asset == policyAsset && nValue + nFeeRequired > curBalance[policyAsset])
             strError = strprintf("Error: This transaction requires a transaction fee of at least %s", FormatMoney(nFeeRequired));
         throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
