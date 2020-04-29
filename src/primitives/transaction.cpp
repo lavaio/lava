@@ -102,9 +102,6 @@ uint256 CMutableTransaction::GetHash() const
 
 uint256 CTransaction::ComputeHash() const
 {
-    if (this->nVersion == CONFIDENTIAL_VERSION){
-        return SerializeHash(*this, SER_GETHASH, 0);
-    }
     return SerializeHash(*this, SER_GETHASH, SERIALIZE_TRANSACTION_NO_WITNESS);
 }
 
