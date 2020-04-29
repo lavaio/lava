@@ -1169,6 +1169,7 @@ public:
     /** Serialize txTo */
     template<typename S>
     void Serialize(S &s) const {
+        s.SetExtra(txTo.IsVersionCA());
         // Serialize nVersion
         ::Serialize(s, txTo.nVersion);
         // Serialize vin
