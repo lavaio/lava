@@ -3035,13 +3035,23 @@ bool fillBlindDetails(BlindDetails* det, CWallet* wallet, CMutableTransaction& t
     if (num_inputs_blinded > 0 &&  det->num_to_blind == 0) {
         // We need to make sure to dupe an asset that is in input set
         //TODO Have blinding do some extremely minimal rangeproof
-        CTxOut newTxOut(det->o_assets.back(), 0, CScript() << OP_RETURN);
+        CAsset lastNonePolicy;
+        for (const auto& asset : det->o_assets) {
+            if (asset.IsNull() || asset == policyAsset)
+                continue;
+            lastNonePolicy = asset;
+        }
+        if (lastNonePolicy.IsNull()) {
+            strFailReason = _("Transaction output could not be blinded as there are no valid asset in outputs.");
+            return false;
+        }
+        CTxOut newTxOut(lastNonePolicy, 0, CScript() << OP_RETURN);
         txNew.vout.push_back(newTxOut);
         det->o_pubkeys.push_back(wallet->GetBlindingPubKey(newTxOut.scriptPubKey));
         det->o_amount_blinds.push_back(uint256());
         det->o_asset_blinds.push_back(uint256());
         det->o_amounts.push_back(0);
-        det->o_assets.push_back(det->o_assets.back());
+        det->o_assets.push_back(lastNonePolicy);
         det->num_to_blind++;
         wallet->WalletLogPrintf("Adding OP_RETURN output to complete blinding since there are %d blinded inputs and no blinded outputs\n", num_inputs_blinded);
 
@@ -3528,7 +3538,7 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
                     int ret = BlindTransaction(blind_details->i_amount_blinds, blind_details->i_asset_blinds, blind_details->i_assets, blind_details->i_amounts, blind_details->o_amount_blinds, blind_details->o_asset_blinds,  blind_details->o_pubkeys, issuance_asset_keys, issuance_token_keys, txNew);
                     assert(ret != -1);
                     if (ret != blind_details->num_to_blind) {
-                        strFailReason = _("Unable to blind the transaction properly. This should not happen.");
+                        strFailReason = _("1. Unable to blind the transaction properly. This should not happen.");
                         return false;
                     }
                 }
@@ -3605,7 +3615,7 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
                             int ret = BlindTransaction(blind_details->i_amount_blinds, blind_details->i_asset_blinds, blind_details->i_assets, blind_details->i_amounts, blind_details->o_amount_blinds, blind_details->o_asset_blinds,  blind_details->o_pubkeys, issuance_asset_keys, issuance_token_keys, txNew);
                             assert(ret != -1);
                             if (ret != blind_details->num_to_blind) {
-                                strFailReason = _("Unable to blind the transaction properly. This should not happen.");
+                                strFailReason = _("2. Unable to blind the transaction properly. This should not happen.");
                                 return false;
                             }
                         } else {
@@ -3651,7 +3661,7 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
                             int ret = BlindTransaction(blind_details->i_amount_blinds, blind_details->i_asset_blinds, blind_details->i_assets, blind_details->i_amounts, blind_details->o_amount_blinds, blind_details->o_asset_blinds,  blind_details->o_pubkeys, issuance_asset_keys, issuance_token_keys, txNew);
                             assert(ret != -1);
                             if (ret != blind_details->num_to_blind) {
-                                strFailReason = _("Unable to blind the transaction properly. This should not happen.");
+                                strFailReason = _("3. Unable to blind the transaction properly. This should not happen.");
                                 return false;
                             }
                             break; // Done, able to increase fee from change

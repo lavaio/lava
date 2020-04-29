@@ -631,7 +631,6 @@ struct CMutableTransaction
 
     bool IsVersionCA() const
     {
-        assert(nVersion == CTransaction::CONFIDENTIAL_VERSION || nVersion == CTransaction::CURRENT_VERSION);
         return nVersion == CTransaction::CONFIDENTIAL_VERSION;
     }
 };
