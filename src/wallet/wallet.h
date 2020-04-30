@@ -929,6 +929,9 @@ public:
 
     // Master derivation blinding key
     mutable uint256 blinding_derivation_key;
+    // Specifically imported blinding keys
+    std::map<CScriptID, uint256> mapSpecificBlindingKeys;
+
     const CWalletTx* GetWalletTx(const uint256& hash) const;
 
     //! check whether we are allowed to upgrade (or already support) to the named feature
@@ -1352,6 +1355,10 @@ public:
     CKey GetBlindingKey(const CScript* script) const;
     // Pubkey accessor for GetBlindingKey
     CPubKey GetBlindingPubKey(const CScript& script) const;
+
+    bool LoadSpecificBlindingKey(const CScriptID& scriptid, const uint256& key);
+    bool AddSpecificBlindingKey(const CScriptID& scriptid, const uint256& key);
+    bool SetMasterBlindingKey(const uint256& key);
 
     /// Returns a map of entropy to the respective pair of reissuance token and issuance asset.
     std::map<uint256, std::pair<CAsset, CAsset> > GetReissuanceTokenTypes() const;

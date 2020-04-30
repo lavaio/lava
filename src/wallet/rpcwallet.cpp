@@ -6729,12 +6729,12 @@ UniValue destroyamount(const JSONRPCRequest& request)
 
 UniValue abortrescan(const JSONRPCRequest& request); // in rpcdump.cpp
 UniValue dumpprivkey(const JSONRPCRequest& request); // in rpcdump.cpp
-//UniValue importblindingkey(const JSONRPCRequest& request); // in rpcdump.cpp
-//UniValue importmasterblindingkey(const JSONRPCRequest& request); // in rpcdump.cpp
-//UniValue importissuanceblindingkey(const JSONRPCRequest& request); // in rpcdump.cpp
-//UniValue dumpblindingkey(const JSONRPCRequest& request); // in rpcdump.cpp
-//UniValue dumpmasterblindingkey(const JSONRPCRequest& request); // in rpcdump.cpp
-//UniValue dumpissuanceblindingkey(const JSONRPCRequest& request); // in rpcdump.cpp
+UniValue importblindingkey(const JSONRPCRequest& request); // in rpcdump.cpp
+UniValue importmasterblindingkey(const JSONRPCRequest& request); // in rpcdump.cpp
+UniValue importissuanceblindingkey(const JSONRPCRequest& request); // in rpcdump.cpp
+UniValue dumpblindingkey(const JSONRPCRequest& request); // in rpcdump.cpp
+UniValue dumpmasterblindingkey(const JSONRPCRequest& request); // in rpcdump.cpp
+UniValue dumpissuanceblindingkey(const JSONRPCRequest& request); // in rpcdump.cpp
 UniValue importprivkey(const JSONRPCRequest& request);
 UniValue importaddress(const JSONRPCRequest& request);
 UniValue importpubkey(const JSONRPCRequest& request);
@@ -6821,12 +6821,12 @@ static const CRPCCommand commands[] =
     { "wallet",             "spendticket",                      &spendticket,                   {"txid", "address"} },
 	{ "wallet",             "freefirestone",					&freefirestone,				    {"address", "receiver"} },
     // CA:
-    //{ "wallet",             "importblindingkey",                &importblindingkey,             {"address", "hexkey"}},
-    //{ "wallet",             "importmasterblindingkey",          &importmasterblindingkey,       {"hexkey"}},
-    //{ "wallet",             "importissuanceblindingkey",        &importissuanceblindingkey,     {"txid", "vin", "blindingkey"}},
-    //{ "wallet",             "dumpblindingkey",                  &dumpblindingkey,               {"address"}},
-    //{ "wallet",             "dumpmasterblindingkey",            &dumpmasterblindingkey,         {}},
-    //{ "wallet",             "dumpissuanceblindingkey",          &dumpissuanceblindingkey,       {"txid", "vin"}},
+    { "wallet",             "importblindingkey",                &importblindingkey,             {"address", "hexkey"}},
+    { "wallet",             "importmasterblindingkey",          &importmasterblindingkey,       {"hexkey"}},
+    { "wallet",             "importissuanceblindingkey",        &importissuanceblindingkey,     {"txid", "vin", "blindingkey"}},
+    { "wallet",             "dumpblindingkey",                  &dumpblindingkey,               {"address"}},
+    { "wallet",             "dumpmasterblindingkey",            &dumpmasterblindingkey,         {}},
+    { "wallet",             "dumpissuanceblindingkey",          &dumpissuanceblindingkey,       {"txid", "vin"}},
     { "wallet",             "listissuances",                    &listissuances,                 {"asset"}},
     { "wallet",             "issueasset",                       &issueasset,                    {"assetamount", "tokenamount", "blind"}},
     { "wallet",             "reissueasset",                     &reissueasset,                  {"asset", "assetamount"}},

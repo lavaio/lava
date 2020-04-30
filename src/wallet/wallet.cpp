@@ -234,7 +234,6 @@ CPubKey CWallet::GenerateNewKey(WalletBatch &batch, bool internal)
 
 CKey CWallet::GenerateMasterBlindingKey() const
 {
-    assert(blinding_derivation_key.IsNull());
     assert(IsHDEnabled());
 
     CKey seed;                     //seed (256bit)
@@ -4932,6 +4931,16 @@ std::shared_ptr<CWallet> CWallet::CreateWalletFromFile(interfaces::Chain& chain,
         }
     }
 
+    if (walletInstance->blinding_derivation_key.IsNull()) {
+        CKey key = walletInstance->GenerateMasterBlindingKey();
+        uint256 keybin;
+        memcpy(keybin.begin(), key.begin(), key.size());
+        if (!walletInstance->SetMasterBlindingKey(keybin)) {
+            InitError(_("Unable to generate initial blinding derivation key"));
+            return nullptr;
+        }
+    }
+
     if (!gArgs.GetArg("-addresstype", "").empty() && !ParseOutputType(gArgs.GetArg("-addresstype", ""), walletInstance->m_default_address_type)) {
         InitError(strprintf("Unknown address type '%s'", gArgs.GetArg("-addresstype", "")));
         return nullptr;
@@ -5548,11 +5557,12 @@ CKey CWallet::GetBlindingKey(const CScript* script) const
     if (script == NULL)
         return key;
 
-    if (blinding_derivation_key.IsNull()) {
-        uint256 keybin;
-        CKey key = GenerateMasterBlindingKey();
-        memcpy(keybin.begin(), key.begin(), key.size());
-        blinding_derivation_key = keybin;
+    std::map<CScriptID, uint256>::const_iterator it = mapSpecificBlindingKeys.find(CScriptID(*script));
+    if (it != mapSpecificBlindingKeys.end()) {
+        key.Set(it->second.begin(), it->second.end(), true);
+        if (key.IsValid()) {
+            return key;
+        }
     }
 
     if (!blinding_derivation_key.IsNull()) {
@@ -5575,4 +5585,30 @@ CPubKey CWallet::GetBlindingPubKey(const CScript& script) const
     }
 
     return CPubKey();
+}
+
+bool CWallet::LoadSpecificBlindingKey(const CScriptID& scriptid, const uint256& key)
+{
+    AssertLockHeld(cs_wallet); // mapSpecificBlindingKeys
+    mapSpecificBlindingKeys[scriptid] = key;
+    return true;
+}
+
+bool CWallet::AddSpecificBlindingKey(const CScriptID& scriptid, const uint256& key)
+{
+    AssertLockHeld(cs_wallet); // mapSpecificBlindingKeys
+    if (!LoadSpecificBlindingKey(scriptid, key))
+        return false;
+
+    return WalletBatch(*database).WriteSpecificBlindingKey(scriptid, key);
+}
+
+bool CWallet::SetMasterBlindingKey(const uint256& key)
+{
+    AssertLockHeld(cs_wallet);
+    if (!WalletBatch(*database).WriteBlindingDerivationKey(key)) {
+        return false;
+    }
+    blinding_derivation_key = key;
+    return true;
 }
