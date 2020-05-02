@@ -1624,8 +1624,7 @@ UniValue importmasterblindingkey(const JSONRPCRequest& request)
         memcpy(keyval.begin(), &keydata[0], 32);
     } else {
         CKey key = pwallet->GenerateMasterBlindingKey();
-        uint256 keybin;
-        memcpy(keybin.begin(), key.begin(), key.size());
+        memcpy(keyval.begin(), key.begin(), key.size());
     }
 
     if (!pwallet->SetMasterBlindingKey(keyval)) {

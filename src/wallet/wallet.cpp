@@ -4932,6 +4932,7 @@ std::shared_ptr<CWallet> CWallet::CreateWalletFromFile(interfaces::Chain& chain,
     }
 
     if (walletInstance->blinding_derivation_key.IsNull()) {
+        LOCK(walletInstance->cs_wallet);
         CKey key = walletInstance->GenerateMasterBlindingKey();
         uint256 keybin;
         memcpy(keybin.begin(), key.begin(), key.size());

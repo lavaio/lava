@@ -4798,7 +4798,7 @@ UniValue sethdseed(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (request.fHelp || request.params.size() > 2) {
+    if (request.fHelp || request.params.size() > 3) {
         throw std::runtime_error(
             RPCHelpMan{"sethdseed",
                 "\nSet or generate a new HD wallet seed. Non-HD wallets will not be upgraded to being a HD wallet. Wallets that are already\n"
@@ -4812,6 +4812,7 @@ UniValue sethdseed(const JSONRPCRequest& request)
             "                             keypool will be used until it has been depleted."},
                     {"seed", RPCArg::Type::STR, /* default */ "random seed", "The WIF private key to use as the new HD seed.\n"
             "                             The seed value can be retrieved using the dumpwallet command. It is the private key marked hdseed=1"},
+                    {"updateblind", RPCArg::Type::BOOL, /* default */ "true", "Whether to update master blinding key use the seed.\n"},
                 },
                 RPCResults{},
                 RPCExamples{
@@ -4862,7 +4863,22 @@ UniValue sethdseed(const JSONRPCRequest& request)
         master_pub_key = pwallet->DeriveNewSeed(key);
     }
 
+    bool update_blind = true;
+    if (!request.params[2].isNull()) {
+        update_blind = request.params[2].get_bool();
+    }
+
     pwallet->SetHDSeed(master_pub_key);
+
+    if (update_blind) {
+        CKey key = pwallet->GenerateMasterBlindingKey();
+        uint256 keybin;
+        memcpy(keybin.begin(), key.begin(), key.size());
+        if (!pwallet->SetMasterBlindingKey(keybin)) {
+            throw JSONRPCError(RPC_WALLET_ERROR, "Failed to update master blinding key");
+        }
+    }
+
     if (flush_key_pool) pwallet->NewKeyPool();
 
     return NullUniValue;
@@ -6763,7 +6779,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "getaddressesbylabel",              &getaddressesbylabel,           {"label"} },
     { "wallet",             "getaddressinfo",                   &getaddressinfo,                {"address"} },
     { "wallet",             "getbalance",                       &getbalance,                    {"dummy","minconf","include_watchonly","assetlabel"} },
-    { "wallet",             "getnewaddress",                    &getnewaddress,                 {"label","address_type"} },
+    { "wallet",             "getnewaddress",                    &getnewaddress,                 {"label","address_type","updateblind"} },
 	{ "wallet",             "getmineraddress",                  &getmineraddress,               {"new"} },
     { "wallet",             "getrawchangeaddress",              &getrawchangeaddress,           {"address_type"} },
     { "wallet",             "getreceivedbyaddress",             &getreceivedbyaddress,          {"address","minconf","assetlabel"} },
