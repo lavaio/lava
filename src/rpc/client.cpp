@@ -40,6 +40,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "sendtoaddress", 6 , "conf_target" },
     { "settxfee", 0, "amount" },
     { "sethdseed", 0, "newkeypool" },
+    { "sethdseed", 2, "updateblind" },
     { "getreceivedbyaddress", 1, "minconf" },
     { "getreceivedbylabel", 1, "minconf" },
     { "listreceivedbyaddress", 0, "minconf" },
@@ -183,6 +184,8 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "issueasset", 2, "blind" },
     { "reissueasset", 1, "assetamount" },
     { "destroyamount", 1, "amount" },
+    { "dumpissuanceblindingkey", 1, "vin" },
+    { "importissuanceblindingkey", 1, "vin" },
 
 };
 // clang-format on
