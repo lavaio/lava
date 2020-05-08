@@ -1249,7 +1249,7 @@ WinCmdLineArgs::WinCmdLineArgs()
     args.resize(argc);
     for (int i = 0; i < argc; i++) {
         args[i] = utf8_cvt.to_bytes(wargv[i]);
-        argv[i] = &*args[i].begin();
+        argv[i] = const_cast<char*>(args[i].data());
     }
     LocalFree(wargv);
 }
