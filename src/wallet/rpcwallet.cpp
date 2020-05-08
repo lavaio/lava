@@ -6376,7 +6376,7 @@ static CTransactionRef SendGenerationTransaction(const CScript& asset_script, co
             recipient.nAmount = curBalance; // Or 1?
             // If the issuance token *is* the fee asset, subtract fee from this output
             if (reissue_token == ::policyAsset) {
-                recipient.fSubtractFeeFromAmount = true;
+                throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, "Invalid, policy asset reissuance is not support.");
             }
         }
         vecSend.push_back(recipient);

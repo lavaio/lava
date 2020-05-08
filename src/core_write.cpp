@@ -316,9 +316,11 @@ void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry,
                 out.pushKV("assetcommitment", txout.nAsset.GetHex());
             }
 
-            out.pushKV("commitmentnonce", txout.nNonce.GetHex());
-            CPubKey pubkey(txout.nNonce.vchCommitment);
-            out.pushKV("commitmentnonce_fully_valid", pubkey.IsFullyValid());
+            if (! txout.nNonce.IsNull()) {
+                out.pushKV("commitmentnonce", txout.nNonce.GetHex());
+                CPubKey pubkey(txout.nNonce.vchCommitment);
+                out.pushKV("commitmentnonce_fully_valid", pubkey.IsFullyValid());
+            }
         }
 
         UniValue o(UniValue::VOBJ);

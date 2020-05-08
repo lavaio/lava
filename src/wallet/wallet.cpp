@@ -1768,8 +1768,8 @@ void CWalletTx::GetAmounts(std::list<COutputEntry>& listReceived,
         COutputEntry output = {address, output_value, (int)i};
         output.asset = GetOutputAsset(i);
         if (txout.IsCA()) {
-            output.asset_blinding_factor = GetOutputAmountBlindingFactor(i);
-            output.amount_blinding_factor = GetOutputAssetBlindingFactor(i);
+            output.amount_blinding_factor = GetOutputAmountBlindingFactor(i);
+            output.asset_blinding_factor = GetOutputAssetBlindingFactor(i);
         }
 
         // If we are debited by the transaction, add the output as a "sent" entry
@@ -3007,6 +3007,7 @@ void resetBlindDetails(BlindDetails* det) {
 
 bool fillBlindDetails(BlindDetails* det, CWallet* wallet, CMutableTransaction& txNew, std::vector<CInputCoin>& selected_coins, std::string& strFailReason) {
     int num_inputs_blinded = 0;
+    int index_of_asset_to_blind = -1;
 
     // Fill in input blinding details
     for (const CInputCoin& coin : selected_coins) {
@@ -3025,6 +3026,8 @@ bool fillBlindDetails(BlindDetails* det, CWallet* wallet, CMutableTransaction& t
         det->o_asset_blinds.push_back(uint256());
         det->o_assets.push_back(txNew.vout[nOut].nAsset.GetAsset());
         det->o_amounts.push_back(txNew.vout[nOut].IsCA() ? txNew.vout[nOut].nValueCA.GetAmount() : txNew.vout[nOut].nValue);
+        if (txNew.vout[nOut].IsCA())
+            index_of_asset_to_blind = nOut;
     }
 
     // There are a few edge-cases of blinding we need to take care of
@@ -3034,23 +3037,15 @@ bool fillBlindDetails(BlindDetails* det, CWallet* wallet, CMutableTransaction& t
     if (num_inputs_blinded > 0 &&  det->num_to_blind == 0) {
         // We need to make sure to dupe an asset that is in input set
         //TODO Have blinding do some extremely minimal rangeproof
-        CAsset lastNonePolicy;
-        for (const auto& asset : det->o_assets) {
-            if (asset.IsNull() || asset == policyAsset)
-                continue;
-            lastNonePolicy = asset;
-        }
-        if (lastNonePolicy.IsNull()) {
-            strFailReason = _("Transaction output could not be blinded as there are no valid asset in outputs.");
-            return false;
-        }
-        CTxOut newTxOut(lastNonePolicy, 0, CScript() << OP_RETURN);
+        assert(index_of_asset_to_blind != -1);
+        assert(! det->o_assets[index_of_asset_to_blind].IsNull());
+        CTxOut newTxOut(det->o_assets[index_of_asset_to_blind], 0, CScript() << OP_RETURN);
         txNew.vout.push_back(newTxOut);
         det->o_pubkeys.push_back(wallet->GetBlindingPubKey(newTxOut.scriptPubKey));
         det->o_amount_blinds.push_back(uint256());
         det->o_asset_blinds.push_back(uint256());
         det->o_amounts.push_back(0);
-        det->o_assets.push_back(lastNonePolicy);
+        det->o_assets.push_back(det->o_assets[index_of_asset_to_blind]);
         det->num_to_blind++;
         wallet->WalletLogPrintf("Adding OP_RETURN output to complete blinding since there are %d blinded inputs and no blinded outputs\n", num_inputs_blinded);
 
@@ -3397,6 +3392,13 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
                             }
 
                             vChangePosInOut[assetChange.first] = newPos;
+
+                            if (blind_details->only_recipient_blind_index >= newPos) {
+                                ++ blind_details->only_recipient_blind_index;
+                            }
+                            if (blind_details->only_change_pos >= newPos) {
+                                ++ blind_details->only_change_pos;
+                            }
                         }
                         else if ((unsigned int)itPos->second > txNew.vout.size())
                         {
