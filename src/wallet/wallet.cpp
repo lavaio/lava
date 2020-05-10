@@ -3393,10 +3393,10 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
 
                             vChangePosInOut[assetChange.first] = newPos;
 
-                            if (blind_details->only_recipient_blind_index >= newPos) {
+                            if (blind_details && blind_details->only_recipient_blind_index >= newPos) {
                                 ++ blind_details->only_recipient_blind_index;
                             }
-                            if (blind_details->only_change_pos >= newPos) {
+                            if (blind_details && blind_details->only_change_pos >= newPos) {
                                 ++ blind_details->only_change_pos;
                             }
                         }
