@@ -36,6 +36,8 @@ class QUrl;
 class QWidget;
 QT_END_NAMESPACE
 
+class WalletModel;
+
 /** Utility functions used by the Bitcoin Qt UI.
  */
 namespace GUIUtil
@@ -208,6 +210,8 @@ namespace GUIUtil
     QString formatBytes(uint64_t bytes);
 
     qreal calculateIdealFontSize(int width, const QString& text, QFont font, qreal minPointSize = 4, qreal startPointSize = 14);
+
+    QString formatPrice(WalletModel& wallet, const CAmount& price);
 
     class ClickableLabel : public QLabel
     {

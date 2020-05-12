@@ -19,96 +19,12 @@
 #include <QFileDialog>
 #include <QSettings>
 #include <QMessageBox>
+#include <qt/freespacechecker.h>
 
 #include <cmath>
 
 /* Total required space (in GB) depending on user choice (prune, not prune) */
 static uint64_t requiredSpace;
-
-/* Check free space asynchronously to prevent hanging the UI thread.
-
-   Up to one request to check a path is in flight to this thread; when the check()
-   function runs, the current path is requested from the associated Intro object.
-   The reply is sent back through a signal.
-
-   This ensures that no queue of checking requests is built up while the user is
-   still entering the path, and that always the most recently entered path is checked as
-   soon as the thread becomes available.
-*/
-class FreespaceChecker : public QObject
-{
-    Q_OBJECT
-
-public:
-    explicit FreespaceChecker(Intro *intro);
-
-    enum Status {
-        ST_OK,
-        ST_ERROR
-    };
-
-public Q_SLOTS:
-    void check();
-
-Q_SIGNALS:
-    void reply(int status, const QString &message, quint64 available);
-
-private:
-    Intro *intro;
-};
-
-#include <qt/intro.moc>
-
-FreespaceChecker::FreespaceChecker(Intro *_intro)
-{
-    this->intro = _intro;
-}
-
-void FreespaceChecker::check()
-{
-    QString dataDirStr = intro->getPathToCheck();
-    fs::path dataDir = GUIUtil::qstringToBoostPath(dataDirStr);
-    uint64_t freeBytesAvailable = 0;
-    int replyStatus = ST_OK;
-    QString replyMessage = tr("A new data directory will be created.");
-
-    /* Find first parent that exists, so that fs::space does not fail */
-    fs::path parentDir = dataDir;
-    fs::path parentDirOld = fs::path();
-    while(parentDir.has_parent_path() && !fs::exists(parentDir))
-    {
-        parentDir = parentDir.parent_path();
-
-        /* Check if we make any progress, break if not to prevent an infinite loop here */
-        if (parentDirOld == parentDir)
-            break;
-
-        parentDirOld = parentDir;
-    }
-
-    try {
-        freeBytesAvailable = fs::space(parentDir).available;
-        if(fs::exists(dataDir))
-        {
-            if(fs::is_directory(dataDir))
-            {
-                QString separator = "<code>" + QDir::toNativeSeparators("/") + tr("name") + "</code>";
-                replyStatus = ST_OK;
-                replyMessage = tr("Directory already exists. Add %1 if you intend to create a new directory here.").arg(separator);
-            } else {
-                replyStatus = ST_ERROR;
-                replyMessage = tr("Path already exists, and is not a directory.");
-            }
-        }
-    } catch (const fs::filesystem_error&)
-    {
-        /* Parent directory does not exist or is not accessible */
-        replyStatus = ST_ERROR;
-        replyMessage = tr("Cannot create data directory here.");
-    }
-    Q_EMIT reply(replyStatus, replyMessage, freeBytesAvailable);
-}
-
 
 Intro::Intro(QWidget *parent, uint64_t blockchain_size, uint64_t chain_state_size) :
     QDialog(parent),
@@ -125,8 +41,8 @@ Intro::Intro(QWidget *parent, uint64_t blockchain_size, uint64_t chain_state_siz
     ui->lblExplanation1->setText(ui->lblExplanation1->text()
         .arg(tr(PACKAGE_NAME))
         .arg(m_blockchain_size)
-        .arg(2009)
-        .arg(tr("Bitcoin"))
+        .arg(2019)
+        .arg(tr("Lava"))
     );
     ui->lblExplanation2->setText(ui->lblExplanation2->text().arg(tr(PACKAGE_NAME)));
 
@@ -145,7 +61,7 @@ Intro::Intro(QWidget *parent, uint64_t blockchain_size, uint64_t chain_state_siz
     }
     requiredSpace += m_chain_state_size;
     ui->sizeWarningLabel->setText(
-        tr("%1 will download and store a copy of the Bitcoin block chain.").arg(tr(PACKAGE_NAME)) + " " +
+        tr("%1 will download and store a copy of the Lava block chain.").arg(tr(PACKAGE_NAME)) + " " +
         storageRequiresMsg.arg(requiredSpace) + " " +
         tr("The wallet will also be stored in this directory.")
     );

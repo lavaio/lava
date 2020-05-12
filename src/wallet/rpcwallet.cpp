@@ -5086,9 +5086,7 @@ UniValue walletcreatefundedpsbt(const JSONRPCRequest& request)
     return result;
 }
 
-extern void ImportScript(CWallet* const pwallet, const CScript& script, const std::string& strLabel, bool isRedeemScript) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet); // in rpcdump.cpp
-
-static CTransactionRef SendMoneyWithOpRet(interfaces::Chain::Lock& locked_chain, CWallet * const pwallet, const CTxDestination &address, CAmount nValue, bool fSubtractFeeFromAmount, CScript optScritp, const CCoinControl& coin_control, mapValue_t mapValue)
+CTransactionRef SendMoneyWithOpRet(interfaces::Chain::Lock& locked_chain, CWallet* const pwallet, const CTxDestination& address, CAmount nValue, bool fSubtractFeeFromAmount, const CScript& optScritp, const CCoinControl& coin_control, mapValue_t&& mapValue)
 {
     CAmount curBalance = pwallet->GetBalance()[::policyAsset];
 
@@ -5607,7 +5605,7 @@ UniValue freefirestone(const JSONRPCRequest& request){
 	return results;
 }
 
-uint256 SendAction(CWallet *const pwallet, const CAction& action, const CKey &key, CTxDestination destChange)
+uint256 SendAction(CWallet *const pwallet, const CAction& action, const CKey &key, const CTxDestination& destChange)
 {
     auto locked_chain = pwallet->chain().lock();
     CAmount curBalance = pwallet->GetBalance()[::policyAsset];

@@ -2,11 +2,16 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#if defined(HAVE_CONFIG_H)
+#include <config/bitcoin-config.h>
+#endif
+
 #include <qt/walletframe.h>
 #include <qt/walletmodel.h>
 
 #include <qt/bitcoingui.h>
 #include <qt/walletview.h>
+#include <QDebug>
 
 #include <cassert>
 #include <cstdio>
@@ -136,6 +141,28 @@ void WalletFrame::gotoHistoryPage()
     QMap<WalletModel*, WalletView*>::const_iterator i;
     for (i = mapWalletViews.constBegin(); i != mapWalletViews.constEnd(); ++i)
         i.value()->gotoHistoryPage();
+}
+
+void WalletFrame::gotoMinerPage()
+{
+    QMap<WalletModel*, WalletView*>::const_iterator i;
+    for (i = mapWalletViews.constBegin(); i != mapWalletViews.constEnd(); ++i)
+        i.value()->gotoMinerviewPage();
+}
+
+void WalletFrame::gotoMinerInfoPage()
+{
+  qInfo() << " miner info page" << endl;
+  QMap<WalletModel*, WalletView*>::const_iterator i;
+  for (i = mapWalletViews.constBegin(); i != mapWalletViews.constEnd(); ++i)
+      i.value()->gotoMinerInfoviewPage();
+}
+
+void WalletFrame::gotoFirestonePage()
+{
+  QMap<WalletModel*, WalletView*>::const_iterator i;
+  for (i = mapWalletViews.constBegin(); i != mapWalletViews.constEnd(); ++i)
+    i.value()->gotoFirestonePage();
 }
 
 void WalletFrame::gotoReceiveCoinsPage()

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>560</width>
+    <width>615</width>
     <height>440</height>
    </rect>
   </property>
@@ -51,20 +51,20 @@
         </spacer>
        </item>
        <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_Main_Prune">
-        <item>
-         <widget class="QCheckBox" name="prune">
-          <property name="toolTip">
-           <string>Disables some advanced features but all blocks will still be fully validated. Reverting this setting requires re-downloading the entire blockchain. Actual disk usage may be somewhat higher.</string>
-          </property>
-          <property name="text">
-           <string>Prune &amp;block storage to</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QSpinBox" name="pruneSize"/>
-        </item>
+        <layout class="QHBoxLayout" name="horizontalLayout_Main_Prune">
+         <item>
+          <widget class="QCheckBox" name="prune">
+           <property name="toolTip">
+            <string>Disables some advanced features but all blocks will still be fully validated. Reverting this setting requires re-downloading the entire blockchain. Actual disk usage may be somewhat higher.</string>
+           </property>
+           <property name="text">
+            <string>Prune &amp;block storage to</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="pruneSize"/>
+         </item>
          <item>
           <widget class="QLabel" name="pruneSizeUnitLabel">
            <property name="text">
@@ -252,7 +252,7 @@
        <item>
         <widget class="QCheckBox" name="mapPortUpnp">
          <property name="toolTip">
-          <string>Automatically open the Bitcoin client port on the router. This only works when your router supports UPnP and it is enabled.</string>
+          <string>Automatically open the Lava client port on the router. This only works when your router supports UPnP and it is enabled.</string>
          </property>
          <property name="text">
           <string>Map port using &amp;UPnP</string>
@@ -272,7 +272,7 @@
        <item>
         <widget class="QCheckBox" name="connectSocks">
          <property name="toolTip">
-          <string>Connect to the Bitcoin network through a SOCKS5 proxy.</string>
+          <string>Connect to the Lava network through a SOCKS5 proxy.</string>
          </property>
          <property name="text">
           <string>&amp;Connect through SOCKS5 proxy (default proxy):</string>
@@ -459,7 +459,7 @@
        <item>
         <widget class="QCheckBox" name="connectSocksTor">
          <property name="toolTip">
-          <string>Connect to the Bitcoin network through a separate SOCKS5 proxy for Tor hidden services.</string>
+          <string>Connect to the Lava network through a separate SOCKS5 proxy for Tor hidden services.</string>
          </property>
          <property name="text">
           <string>Use separate SOCKS&amp;5 proxy to reach peers via Tor hidden services:</string>

@@ -5,7 +5,7 @@
 /* #undef AC_APPLE_UNIVERSAL_BUILD */
 
 /* Version Build */
-//#define CLIENT_VERSION_BUILD 0
+#define CLIENT_VERSION_BUILD 0
 
 /* Version is release */
 #define CLIENT_VERSION_IS_RELEASE true
@@ -29,7 +29,7 @@
 #define COPYRIGHT_HOLDERS_SUBSTITUTION "Lava Core"
 
 /* Copyright year */
-#define COPYRIGHT_YEAR 2019
+#define COPYRIGHT_YEAR 2020
 
 /* Define to 1 to enable wallet functions */
 #define ENABLE_WALLET 1
@@ -392,7 +392,10 @@
 /* #undef USE_DBUS */
 
 /* Define if QR support should be compiled in */
-//#define USE_QRCODE 1
+#define USE_QRCODE 1
+
+/* Define if not use shabal.asm */
+#define WITHOUT_ASM
 
 /* Define if not use shabal.asm */
 #define WITHOUT_ASM

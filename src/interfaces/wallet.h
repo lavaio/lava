@@ -21,6 +21,8 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+#include <actiondb.h>
+#include "chain.h"
 
 class CCoinControl;
 class CFeeRate;
@@ -286,6 +288,26 @@ public:
     //! Register handler for keypool changed messages.
     using CanGetAddressesChangedFn = std::function<void()>;
     virtual std::unique_ptr<Handler> handleCanGetAddressesChanged(CanGetAddressesChangedFn fn) = 0;
+
+    virtual std::map<CTxDestination, int64_t> GetKeyBirthTimes() = 0;
+    virtual bool hasAddress(const CTxDestination& dest) = 0;
+
+    virtual CKeyID getKeyForDestination(const CTxDestination& dest) = 0;
+
+    virtual uint256 sendAction(const CAction& action, const CKey& key, const CTxDestination& destChange) = 0;
+    virtual CTransactionRef sendMoneyWithOpRet(interfaces::Chain::Lock& locked_chain, const CTxDestination& address, 
+                                               CAmount nValue, bool fSubtractFeeFromAmount, const CScript& optScritp, 
+                                               const CCoinControl& coin_control) = 0;
+    virtual void importScript(const CScript& script, const std::string& strLabel, bool isRedeemScript) = 0;
+
+    virtual CFeeRate getPayTxFee() const = 0;
+    virtual void setPayTxFee(const CFeeRate& fee) = 0;
+    virtual std::unique_ptr<Chain::Lock> chain_lock() = 0;
+    virtual void doWithChainAndWalletLock(std::function<void (std::unique_ptr<Chain::Lock>&, Wallet&)>) = 0;
+    virtual CTransactionRef createTicketAllSpendTx(std::map<uint256,std::pair<int,CScript>> txScriptInputs,
+                                                   std::vector<CTxOut> outs, CTxDestination& dest, CKey& key) = 0;
+    
+    virtual bool isPoc2x() = 0;
 };
 
 //! Tracking object returned by CreateTransaction and passed to CommitTransaction.

@@ -2,12 +2,17 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#if defined(HAVE_CONFIG_H)
+#include <config/bitcoin-config.h>
+#endif
+
 #include <qt/guiutil.h>
 
 #include <qt/bitcoinaddressvalidator.h>
 #include <qt/bitcoinunits.h>
 #include <qt/qvalidatedlineedit.h>
 #include <qt/walletmodel.h>
+#include <qt/optionsmodel.h>
 
 #include <base58.h>
 #include <chainparams.h>
@@ -104,7 +109,7 @@ void setupAddressWidget(QValidatedLineEdit *widget, QWidget *parent)
     widget->setFont(fixedPitchFont());
     // We don't want translators to use own addresses in translations
     // and this is the only place, where this address is supplied.
-    widget->setPlaceholderText(QObject::tr("Enter a Bitcoin address (e.g. %1)").arg(
+    widget->setPlaceholderText(QObject::tr("Enter a Lava address (e.g. %1)").arg(
         QString::fromStdString(DummyAddress(Params()))));
     widget->setValidator(new BitcoinAddressEntryValidator(parent));
     widget->setCheckValidator(new BitcoinAddressCheckValidator(parent));
@@ -113,7 +118,7 @@ void setupAddressWidget(QValidatedLineEdit *widget, QWidget *parent)
 bool parseBitcoinURI(const QUrl &uri, SendCoinsRecipient *out)
 {
     // return if URI is not valid or is no bitcoin: URI
-    if(!uri.isValid() || uri.scheme() != QString("bitcoin"))
+    if(!uri.isValid() || uri.scheme() != QString("lavacoin"))
         return false;
 
     SendCoinsRecipient rv;
@@ -149,7 +154,7 @@ bool parseBitcoinURI(const QUrl &uri, SendCoinsRecipient *out)
         {
             if(!i->second.isEmpty())
             {
-                if(!BitcoinUnits::parse(BitcoinUnits::BTC, i->second, &rv.amount))
+                if(!BitcoinUnits::parse(BitcoinUnits::LV, i->second, &rv.amount))
                 {
                     return false;
                 }
@@ -175,12 +180,12 @@ bool parseBitcoinURI(QString uri, SendCoinsRecipient *out)
 
 QString formatBitcoinURI(const SendCoinsRecipient &info)
 {
-    QString ret = QString("bitcoin:%1").arg(info.address);
+    QString ret = QString("lavacoin:%1").arg(info.address);
     int paramCount = 0;
 
     if (info.amount)
     {
-        ret += QString("?amount=%1").arg(BitcoinUnits::format(BitcoinUnits::BTC, info.amount, false, BitcoinUnits::separatorNever));
+        ret += QString("?amount=%1").arg(BitcoinUnits::format(BitcoinUnits::LV, info.amount, false, BitcoinUnits::separatorNever));
         paramCount++;
     }
 
@@ -354,8 +359,8 @@ void bringToFront(QWidget* w)
 #ifdef Q_OS_MAC
     // Force application activation on macOS. With Qt 5.4 this is required when
     // an action in the dock menu is triggered.
-    id app = objc_msgSend((id) objc_getClass("NSApplication"), sel_registerName("sharedApplication"));
-    objc_msgSend(app, sel_registerName("activateIgnoringOtherApps:"), YES);
+    id app = ((id (*)(id, SEL))objc_msgSend)((id) objc_getClass("NSApplication"), sel_registerName("sharedApplication"));
+    ((id (*)(id, SEL, BOOL))objc_msgSend)(app, sel_registerName("activateIgnoringOtherApps:"), YES);
 #endif
 
     if (w) {
@@ -941,6 +946,12 @@ void PolishProgressDialog(QProgressDialog* dialog)
 #else
     Q_UNUSED(dialog);
 #endif
+}
+
+QString formatPrice(WalletModel& wallet, const CAmount &price)
+{
+    int unit = wallet.getOptionsModel()->getDisplayUnit();
+    return BitcoinUnits::formatWithUnit(unit, price, false, BitcoinUnits::separatorAlways);
 }
 
 } // namespace GUIUtil

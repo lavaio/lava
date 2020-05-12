@@ -31,6 +31,7 @@
 #include <wallet/rpcwallet.h>
 #include <wallet/wallet.h>
 #include <wallet/walletutil.h>
+#include <chainparams.h>
 
 #include <memory>
 #include <string>
@@ -529,6 +530,67 @@ public:
     std::unique_ptr<Handler> handleCanGetAddressesChanged(CanGetAddressesChangedFn fn) override
     {
         return MakeHandler(m_wallet->NotifyCanGetAddressesChanged.connect(fn));
+    }
+
+    std::map<CTxDestination, int64_t> GetKeyBirthTimes() override {
+      auto locked_chain = m_wallet->chain().lock();
+      LOCK(m_wallet->cs_wallet);
+      std::map<CTxDestination, int64_t> mapKeyBirth;
+      m_wallet->GetKeyBirthTimes(*locked_chain, mapKeyBirth);
+      return mapKeyBirth;
+    }
+
+    bool hasAddress(const CTxDestination& dest) override {
+      auto locked_chain = m_wallet->chain().lock();
+      LOCK(m_wallet->cs_wallet);
+      return m_wallet->mapAddressBook.count(dest) > 0;
+    }
+
+    CKeyID getKeyForDestination(const CTxDestination& dest) override {
+      return ::GetKeyForDestination(*m_wallet, dest);
+    }
+
+    uint256 sendAction(const CAction& action, const CKey& key, const CTxDestination& destChange) override {
+      return ::SendAction(m_wallet.get(), action, key, destChange);
+    }
+
+    CTransactionRef sendMoneyWithOpRet(interfaces::Chain::Lock& locked_chain, const CTxDestination& address,
+                                       CAmount nValue, bool fSubtractFeeFromAmount, const CScript& optScritp,
+                                       const CCoinControl& coin_control) override {
+        mapValue_t mapValue;
+        return ::SendMoneyWithOpRet(locked_chain, m_wallet.get(), address, nValue, fSubtractFeeFromAmount, optScritp, coin_control, std::move(mapValue));
+    }
+    
+    void importScript(const CScript& script, const std::string& strLabel, bool isRedeemScript) override {
+        ::ImportScript(m_wallet.get(), script, strLabel, isRedeemScript);
+    }
+
+    virtual CFeeRate getPayTxFee() const override {
+      return m_wallet->m_pay_tx_fee;
+    }
+
+    virtual void setPayTxFee(const CFeeRate& fee) override {
+      m_wallet->m_pay_tx_fee = fee;
+    }
+
+    virtual std::unique_ptr<Chain::Lock> chain_lock() override {
+      return m_wallet->chain().lock(true);
+    }
+
+    virtual void doWithChainAndWalletLock(std::function<void (std::unique_ptr<Chain::Lock>&, Wallet&)> cb) override {
+      auto locked_chain = m_wallet->chain().lock(true);
+      LOCK(m_wallet->cs_wallet);
+      cb(locked_chain, *this);
+    }
+
+    virtual CTransactionRef createTicketAllSpendTx(
+        std::map<uint256,std::pair<int,CScript>> txScriptInputs,
+        std::vector<CTxOut> outs, CTxDestination& dest, CKey& key) override {
+      return ::CreateTicketAllSpendTx(m_wallet.get(), txScriptInputs, outs, dest, key);
+    }
+
+    virtual bool isPoc2x() override {
+        return chainActive.Tip()->nHeight >= Params().GetConsensus().LVIP05Height;
     }
 
     std::shared_ptr<CWallet> m_wallet;

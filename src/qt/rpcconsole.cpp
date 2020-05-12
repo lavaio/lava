@@ -40,6 +40,8 @@
 #include <QTime>
 #include <QTimer>
 #include <QStringList>
+#include "rpcexecutor.h"
+#include "qtrpctimerbase.h"
 
 // TODO: add a scrollback limit, as there is currently none
 // TODO: make it possible to filter out categories (esp debug messages when implemented)
@@ -77,43 +79,6 @@ const QStringList historyFilter = QStringList()
 
 }
 
-/* Object for executing console RPC commands in a separate thread.
-*/
-class RPCExecutor : public QObject
-{
-    Q_OBJECT
-public:
-    explicit RPCExecutor(interfaces::Node& node) : m_node(node) {}
-
-public Q_SLOTS:
-    void request(const QString &command, const WalletModel* wallet_model);
-
-Q_SIGNALS:
-    void reply(int category, const QString &command);
-
-private:
-    interfaces::Node& m_node;
-};
-
-/** Class for handling RPC timers
- * (used for e.g. re-locking the wallet after a timeout)
- */
-class QtRPCTimerBase: public QObject, public RPCTimerBase
-{
-    Q_OBJECT
-public:
-    QtRPCTimerBase(std::function<void()>& _func, int64_t millis):
-        func(_func)
-    {
-        timer.setSingleShot(true);
-        connect(&timer, &QTimer::timeout, [this]{ func(); });
-        timer.start(millis);
-    }
-    ~QtRPCTimerBase() {}
-private:
-    QTimer timer;
-    std::function<void()> func;
-};
 
 class QtRPCTimerInterface: public RPCTimerInterface
 {
@@ -126,8 +91,6 @@ public:
     }
 };
 
-
-#include <qt/rpcconsole.moc>
 
 /**
  * Split shell command line into a list of arguments and optionally execute the command(s).
@@ -388,61 +351,6 @@ bool RPCConsole::RPCParseCommandLine(interfaces::Node* node, std::string &strRes
     }
 }
 
-void RPCExecutor::request(const QString &command, const WalletModel* wallet_model)
-{
-    try
-    {
-        std::string result;
-        std::string executableCommand = command.toStdString() + "\n";
-
-        // Catch the console-only-help command before RPC call is executed and reply with help text as-if a RPC reply.
-        if(executableCommand == "help-console\n") {
-            Q_EMIT reply(RPCConsole::CMD_REPLY, QString(("\n"
-                "This console accepts RPC commands using the standard syntax.\n"
-                "   example:    getblockhash 0\n\n"
-
-                "This console can also accept RPC commands using the parenthesized syntax.\n"
-                "   example:    getblockhash(0)\n\n"
-
-                "Commands may be nested when specified with the parenthesized syntax.\n"
-                "   example:    getblock(getblockhash(0) 1)\n\n"
-
-                "A space or a comma can be used to delimit arguments for either syntax.\n"
-                "   example:    getblockhash 0\n"
-                "               getblockhash,0\n\n"
-
-                "Named results can be queried with a non-quoted key string in brackets using the parenthesized syntax.\n"
-                "   example:    getblock(getblockhash(0) 1)[tx]\n\n"
-
-                "Results without keys can be queried with an integer in brackets using the parenthesized syntax.\n"
-                "   example:    getblock(getblockhash(0),1)[tx][0]\n\n")));
-            return;
-        }
-        if (!RPCConsole::RPCExecuteCommandLine(m_node, result, executableCommand, nullptr, wallet_model)) {
-            Q_EMIT reply(RPCConsole::CMD_ERROR, QString("Parse error: unbalanced ' or \""));
-            return;
-        }
-
-        Q_EMIT reply(RPCConsole::CMD_REPLY, QString::fromStdString(result));
-    }
-    catch (UniValue& objError)
-    {
-        try // Nice formatting for standard-format error
-        {
-            int code = find_value(objError, "code").get_int();
-            std::string message = find_value(objError, "message").get_str();
-            Q_EMIT reply(RPCConsole::CMD_ERROR, QString::fromStdString(message) + " (code " + QString::number(code) + ")");
-        }
-        catch (const std::runtime_error&) // raised when converting to invalid type, i.e. missing code or message
-        {   // Show raw JSON object
-            Q_EMIT reply(RPCConsole::CMD_ERROR, QString::fromStdString(objError.write()));
-        }
-    }
-    catch (const std::exception& e)
-    {
-        Q_EMIT reply(RPCConsole::CMD_ERROR, QString("Error: ") + QString::fromStdString(e.what()));
-    }
-}
 
 RPCConsole::RPCConsole(interfaces::Node& node, const PlatformStyle *_platformStyle, QWidget *parent) :
     QWidget(parent),
