@@ -12,6 +12,7 @@
 #include <univalue.h>
 #include <node/transaction.h>
 #include <txmempool.h>
+#include <policy/policy.h>
 #include "txfeemodifier.h"
 
 FirestoneInfoPage::FirestoneInfoPage(const PlatformStyle* style, QWidget *parent) :
@@ -170,7 +171,7 @@ void FirestoneInfoPage::on_btnBuy_clicked()
 
         //set change dest
         CCoinControl coin_control;
-        coin_control.destChange = CTxDestination(changeID);
+        coin_control.destChange = {{policyAsset, CTxDestination(changeID)}};
 
         iWallet.sendMoneyWithOpRet(*lockedChain, buyDest, nAmount, false, opRetScript, coin_control);
         iWallet.importScript(redeemScript, "tickets", true);

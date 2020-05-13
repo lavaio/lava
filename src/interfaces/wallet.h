@@ -6,7 +6,6 @@
 #define BITCOIN_INTERFACES_WALLET_H
 
 #include <amount.h>                    // For CAmount
-#include <asset.h>                     // For CAmountMap
 #include <pubkey.h>                    // For CKeyID and CScriptID (definitions needed in CTxDestination instantiation)
 #include <script/ismine.h>             // For isminefilter, isminetype
 #include <script/standard.h>           // For CTxDestination
@@ -113,9 +112,6 @@ public:
     //! database can detect payments to newer address types.
     virtual void learnRelatedScripts(const CPubKey& key, OutputType type) = 0;
 
-    //! Get blinding pubkey for script
-    virtual CPubKey getBlindingPubKey(const CScript& script) = 0;
-
     //! Add dest data.
     virtual bool addDestData(const CTxDestination& dest, const std::string& key, const std::string& value) = 0;
 
@@ -143,7 +139,6 @@ public:
         bool sign,
         int& change_pos,
         CAmount& fee,
-        std::vector<CAmount>& out_amounts,
         std::string& fail_reason) = 0;
 
     //! Return whether transaction can be abandoned.
@@ -368,18 +363,11 @@ struct WalletTx
     CTransactionRef tx;
     std::vector<isminetype> txin_is_mine;
     std::vector<isminetype> txout_is_mine;
-    std::vector<bool> txout_is_change;
     std::vector<CTxDestination> txout_address;
     std::vector<isminetype> txout_address_is_mine;
     CAmountMap credit;
     CAmountMap debit;
     CAmountMap change;
-    std::vector<CAmount> txout_amounts;
-    std::vector<CAsset> txout_assets;
-    std::vector<CAmount> txin_issuance_asset_amount;
-    std::vector<CAsset> txin_issuance_asset;
-    std::vector<CAmount> txin_issuance_token_amount;
-    std::vector<CAsset> txin_issuance_token;
     int64_t time;
     std::map<std::string, std::string> value_map;
     bool is_coinbase;

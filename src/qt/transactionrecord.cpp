@@ -12,6 +12,7 @@
 #include <consensus/consensus.h>
 #include <interfaces/wallet.h>
 #include <key_io.h>
+#include <policy/policy.h>
 #include <timedata.h>
 #include <validation.h>
 
@@ -35,8 +36,8 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
 {
     QList<TransactionRecord> parts;
     int64_t nTime = wtx.time;
-    CAmount nCredit = wtx.credit;
-    CAmount nDebit = wtx.debit;
+    CAmount nCredit = valueFor(wtx.credit, ::policyAsset);
+    CAmount nDebit = valueFor(wtx.debit, ::policyAsset);
     CAmount nNet = nCredit - nDebit;
     uint256 hash = wtx.tx->GetHash();
     std::map<std::string, std::string> mapValue = wtx.value_map;
@@ -99,7 +100,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const interface
         if (fAllFromMe && fAllToMe)
         {
             // Payment to self
-            CAmount nChange = wtx.change;
+            CAmount nChange = valueFor(wtx.change, ::policyAsset);
 
             parts.append(TransactionRecord(hash, nTime, TransactionRecord::SendToSelf, "",
                             -(nDebit - nChange), nCredit - nChange));
