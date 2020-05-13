@@ -61,6 +61,9 @@
 /* define if the Boost::Unit_Test_Framework library is available */
 #define HAVE_BOOST_UNIT_TEST_FRAMEWORK /**/
 
+/* define if the obj/build.h is available */
+#define HAVE_BUILD_INFO 1
+
 /* Define to 1 if you have the <byteswap.h> header file. */
 /* #undef HAVE_BYTESWAP_H */
 

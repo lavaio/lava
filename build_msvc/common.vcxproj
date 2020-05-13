@@ -5,6 +5,7 @@
       <BuildDependsOn>
           CopyBitcoinConfig;
           CopySecp256k1Config;
+          GenerateBuildSuffix;
           $(BuildDependsOn);
       </BuildDependsOn>
   </PropertyGroup>
@@ -17,5 +18,8 @@
           Inputs="$(MSBuildThisFileDirectory)libsecp256k1_config.h"
           Outputs="$(MSBuildThisFileDirectory)..\src\secp256k1\src\libsecp256k1-config.h">
       <Copy SourceFiles="$(MSBuildThisFileDirectory)libsecp256k1_config.h" DestinationFiles="$(MSBuildThisFileDirectory)..\src\secp256k1\src\libsecp256k1-config.h" />
+  </Target>
+  <Target Name="GenerateBuildSuffix">
+    <Exec Command="for /f %%a in ('git rev-parse --short HEAD') do echo #define BUILD_SUFFIX %%a >$(MSBuildThisFileDirectory)..\src\obj\build.h" />
   </Target>
 </Project>
