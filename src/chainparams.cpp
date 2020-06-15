@@ -267,6 +267,9 @@ public:
         consensus.nActionFee = 16 * COIN;
 
         checkpointData = {
+            {
+                {13333, uint256S("c5425517b7c9dd1b1002a6604ef9eca9e222601a4dff2f4f9b9bfdb32729ab99")},
+            }
         };
 
         chainTxData = ChainTxData{
