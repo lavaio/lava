@@ -6730,7 +6730,8 @@ UniValue destroyamount(const JSONRPCRequest& request)
 
     EnsureWalletIsUnlocked(pwallet);
 
-    NullData nulldata;
+    CKeyID nulldata;
+    nulldata.SetHex("4c56000000000000000000000000000000000000");
     CTxDestination address(nulldata);
     CCoinControl no_coin_control; // This is a deprecated API
     CTransactionRef tx = SendMoney(*locked_chain, pwallet, address, nAmount, false, no_coin_control, std::move(mapValue), asset, true);
