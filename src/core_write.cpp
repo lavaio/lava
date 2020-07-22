@@ -287,7 +287,7 @@ void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry,
 
         if (txout.IsCA()) {
             if (txout.nValueCA.IsExplicit()) {
-                out.pushKV("value", ValueFromAmount(txout.nValueCA.GetAmount()));
+                out.pushKV("value-ca", ValueFromAmount(txout.nValueCA.GetAmount()));
             } else {
                 int exp;
                 int mantissa;
@@ -295,7 +295,7 @@ void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry,
                 uint64_t maxv;
                 if (txout.vchRangeproof.size() && secp256k1_rangeproof_info(secp256k1_blind_context, &exp, &mantissa, &minv, &maxv, &txout.vchRangeproof[0], txout.vchRangeproof.size())) {
                     if (exp == -1) {
-                        out.pushKV("value", ValueFromAmount((CAmount)minv));
+                        out.pushKV("value-ca", ValueFromAmount((CAmount)minv));
                     } else {
                         out.pushKV("value-minimum", ValueFromAmount((CAmount)minv));
                         out.pushKV("value-maximum", ValueFromAmount((CAmount)maxv));

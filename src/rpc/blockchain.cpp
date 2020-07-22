@@ -1208,7 +1208,7 @@ UniValue gettxout(const JSONRPCRequest& request)
     }
     if (coin.out.IsCA()) {
         if (coin.out.nValueCA.IsExplicit()) {
-            ret.pushKV("value", ValueFromAmount(coin.out.nValueCA.GetAmount()));
+            ret.pushKV("value-ca", ValueFromAmount(coin.out.nValueCA.GetAmount()));
         } else {
             ret.pushKV("valuecommitment", coin.out.nValueCA.GetHex());
         }
