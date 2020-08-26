@@ -105,9 +105,9 @@ AC_ARG_ENABLE(openssl_tests,
     [enable_openssl_tests=auto])
 
 AC_ARG_ENABLE(experimental,
-    AS_HELP_STRING([--enable-experimental],[allow experimental configure options (default is no)]),
-    [use_experimental=$enableval],
-    [use_experimental=no])
+    AS_HELP_STRING([--enable-experimental],[allow experimental configure options (default is yes)]),
+    [enable_experimental=$enableval],
+    [enable_experimental=yes])
 
 AC_ARG_ENABLE(exhaustive_tests,
     AS_HELP_STRING([--enable-exhaustive-tests],[compile exhaustive tests (default is yes)]),
@@ -127,7 +127,7 @@ AC_ARG_ENABLE(ecmult_static_precomputation,
 AC_ARG_ENABLE(module_ecdh,
     AS_HELP_STRING([--enable-module-ecdh],[enable ECDH shared secret computation (experimental)]),
     [enable_module_ecdh=$enableval],
-    [enable_module_ecdh=no])
+    [enable_module_ecdh=yes])
 
 AC_ARG_ENABLE(module_schnorrsig,
     AS_HELP_STRING([--enable-module-schnorrsig],[enable schnorrsig module (experimental)]),
@@ -135,29 +135,29 @@ AC_ARG_ENABLE(module_schnorrsig,
     [enable_module_schnorrsig=no])
 
 AC_ARG_ENABLE(module_recovery,
-    AS_HELP_STRING([--enable-module-recovery],[enable ECDSA pubkey recovery module (default is no)]),
+    AS_HELP_STRING([--enable-module-recovery],[enable ECDSA pubkey recovery module (default is yes)]),
     [enable_module_recovery=$enableval],
-    [enable_module_recovery=no])
+    [enable_module_recovery=yes])
 
 AC_ARG_ENABLE(module_generator,
-    AS_HELP_STRING([--enable-module-generator],[enable NUMS generator module (default is no)]),
+    AS_HELP_STRING([--enable-module-generator],[enable NUMS generator module (default is yes)]),
     [enable_module_generator=$enableval],
-    [enable_module_generator=no])
+    [enable_module_generator=yes])
 
 AC_ARG_ENABLE(module_commitment,
-    AS_HELP_STRING([--enable-module-commitment],[enable Pedersen commitments module (default is no)]),
+    AS_HELP_STRING([--enable-module-commitment],[enable Pedersen commitments module (default is yes)]),
     [enable_module_commitment=$enableval],
-    [enable_module_commitment=no])
+    [enable_module_commitment=yes])
 
 AC_ARG_ENABLE(module_rangeproof,
-    AS_HELP_STRING([--enable-module-rangeproof],[enable zero-knowledge range proofs module (default is no)]),
+    AS_HELP_STRING([--enable-module-rangeproof],[enable zero-knowledge range proofs module (default is yes)]),
     [enable_module_rangeproof=$enableval],
-    [enable_module_rangeproof=no])
+    [enable_module_rangeproof=yes])
 
 AC_ARG_ENABLE(module_bulletproof,
-    AS_HELP_STRING([--enable-module-bulletproof],[enable Pedersen / zero-knowledge bulletproofs module (default is no)]),
+    AS_HELP_STRING([--enable-module-bulletproof],[enable Pedersen / zero-knowledge bulletproofs module (default is yes)]),
     [enable_module_bulletproof=$enableval],
-    [enable_module_bulletproof=no])
+    [enable_module_bulletproof=yes])
 
 AC_ARG_ENABLE(module_aggsig,
     AS_HELP_STRING([--enable-module-aggsig],[enable Grin aggsig modules]),
@@ -175,9 +175,9 @@ AC_ARG_ENABLE(jni,
     [use_jni=no])
 
 AC_ARG_ENABLE(module_surjectionproof,
-    AS_HELP_STRING([--enable-module-surjectionproof],[enable surjection proof module (default is no)]),
+    AS_HELP_STRING([--enable-module-surjectionproof],[enable surjection proof module (default is yes)]),
     [enable_module_surjectionproof=$enableval],
-    [enable_module_surjectionproof=no])
+    [enable_module_surjectionproof=yes])
 
 AC_ARG_WITH([field], [AS_HELP_STRING([--with-field=64bit|32bit|auto],
 [Specify Field Implementation. Default is auto])],[req_field=$withval], [req_field=auto])
