@@ -17,6 +17,27 @@
 #include "ecdsa_impl.h"
 #include "eckey_impl.h"
 #include "hash_impl.h"
+#include "scratch_impl.h"
+
+#ifdef ENABLE_MODULE_GENERATOR
+# include "include/secp256k1_generator.h"
+#endif
+
+#ifdef ENABLE_MODULE_COMMITMENT
+# include "include/secp256k1_commitment.h"
+#endif
+
+#ifdef ENABLE_MODULE_RANGEPROOF
+# include "include/secp256k1_rangeproof.h"
+#endif
+
+#ifdef ENABLE_MODULE_BULLETPROOF
+# include "include/secp256k1_bulletproofs.h"
+#endif
+
+#ifdef ENABLE_MODULE_AGGSIG
+# include "include/secp256k1_aggsig.h"
+#endif
 
 #define ARG_CHECK(cond) do { \
     if (EXPECT(!(cond), 0)) { \
@@ -114,13 +135,22 @@ void secp256k1_context_set_error_callback(secp256k1_context* ctx, void (*fun)(co
     ctx->error_callback.data = data;
 }
 
+secp256k1_scratch_space* secp256k1_scratch_space_create(const secp256k1_context* ctx, size_t max_size) {
+    VERIFY_CHECK(ctx != NULL);
+    return secp256k1_scratch_create(&ctx->error_callback, max_size);
+}
+
+void secp256k1_scratch_space_destroy(secp256k1_scratch_space* scratch) {
+    secp256k1_scratch_destroy(scratch);
+}
+
 static int secp256k1_pubkey_load(const secp256k1_context* ctx, secp256k1_ge* ge, const secp256k1_pubkey* pubkey) {
     if (sizeof(secp256k1_ge_storage) == 64) {
         /* When the secp256k1_ge_storage type is exactly 64 byte, use its
          * representation inside secp256k1_pubkey, as conversion is very fast.
          * Note that secp256k1_pubkey_save must use the same representation. */
         secp256k1_ge_storage s;
-        memcpy(&s, &pubkey->data[0], 64);
+        memcpy(&s, &pubkey->data[0], sizeof(s));
         secp256k1_ge_from_storage(ge, &s);
     } else {
         /* Otherwise, fall back to 32-byte big endian for X and Y. */
@@ -137,7 +167,7 @@ static void secp256k1_pubkey_save(secp256k1_pubkey* pubkey, secp256k1_ge* ge) {
     if (sizeof(secp256k1_ge_storage) == 64) {
         secp256k1_ge_storage s;
         secp256k1_ge_to_storage(&s, ge);
-        memcpy(&pubkey->data[0], &s, 64);
+        memcpy(&pubkey->data[0], &s, sizeof(s));
     } else {
         VERIFY_CHECK(!secp256k1_ge_is_infinity(ge));
         secp256k1_fe_normalize_var(&ge->x);
@@ -307,10 +337,36 @@ int secp256k1_ecdsa_verify(const secp256k1_context* ctx, const secp256k1_ecdsa_s
             secp256k1_ecdsa_sig_verify(&ctx->ecmult_ctx, &r, &s, &q, &m));
 }
 
+static SECP256K1_INLINE void buffer_append(unsigned char *buf, unsigned int *offset, const void *data, unsigned int len) {
+    memcpy(buf + *offset, data, len);
+    *offset += len;
+}
+
+/* This nonce function is described in BIP-schnorr
+ * (https://github.com/sipa/bips/blob/bip-schnorr/bip-schnorr.mediawiki) */
+static int secp256k1_nonce_function_bipschnorr(unsigned char* nonce32, const unsigned char* msg32, const unsigned char* key32, const unsigned char* algo16, void* data, unsigned int counter) {
+	secp256k1_sha256 sha;
+	(void)data;
+	(void)counter;
+	VERIFY_CHECK(counter == 0);
+
+	/* Hash x||msg as per the spec */
+	secp256k1_sha256_initialize(&sha);
+	secp256k1_sha256_write(&sha, key32, 32);
+	secp256k1_sha256_write(&sha, msg32, 32);
+	/* Hash in algorithm, which is not in the spec, but may be critical to
+	 * users depending on it to avoid nonce reuse across algorithms. */
+	if (algo16 != NULL) {
+		secp256k1_sha256_write(&sha, algo16, 16);
+	}
+	secp256k1_sha256_finalize(&sha, nonce32);
+	return 1;
+}
+
 static int nonce_function_rfc6979(unsigned char *nonce32, const unsigned char *msg32, const unsigned char *key32, const unsigned char *algo16, void *data, unsigned int counter) {
    unsigned char keydata[112];
-   int keylen = 64;
-   secp256k1_rfc6979_hmac_sha256_t rng;
+   unsigned int offset = 0;
+   secp256k1_rfc6979_hmac_sha256 rng;
    unsigned int i;
    /* We feed a byte array to the PRNG as input, consisting of:
     * - the private key (32 bytes) and message (32 bytes), see RFC 6979 3.2d.
@@ -320,17 +376,15 @@ static int nonce_function_rfc6979(unsigned char *nonce32, const unsigned char *m
     *  different argument mixtures to emulate each other and result in the same
     *  nonces.
     */
-   memcpy(keydata, key32, 32);
-   memcpy(keydata + 32, msg32, 32);
+   buffer_append(keydata, &offset, key32, 32);
+   buffer_append(keydata, &offset, msg32, 32);
    if (data != NULL) {
-       memcpy(keydata + 64, data, 32);
-       keylen = 96;
+       buffer_append(keydata, &offset, data, 32);
    }
    if (algo16 != NULL) {
-       memcpy(keydata + keylen, algo16, 16);
-       keylen += 16;
+       buffer_append(keydata, &offset, algo16, 16);
    }
-   secp256k1_rfc6979_hmac_sha256_initialize(&rng, keydata, keylen);
+   secp256k1_rfc6979_hmac_sha256_initialize(&rng, keydata, offset);
    memset(keydata, 0, sizeof(keydata));
    for (i = 0; i <= counter; i++) {
        secp256k1_rfc6979_hmac_sha256_generate(&rng, nonce32, 32);
@@ -575,10 +629,82 @@ int secp256k1_ec_pubkey_combine(const secp256k1_context* ctx, secp256k1_pubkey *
     return 1;
 }
 
+int secp256k1_ec_privkey_tweak_inv(const secp256k1_context* ctx, unsigned char *seckey) {
+    secp256k1_scalar sec;
+    secp256k1_scalar inv;
+    int ret = 0;
+    int overflow = 0;
+    VERIFY_CHECK(ctx != NULL);
+    ARG_CHECK(seckey != NULL);
+
+    secp256k1_scalar_set_b32(&sec, seckey, &overflow);
+    ret = !overflow;
+    memset(seckey, 0, 32);
+    if (ret) {
+        secp256k1_scalar_inverse(&inv, &sec);
+        secp256k1_scalar_get_b32(seckey, &inv);
+        secp256k1_scalar_clear(&inv);
+    }
+    secp256k1_scalar_clear(&sec);
+    return ret;
+}
+
+int secp256k1_ec_privkey_tweak_neg(const secp256k1_context* ctx, unsigned char *seckey) {
+    secp256k1_scalar sec;
+    secp256k1_scalar neg;
+    int ret = 0;
+    int overflow = 0;
+    VERIFY_CHECK(ctx != NULL);
+    ARG_CHECK(seckey != NULL);
+
+    secp256k1_scalar_set_b32(&sec, seckey, &overflow);
+    ret = !overflow;
+    memset(seckey, 0, 32);
+    if (ret) {
+        secp256k1_scalar_negate(&neg, &sec);
+        secp256k1_scalar_get_b32(seckey, &neg);
+        secp256k1_scalar_clear(&neg);
+    }
+    secp256k1_scalar_clear(&sec);
+    return ret;
+}
+
 #ifdef ENABLE_MODULE_ECDH
 # include "modules/ecdh/main_impl.h"
 #endif
 
 #ifdef ENABLE_MODULE_RECOVERY
 # include "modules/recovery/main_impl.h"
+#endif
+
+#ifdef ENABLE_MODULE_GENERATOR
+# include "modules/generator/main_impl.h"
+#endif
+
+#ifdef ENABLE_MODULE_COMMITMENT
+# include "modules/commitment/main_impl.h"
+#endif
+
+#ifdef ENABLE_MODULE_RANGEPROOF
+# include "modules/rangeproof/main_impl.h"
+#endif
+
+#ifdef ENABLE_MODULE_BULLETPROOF
+# include "modules/bulletproofs/main_impl.h"
+#endif
+
+#ifdef ENABLE_MODULE_AGGSIG
+# include "modules/aggsig/main_impl.h"
+#endif
+
+#ifdef ENABLE_MODULE_SCHNORRSIG
+# include "modules/schnorrsig/main_impl.h"
+#endif
+
+#ifdef ENABLE_MODULE_WHITELIST
+# include "modules/whitelist/main_impl.h"
+#endif
+
+#ifdef ENABLE_MODULE_SURJECTIONPROOF
+# include "modules/surjection/main_impl.h"
 #endif

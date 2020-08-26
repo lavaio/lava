@@ -31,6 +31,11 @@ CPubKey AddrToPubKey(CKeyStore* const keystore, const std::string& addr_in);
 CScript CreateMultisigRedeemscript(const int required, const std::vector<CPubKey>& pubkeys);
 
 UniValue DescribeAddress(const CTxDestination& dest);
+UniValue DescribeBlindAddress(const CTxDestination& dest);
+CPubKey GetDestinationBlindingKey(const CTxDestination& dest);
+bool IsBlindDestination(const CTxDestination& dest);
+
+UniValue AmountMapToUniv(const CAmountMap& balanceOrig, const CAsset& asset);
 
 //! Parse a confirm target option and raise an RPC error if it is invalid.
 unsigned int ParseConfirmTarget(const UniValue& value);

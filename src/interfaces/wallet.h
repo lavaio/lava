@@ -20,6 +20,8 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+#include <actiondb.h>
+#include "chain.h"
 
 class CCoinControl;
 class CFeeRate;
@@ -195,10 +197,10 @@ public:
     virtual bool tryGetBalances(WalletBalances& balances, int& num_blocks) = 0;
 
     //! Get balance.
-    virtual CAmount getBalance() = 0;
+    virtual CAmountMap getBalance() = 0;
 
     //! Get available balance.
-    virtual CAmount getAvailableBalance(const CCoinControl& coin_control) = 0;
+    virtual CAmountMap getAvailableBalance(const CCoinControl& coin_control) = 0;
 
     //! Return whether transaction input belongs to wallet.
     virtual isminetype txinIsMine(const CTxIn& txin) = 0;
@@ -207,10 +209,10 @@ public:
     virtual isminetype txoutIsMine(const CTxOut& txout) = 0;
 
     //! Return debit amount if transaction input belongs to wallet.
-    virtual CAmount getDebit(const CTxIn& txin, isminefilter filter) = 0;
+    virtual CAmountMap getDebit(const CTxIn& txin, isminefilter filter) = 0;
 
     //! Return credit amount if transaction input belongs to wallet.
-    virtual CAmount getCredit(const CTxOut& txout, isminefilter filter) = 0;
+    virtual CAmountMap getCredit(const CTransaction& tx, const size_t out_index, isminefilter filter) = 0;
 
     //! Return AvailableCoins + LockedCoins grouped by wallet address.
     //! (put change in one group with wallet address)
@@ -281,6 +283,26 @@ public:
     //! Register handler for keypool changed messages.
     using CanGetAddressesChangedFn = std::function<void()>;
     virtual std::unique_ptr<Handler> handleCanGetAddressesChanged(CanGetAddressesChangedFn fn) = 0;
+
+    virtual std::map<CTxDestination, int64_t> GetKeyBirthTimes() = 0;
+    virtual bool hasAddress(const CTxDestination& dest) = 0;
+
+    virtual CKeyID getKeyForDestination(const CTxDestination& dest) = 0;
+
+    virtual uint256 sendAction(const CAction& action, const CKey& key, const CTxDestination& destChange) = 0;
+    virtual CTransactionRef sendMoneyWithOpRet(interfaces::Chain::Lock& locked_chain, const CTxDestination& address, 
+                                               CAmount nValue, bool fSubtractFeeFromAmount, const CScript& optScritp, 
+                                               const CCoinControl& coin_control) = 0;
+    virtual void importScript(const CScript& script, const std::string& strLabel, bool isRedeemScript) = 0;
+
+    virtual CFeeRate getPayTxFee() const = 0;
+    virtual void setPayTxFee(const CFeeRate& fee) = 0;
+    virtual std::unique_ptr<Chain::Lock> chain_lock() = 0;
+    virtual void doWithChainAndWalletLock(std::function<void (std::unique_ptr<Chain::Lock>&, Wallet&)>) = 0;
+    virtual CTransactionRef createTicketAllSpendTx(std::map<uint256,std::pair<int,CScript>> txScriptInputs,
+                                                   std::vector<CTxOut> outs, CTxDestination& dest, CKey& key) = 0;
+    
+    virtual bool isPoc2x() = 0;
 };
 
 //! Tracking object returned by CreateTransaction and passed to CommitTransaction.
@@ -318,13 +340,13 @@ struct WalletAddress
 //! Collection of wallet balances.
 struct WalletBalances
 {
-    CAmount balance = 0;
-    CAmount unconfirmed_balance = 0;
-    CAmount immature_balance = 0;
+    CAmountMap balance = CAmountMap();
+    CAmountMap unconfirmed_balance = CAmountMap();
+    CAmountMap immature_balance = CAmountMap();
     bool have_watch_only = false;
-    CAmount watch_only_balance = 0;
-    CAmount unconfirmed_watch_only_balance = 0;
-    CAmount immature_watch_only_balance = 0;
+    CAmountMap watch_only_balance = CAmountMap();
+    CAmountMap unconfirmed_watch_only_balance = CAmountMap();
+    CAmountMap immature_watch_only_balance = CAmountMap();
 
     bool balanceChanged(const WalletBalances& prev) const
     {
@@ -343,9 +365,9 @@ struct WalletTx
     std::vector<isminetype> txout_is_mine;
     std::vector<CTxDestination> txout_address;
     std::vector<isminetype> txout_address_is_mine;
-    CAmount credit;
-    CAmount debit;
-    CAmount change;
+    CAmountMap credit;
+    CAmountMap debit;
+    CAmountMap change;
     int64_t time;
     std::map<std::string, std::string> value_map;
     bool is_coinbase;

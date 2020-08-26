@@ -1,4 +1,6 @@
-<TS language="zh_CN" version="2.1">
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS>
+<TS version="2.1" language="zh_CN">
 <context>
     <name>AddressBookPage</name>
     <message>
@@ -66,12 +68,12 @@
         <translation>收款地址</translation>
     </message>
     <message>
-        <source>These are your Bitcoin addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
-        <translation>您可以给这些比特币地址付款。在付款之前，务必要检查金额和收款地址是否正确。</translation>
+        <source>These are your Lava addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <translation>您可以给这些Lava地址付款。在付款之前，务必要检查金额和收款地址是否正确。</translation>
     </message>
     <message>
-        <source>These are your Bitcoin addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
-        <translation>您可以用这些比特币地址收款。建议在每次交易时，都使用一个新的收款地址。</translation>
+        <source>These are your Lava addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
+        <translation>您可以用这些Lava地址收款。建议在每次交易时，都使用一个新的收款地址。</translation>
     </message>
     <message>
         <source>&amp;Copy Address</source>
@@ -176,8 +178,8 @@
         <translation>确认钱包加密</translation>
     </message>
     <message>
-        <source>Warning: If you encrypt your wallet and lose your passphrase, you will &lt;b&gt;LOSE ALL OF YOUR BITCOINS&lt;/b&gt;!</source>
-        <translation>警告: 如果把钱包加密后又忘记密码，你就会从此&lt;b&gt;失去其中所有的比特币了&lt;/b&gt;！</translation>
+        <source>Warning: If you encrypt your wallet and lose your passphrase, you will &lt;b&gt;LOSE ALL OF YOUR LAVAS&lt;/b&gt;!</source>
+        <translation>警告: 如果把钱包加密后又忘记密码，你就会从此&lt;b&gt;失去其中所有的Lava了&lt;/b&gt;！</translation>
     </message>
     <message>
         <source>Are you sure you wish to encrypt your wallet?</source>
@@ -188,8 +190,8 @@
         <translation>钱包已加密</translation>
     </message>
     <message>
-        <source>Your wallet is now encrypted. Remember that encrypting your wallet cannot fully protect your bitcoins from being stolen by malware infecting your computer.</source>
-        <translation>你的钱包现在已被加密。请记住，对钱包进行加密仍然不能完全防止感染电脑的恶意软件偷取你的比特币。</translation>
+        <source>Your wallet is now encrypted. Remember that encrypting your wallet cannot fully protect your Lavas from being stolen by malware infecting your computer.</source>
+        <translation>你的钱包现在已被加密。请记住，对钱包进行加密仍然不能完全防止感染电脑的恶意软件偷取你的Lava。</translation>
     </message>
     <message>
         <source>IMPORTANT: Any previous backups you have made of your wallet file should be replaced with the newly generated, encrypted wallet file. For security reasons, previous backups of the unencrypted wallet file will become useless as soon as you start using the new, encrypted wallet.</source>
@@ -342,8 +344,8 @@
         <translation>代理已被&lt;b&gt;启用&lt;/b&gt;：%1</translation>
     </message>
     <message>
-        <source>Send coins to a Bitcoin address</source>
-        <translation>向一个比特币地址发送比特币</translation>
+        <source>Send coins to a Lava address</source>
+        <translation>向一个Lava地址发送Lava</translation>
     </message>
     <message>
         <source>Backup wallet to another location</source>
@@ -366,8 +368,8 @@
         <translation>验证消息(&amp;V)...</translation>
     </message>
     <message>
-        <source>Bitcoin</source>
-        <translation>比特币</translation>
+        <source>Lava</source>
+        <translation>Lava</translation>
     </message>
     <message>
         <source>&amp;Send</source>
@@ -376,6 +378,10 @@
     <message>
         <source>&amp;Receive</source>
         <translation>接收(&amp;R)</translation>
+    </message>
+    <message>
+        <source>&amp;MinerInfo</source>
+        <translation>矿工信息(&amp;M)</translation>
     </message>
     <message>
         <source>&amp;Show / Hide</source>
@@ -390,12 +396,12 @@
         <translation>对钱包中的私钥加密</translation>
     </message>
     <message>
-        <source>Sign messages with your Bitcoin addresses to prove you own them</source>
-        <translation>用比特币地址关联的私钥为消息签名，以证明您拥有这个比特币地址</translation>
+        <source>Sign messages with your Lava addresses to prove you own them</source>
+        <translation>用Lava地址关联的私钥为消息签名，以证明您拥有这个Lava地址</translation>
     </message>
     <message>
-        <source>Verify messages to ensure they were signed with specified Bitcoin addresses</source>
-        <translation>校验消息，确保该消息是由指定的比特币地址所有者签名的</translation>
+        <source>Verify messages to ensure they were signed with specified Lava addresses</source>
+        <translation>校验消息，确保该消息是由指定的Lava地址所有者签名的</translation>
     </message>
     <message>
         <source>&amp;File</source>
@@ -414,8 +420,8 @@
         <translation>分页工具栏</translation>
     </message>
     <message>
-        <source>Request payments (generates QR codes and bitcoin: URIs)</source>
-        <translation>请求支付 (生成二维码和 bitcoin: URI)</translation>
+        <source>Request payments (generates QR codes and Lava: URIs)</source>
+        <translation>请求支付 (生成二维码和 Lava: URI)</translation>
     </message>
     <message>
         <source>Show the list of used sending addresses and labels</source>
@@ -426,16 +432,18 @@
         <translation>显示用过的接收地址和标签的列表</translation>
     </message>
     <message>
-        <source>Open a bitcoin: URI or payment request</source>
-        <translation>打开一个 bitcoin: URI 或支付请求</translation>
+        <source>Open a Lava: URI or payment request</source>
+        <translation>打开一个 Lava: URI 或支付请求</translation>
     </message>
     <message>
         <source>&amp;Command-line options</source>
         <translation>命令行选项(&amp;C)</translation>
     </message>
     <message numerus="yes">
-        <source>%n active connection(s) to Bitcoin network</source>
-        <translation><numerusform>%n 条到比特币网络的活动连接</numerusform></translation>
+        <source>%n active connection(s) to Lava network</source>
+        <translation>
+            <numerusform>%n 条到Lava网络的活动连接</numerusform>
+        </translation>
     </message>
     <message>
         <source>Indexing blocks on disk...</source>
@@ -447,7 +455,9 @@
     </message>
     <message numerus="yes">
         <source>Processed %n block(s) of transaction history.</source>
-        <translation><numerusform>已处理 %n 个区块的交易历史</numerusform></translation>
+        <translation>
+            <numerusform>已处理 %n 个区块的交易历史</numerusform>
+        </translation>
     </message>
     <message>
         <source>%1 behind</source>
@@ -502,7 +512,7 @@
         <translation>关闭钱包</translation>
     </message>
     <message>
-        <source>Show the %1 help message to get a list with possible Bitcoin command-line options</source>
+        <source>Show the %1 help message to get a list with possible Lava command-line options</source>
         <translation>显示 %1 帮助信息，获取可用命令行选项列表</translation>
     </message>
     <message>
@@ -613,8 +623,28 @@
         <translation>钱包已被&lt;b&gt;加密&lt;/b&gt;，当前为&lt;b&gt;锁定&lt;/b&gt;状态</translation>
     </message>
     <message>
-        <source>A fatal error occurred. Bitcoin can no longer continue safely and will quit.</source>
+        <source>A fatal error occurred. Lava can no longer continue safely and will quit.</source>
         <translation>发生严重错误。客户端无法安全地继续运行，即将退出。</translation>
+    </message>
+    <message>
+        <source>&amp;Miner</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Miner block</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Miner Information</source>
+        <translation>挖矿信息</translation>
+    </message>
+    <message>
+        <source>Fire&amp;stone</source>
+        <translation>火石(&amp;S)</translation>
+    </message>
+    <message>
+        <source>Firestone Information</source>
+        <translation>火石信息</translation>
     </message>
 </context>
 <context>
@@ -803,15 +833,15 @@
         <translation>编辑付款地址</translation>
     </message>
     <message>
-        <source>The entered address "%1" is not a valid Bitcoin address.</source>
-        <translation>输入的地址 %1 并不是有效的比特币地址。</translation>
+        <source>The entered address &quot;%1&quot; is not a valid Lava address.</source>
+        <translation>输入的地址 %1 并不是有效的Lava地址。</translation>
     </message>
     <message>
-        <source>Address "%1" already exists as a receiving address with label "%2" and so cannot be added as a sending address.</source>
+        <source>Address &quot;%1&quot; already exists as a receiving address with label &quot;%2&quot; and so cannot be added as a sending address.</source>
         <translation>地址“%1”已经存在，它是一个接受地址，标签为“%2”，所以它不能被添加为一个发送地址。</translation>
     </message>
     <message>
-        <source>The entered address "%1" is already in the address book with label "%2".</source>
+        <source>The entered address &quot;%1&quot; is already in the address book with label &quot;%2&quot;.</source>
         <translation>输入地址“%1”已经存在于地址簿中，标签为“%2”。</translation>
     </message>
     <message>
@@ -821,6 +851,169 @@
     <message>
         <source>New key generation failed.</source>
         <translation>生成新密钥失败。</translation>
+    </message>
+</context>
+<context>
+    <name>FirestoneInfoPage</name>
+    <message>
+        <source>Form</source>
+        <translation>表单</translation>
+    </message>
+    <message>
+        <source>Slot Info:</source>
+        <translation>周期信息:</translation>
+    </message>
+    <message>
+        <source>Slot Index</source>
+        <translation>周期编号:</translation>
+    </message>
+    <message>
+        <source>Firestone Price</source>
+        <translation>火石价格</translation>
+    </message>
+    <message>
+        <source>Lock Time</source>
+        <translation>锁定高度</translation>
+    </message>
+    <message>
+        <source>Count</source>
+        <translation>火石数:</translation>
+    </message>
+    <message>
+        <source>Buy:</source>
+        <translation>购买:</translation>
+    </message>
+    <message>
+        <source>Address</source>
+        <translation>地址</translation>
+    </message>
+    <message>
+        <source>Target address</source>
+        <translation>目标地址:</translation>
+    </message>
+    <message>
+        <source>Change Address</source>
+        <translation>找零地址</translation>
+    </message>
+    <message>
+        <source>Change address</source>
+        <translation>找零地址</translation>
+    </message>
+    <message>
+        <source>Buy Firestone</source>
+        <translation>购买火石</translation>
+    </message>
+    <message>
+        <source>Query:</source>
+        <translation>查询:</translation>
+    </message>
+    <message>
+        <source>The address to query</source>
+        <translation>要查询火石的地址</translation>
+    </message>
+    <message>
+        <source>Query Firestone</source>
+        <translation>查询火石</translation>
+    </message>
+    <message>
+        <source>Release:</source>
+        <translation>释放火石:</translation>
+    </message>
+    <message>
+        <source>Release expired firestones for an address</source>
+        <translation>释放指定地址中的已过期火石</translation>
+    </message>
+    <message>
+        <source>Receive Address</source>
+        <translation>接收地址</translation>
+    </message>
+    <message>
+        <source>Receive address</source>
+        <translation>接收地址</translation>
+    </message>
+    <message>
+        <source>Release Firestone</source>
+        <translation>释放火石</translation>
+    </message>
+    <message>
+        <source>Invalid address</source>
+        <translation>非法地址</translation>
+    </message>
+    <message>
+        <source>Address &quot;%1&quot; has %2 firestones</source>
+        <translation>地址&quot;%1&quot;拥有&quot;%2&quot;个火石</translation>
+    </message>
+    <message>
+        <source>%1 firestone(s) in current slot</source>
+        <translation>在当前周期有%1个火石</translation>
+    </message>
+    <message>
+        <source>%1 immature firestone(s)</source>
+        <translation type="unfinished">%1个未成熟的火石</translation>
+    </message>
+    <message>
+        <source>%1 overdue firestone(s)</source>
+        <translation>%1过期火石</translation>
+    </message>
+    <message>
+        <source>Firestone Information</source>
+        <translation>火石信息</translation>
+    </message>
+    <message>
+        <source>Please unlock wallet to continue</source>
+        <translation>此操作需要先解锁钱包</translation>
+    </message>
+    <message>
+        <source>Invalid target address</source>
+        <translation>非法的目标地址</translation>
+    </message>
+    <message>
+        <source>Invalid change address</source>
+        <translation>非法的找零地址</translation>
+    </message>
+    <message>
+        <source>Can&apos;t buy firestone on slot&apos;s last block</source>
+        <translation>不能在火石周期的最后一块购买火石</translation>
+    </message>
+    <message>
+        <source>Buy firestone success!</source>
+        <translation>成功购买火石!</translation>
+    </message>
+    <message>
+        <source>Failed to buy firestone, please make sure there is enough balance in your wallet</source>
+        <translation>购买火石失败, 请确保钱包中有足够余额.</translation>
+    </message>
+    <message>
+        <source>Invalid refund address</source>
+        <translation>非法的资金回放地址</translation>
+    </message>
+    <message>
+        <source>This address isn&apos;t your address, you can&apos;t release firestone for it</source>
+        <translation>此地址不属于你, 无法为它释放火石.</translation>
+    </message>
+    <message>
+        <source>No firestones in this address</source>
+        <translation>此地址中没有火石.</translation>
+    </message>
+    <message>
+        <source>Failed to free firestone, something unexpected happened...</source>
+        <translation>释放火石失败, 发生了一些错误...</translation>
+    </message>
+    <message>
+        <source>Failed to broadcast transation!</source>
+        <translation>广播交易失败.</translation>
+    </message>
+    <message>
+        <source>Released %1 firestone(s)</source>
+        <translation>释放了%1个火石</translation>
+    </message>
+    <message>
+        <source>Target address isn&apos;t an address in your wallet, are you sure?</source>
+        <translation>目标地址不属于你, 确定要为它购买火石吗?</translation>
+    </message>
+    <message>
+        <source>Change address isn&apos;t an address in your wallet, are you sure?</source>
+        <translation>找零地址不属于你, 确定要继续吗?</translation>
     </message>
 </context>
 <context>
@@ -896,8 +1089,8 @@
         <translation>使用自定义的数据目录：</translation>
     </message>
     <message>
-        <source>Bitcoin</source>
-        <translation>比特币</translation>
+        <source>Lava</source>
+        <translation>Lava</translation>
     </message>
     <message>
         <source>At least %1 GB of data will be stored in this directory, and it will grow over time.</source>
@@ -908,16 +1101,16 @@
         <translation>会在此目录中存储约 %1 GB 的数据。</translation>
     </message>
     <message>
-        <source>%1 will download and store a copy of the Bitcoin block chain.</source>
-        <translation>%1 将会下载并存储比特币区块链。</translation>
+        <source>%1 will download and store a copy of the Lava block chain.</source>
+        <translation>%1 将会下载并存储Lava区块链。</translation>
     </message>
     <message>
         <source>The wallet will also be stored in this directory.</source>
         <translation>钱包也会被保存在这个目录中。</translation>
     </message>
     <message>
-        <source>Error: Specified data directory "%1" cannot be created.</source>
-        <translation>错误：无法创建 指定的数据目录 "%1" </translation>
+        <source>Error: Specified data directory &quot;%1&quot; cannot be created.</source>
+        <translation>错误：无法创建 指定的数据目录 &quot;%1&quot; </translation>
     </message>
     <message>
         <source>Error</source>
@@ -925,11 +1118,30 @@
     </message>
     <message numerus="yes">
         <source>%n GB of free space available</source>
-        <translation><numerusform>有 %n GB 空闲空间可用</numerusform></translation>
+        <translation>
+            <numerusform>有 %n GB 空闲空间可用</numerusform>
+        </translation>
     </message>
     <message numerus="yes">
         <source>(of %n GB needed)</source>
-        <translation><numerusform>(需要 %n GB的空间)</numerusform></translation>
+        <translation>
+            <numerusform>(需要 %n GB的空间)</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>This initial synchronisation is very demanding, and may expose hardware problems with your computer that had previously gone unnoticed. Each time you run %1, it will continue downloading where it left off.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>MinerviewPage</name>
+    <message>
+        <source>Form</source>
+        <translation type="unfinished">表单</translation>
+    </message>
+    <message>
+        <source>new</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -939,11 +1151,11 @@
         <translation>表单</translation>
     </message>
     <message>
-        <source>Recent transactions may not yet be visible, and therefore your wallet's balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the bitcoin network, as detailed below.</source>
-        <translation>近期交易可能尚未显示，因此当前余额可能不准确。以上信息将在与比特币网络完全同步后更正。详情如下</translation>
+        <source>Recent transactions may not yet be visible, and therefore your wallet&apos;s balance might be incorrect. This information will be correct once your wallet has finished synchronizing with the Lava network, as detailed below.</source>
+        <translation>近期交易可能尚未显示，因此当前余额可能不准确。以上信息将在与Lava网络完全同步后更正。详情如下</translation>
     </message>
     <message>
-        <source>Attempting to spend bitcoins that are affected by not-yet-displayed transactions will not be accepted by the network.</source>
+        <source>Attempting to spend Lavas that are affected by not-yet-displayed transactions will not be accepted by the network.</source>
         <translation>尝试使用受未可见交易影响的余额将不被网络接受。</translation>
     </message>
     <message>
@@ -1125,8 +1337,8 @@
         <translation>动用尚未确认的找零资金(&amp;S)</translation>
     </message>
     <message>
-        <source>Automatically open the Bitcoin client port on the router. This only works when your router supports UPnP and it is enabled.</source>
-        <translation>自动在路由器中打开比特币端口。只有当您的路由器开启了 UPnP 选项时此功能才有效。</translation>
+        <source>Automatically open the Lava client port on the router. This only works when your router supports UPnP and it is enabled.</source>
+        <translation>自动在路由器中打开Lava端口。只有当您的路由器开启了 UPnP 选项时此功能才有效。</translation>
     </message>
     <message>
         <source>Map port using &amp;UPnP</source>
@@ -1141,8 +1353,8 @@
         <translation>允许流入连接(&amp;G)</translation>
     </message>
     <message>
-        <source>Connect to the Bitcoin network through a SOCKS5 proxy.</source>
-        <translation>通过 SOCKS5 代理连接比特币网络。</translation>
+        <source>Connect to the Lava network through a SOCKS5 proxy.</source>
+        <translation>通过 SOCKS5 代理连接Lava网络。</translation>
     </message>
     <message>
         <source>&amp;Connect through SOCKS5 proxy (default proxy):</source>
@@ -1177,8 +1389,8 @@
         <translation>Tor</translation>
     </message>
     <message>
-        <source>Connect to the Bitcoin network through a separate SOCKS5 proxy for Tor hidden services.</source>
-        <translation>在 Tor 匿名网络下通过不同的 SOCKS5 代理连接比特币网络</translation>
+        <source>Connect to the Lava network through a separate SOCKS5 proxy for Tor hidden services.</source>
+        <translation>在 Tor 匿名网络下通过不同的 SOCKS5 代理连接Lava网络</translation>
     </message>
     <message>
         <source>&amp;Window</source>
@@ -1210,11 +1422,11 @@
     </message>
     <message>
         <source>&amp;Unit to show amounts in:</source>
-        <translation>比特币金额单位(&amp;U)：</translation>
+        <translation>Lava金额单位(&amp;U)：</translation>
     </message>
     <message>
         <source>Choose the default subdivision unit to show in the interface and when sending coins.</source>
-        <translation>选择比特币单位。</translation>
+        <translation>选择Lava单位。</translation>
     </message>
     <message>
         <source>Whether to show coin control features or not.</source>
@@ -1288,8 +1500,8 @@
         <translation>表单</translation>
     </message>
     <message>
-        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the Bitcoin network after a connection is established, but this process has not completed yet.</source>
-        <translation>现在显示的消息可能是过期的。在连接上比特币网络节点后，您的钱包将自动与网络同步，但是这个过程还没有完成。</translation>
+        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the Lava network after a connection is established, but this process has not completed yet.</source>
+        <translation>现在显示的消息可能是过期的。在连接上Lava网络节点后，您的钱包将自动与网络同步，但是这个过程还没有完成。</translation>
     </message>
     <message>
         <source>Watch-only:</source>
@@ -1355,6 +1567,14 @@
         <source>Current total balance in watch-only addresses</source>
         <translation>观察地址(watch-only address)中的当前总余额 </translation>
     </message>
+    <message>
+        <source>Show Watchonly Address</source>
+        <translation type="unfinished">显示仅观察地址的交易</translation>
+    </message>
+    <message>
+        <source>WatchOnly</source>
+        <translation type="unfinished">观察地址</translation>
+    </message>
 </context>
 <context>
     <name>PaymentServer</name>
@@ -1363,17 +1583,16 @@
         <translation>要求付款时发生错误</translation>
     </message>
     <message>
-        <source>Cannot start bitcoin: click-to-pay handler</source>
-        <translation>无法启动 bitcoin 协议的“
-一键支付”处理器</translation>
+        <source>Cannot start Lava: click-to-pay handler</source>
+        <translation>无法启动 Lava 协议的“一键支付”处理器</translation>
     </message>
     <message>
         <source>URI handling</source>
         <translation>URI 处理</translation>
     </message>
     <message>
-        <source>'bitcoin://' is not a valid URI. Use 'bitcoin:' instead.</source>
-        <translation>‘bitcoin://’不是合法的URI。请使用'bitcoin:'作为替代。</translation>
+        <source>&apos;lavacoin://&apos; is not a valid URI. Use &apos;lavacoin:&apos; instead.</source>
+        <translation>‘lavacoin://’不是合法的URI。请使用&apos;lavacoin:&apos;作为替代。</translation>
     </message>
     <message>
         <source>You are using a BIP70 URL which will be unsupported in the future.</source>
@@ -1392,8 +1611,8 @@
         <translation>无效的付款地址 %1</translation>
     </message>
     <message>
-        <source>URI cannot be parsed! This can be caused by an invalid Bitcoin address or malformed URI parameters.</source>
-        <translation>无法解析 URI 地址！可能是因为比特币地址无效，或是 URI 参数格式错误。</translation>
+        <source>URI cannot be parsed! This can be caused by an invalid Lava address or malformed URI parameters.</source>
+        <translation>无法解析 URI 地址！可能是因为Lava地址无效，或是 URI 参数格式错误。</translation>
     </message>
     <message>
         <source>Payment request file handling</source>
@@ -1408,7 +1627,7 @@
         <translation>付款请求已被拒绝</translation>
     </message>
     <message>
-        <source>Payment request network doesn't match client network.</source>
+        <source>Payment request network doesn&apos;t match client network.</source>
         <translation>付款请求的网络类型跟客户端不符。</translation>
     </message>
     <message>
@@ -1455,6 +1674,10 @@
         <source>Payment acknowledged</source>
         <translation>付款已确认</translation>
     </message>
+    <message>
+        <source>Payment request is not initialized.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>PeerTableModel</name>
@@ -1484,14 +1707,157 @@
     </message>
 </context>
 <context>
+    <name>PlotInfoPage</name>
+    <message>
+        <source>MinerInfo</source>
+        <translation type="vanished">挖矿信息</translation>
+    </message>
+    <message>
+        <source>Current Mining Info:</source>
+        <translation>默认挖矿信息</translation>
+    </message>
+    <message>
+        <source>Miner Address:</source>
+        <translation>收益地址</translation>
+    </message>
+    <message>
+        <source>PlotId:</source>
+        <translation>PubkeyID:</translation>
+    </message>
+    <message>
+        <source>New Plot ID</source>
+        <translation>生成新PubkeyID</translation>
+    </message>
+    <message>
+        <source>New Mining Address</source>
+        <translation>新挖矿地址</translation>
+    </message>
+    <message>
+        <source>Failed to Generate New Plot Id</source>
+        <translation>无法生成PubkeyID</translation>
+    </message>
+    <message>
+        <source>Please check the address pool</source>
+        <translation>请检查地址池</translation>
+    </message>
+    <message>
+        <source>Form</source>
+        <translation>表单</translation>
+    </message>
+    <message>
+        <source>Bind Address</source>
+        <translation>绑定地址</translation>
+    </message>
+    <message>
+        <source>Binding From Address</source>
+        <translation>绑定的原地址</translation>
+    </message>
+    <message>
+        <source>Bind To Address</source>
+        <translation>绑定的目标地址</translation>
+    </message>
+    <message>
+        <source>Binding To Address</source>
+        <translation>绑定的目标地址</translation>
+    </message>
+    <message>
+        <source>Bind PlotId</source>
+        <translation>绑定PubkeyID</translation>
+    </message>
+    <message>
+        <source>Binding Info:</source>
+        <translation>算力绑定信息</translation>
+    </message>
+    <message>
+        <source>Address To Query</source>
+        <translation>要查询的地址</translation>
+    </message>
+    <message>
+        <source>Query Binding</source>
+        <translation>查询算力绑定信息</translation>
+    </message>
+    <message>
+        <source>Please enter a valid address</source>
+        <translation>请输入合法的地址</translation>
+    </message>
+    <message>
+        <source>No binding found for address: &quot;%1&quot;</source>
+        <translation>地址 &quot;%1&quot; 没有对应的算力绑定信息</translation>
+    </message>
+    <message>
+        <source>Address &quot;%1&quot; binds to &quot;%2&quot;</source>
+        <translation>地址 &quot;%1&quot; 已经绑定到地址 &quot;%2&quot;</translation>
+    </message>
+    <message>
+        <source>Please unlock wallet to continue</source>
+        <translation>此操作需要先解锁钱包</translation>
+    </message>
+    <message>
+        <source>Invalid from address</source>
+        <translation>无效的原地址</translation>
+    </message>
+    <message>
+        <source>Invalid to address</source>
+        <translation>无效的目标地址</translation>
+    </message>
+    <message>
+        <source>From address should not be the same as to address!</source>
+        <translation>原地址和目标地址不能相同!</translation>
+    </message>
+    <message>
+        <source>Failed to unlock wallet</source>
+        <translation>无法解锁钱包</translation>
+    </message>
+    <message>
+        <source>Make binding takes 16 lv, are you sure to continue?</source>
+        <translation>绑定算力需要16个lv, 确定要继续绑定吗?</translation>
+    </message>
+    <message>
+        <source>Wallet doesn&apos;t have private key for address: &quot;%1&quot;</source>
+        <translation>钱包中没有地址 &quot;%1&quot; 的密钥</translation>
+    </message>
+    <message>
+        <source>Transaction &quot;%1&quot; was created for plot id binding</source>
+        <translation>成功创建算力绑定交易 &quot;%1&quot;</translation>
+    </message>
+    <message>
+        <source>UnBind PlotId</source>
+        <translation>解绑算力</translation>
+    </message>
+    <message>
+        <source>This address already binds to an address, are you sure to continue?</source>
+        <translation>此地址已经绑定算力到了某个地址, 确定要继续吗?</translation>
+    </message>
+    <message>
+        <source>No binding for this address, please don&apos;t waste your money!</source>
+        <translation>此地址没有任何算力绑定信息, 请不要浪费你的金钱!</translation>
+    </message>
+    <message>
+        <source>Unbinding takes 16 lv, are you sure to continue?</source>
+        <translation>解绑算力需要16lv, 确定要继续吗?</translation>
+    </message>
+    <message>
+        <source>Transaction &quot;%1&quot; was created for plot id unbinding</source>
+        <translation>成功为解绑算力创建了交易: %1 </translation>
+    </message>
+    <message>
+        <source>Failed to create plot id binding transaction, please make sure there is enough balance in your wallet</source>
+        <translation>创建绑定算力交易失败, 请确保钱包中有充足的余额.</translation>
+    </message>
+    <message>
+        <source>Failed to create unbind transaction, please make sure there is enough balance in your wallet</source>
+        <translation type="unfinished">创建解绑算力交易失败, 请确保钱包中有充足的余额</translation>
+    </message>
+</context>
+<context>
     <name>QObject</name>
     <message>
         <source>Amount</source>
         <translation>金额</translation>
     </message>
     <message>
-        <source>Enter a Bitcoin address (e.g. %1)</source>
-        <translation>请输入一个比特币地址 (例如 %1)</translation>
+        <source>Enter a Lava address (e.g. %1)</source>
+        <translation>请输入一个Lava地址 (例如 %1)</translation>
     </message>
     <message>
         <source>%1 d</source>
@@ -1523,23 +1889,33 @@
     </message>
     <message numerus="yes">
         <source>%n second(s)</source>
-        <translation><numerusform>%n 秒</numerusform></translation>
+        <translation>
+            <numerusform>%n 秒</numerusform>
+        </translation>
     </message>
     <message numerus="yes">
         <source>%n minute(s)</source>
-        <translation><numerusform>%n 分钟</numerusform></translation>
+        <translation>
+            <numerusform>%n 分钟</numerusform>
+        </translation>
     </message>
     <message numerus="yes">
         <source>%n hour(s)</source>
-        <translation><numerusform>%n 小时</numerusform></translation>
+        <translation>
+            <numerusform>%n 小时</numerusform>
+        </translation>
     </message>
     <message numerus="yes">
         <source>%n day(s)</source>
-        <translation><numerusform>%n 天</numerusform></translation>
+        <translation>
+            <numerusform>%n 天</numerusform>
+        </translation>
     </message>
     <message numerus="yes">
         <source>%n week(s)</source>
-        <translation><numerusform>%n 周</numerusform></translation>
+        <translation>
+            <numerusform>%n 周</numerusform>
+        </translation>
     </message>
     <message>
         <source>%1 and %2</source>
@@ -1547,7 +1923,9 @@
     </message>
     <message numerus="yes">
         <source>%n year(s)</source>
-        <translation><numerusform>%n 年</numerusform></translation>
+        <translation>
+            <numerusform>%n 年</numerusform>
+        </translation>
     </message>
     <message>
         <source>%1 B</source>
@@ -1566,7 +1944,7 @@
         <translation>%1 GB</translation>
     </message>
     <message>
-        <source>%1 didn't yet exit safely...</source>
+        <source>%1 didn&apos;t yet exit safely...</source>
         <translation>%1 尚未安全退出</translation>
     </message>
     <message>
@@ -1581,7 +1959,7 @@
         <translation>解析命令行参数错误：%1</translation>
     </message>
     <message>
-        <source>Error: Specified data directory "%1" does not exist.</source>
+        <source>Error: Specified data directory &quot;%1&quot; does not exist.</source>
         <translation>错误：指定的数据目录“%1”不存在。</translation>
     </message>
     <message>
@@ -1643,16 +2021,16 @@
         <translation>数据目录</translation>
     </message>
     <message>
-        <source>To specify a non-default location of the data directory use the '%1' option.</source>
-        <translation>如果不想用默认的数据目录位置，请用 '%1' 这个选项来指定新的位置。</translation>
+        <source>To specify a non-default location of the data directory use the &apos;%1&apos; option.</source>
+        <translation>如果不想用默认的数据目录位置，请用 &apos;%1&apos; 这个选项来指定新的位置。</translation>
     </message>
     <message>
         <source>Blocksdir</source>
         <translation>区块存储目录</translation>
     </message>
     <message>
-        <source>To specify a non-default location of the blocks directory use the '%1' option.</source>
-        <translation>如果要自定义区块存储目录的位置，请用 '%1' 这个选项来指定新的位置。</translation>
+        <source>To specify a non-default location of the blocks directory use the &apos;%1&apos; option.</source>
+        <translation>如果要自定义区块存储目录的位置，请用 &apos;%1&apos; 这个选项来指定新的位置。</translation>
     </message>
     <message>
         <source>Startup time</source>
@@ -1891,7 +2269,7 @@
         <translation>不使用任何钱包执行命令</translation>
     </message>
     <message>
-        <source>Executing command using "%1" wallet</source>
+        <source>Executing command using &quot;%1&quot; wallet</source>
         <translation>使用“%1”钱包执行命令</translation>
     </message>
     <message>
@@ -1926,6 +2304,10 @@
         <source>Unknown</source>
         <translation>未知</translation>
     </message>
+    <message>
+        <source>Open the %1 debug log file from the current data directory. This can take a few seconds for large log files.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ReceiveCoinsDialog</name>
@@ -1942,8 +2324,8 @@
         <translation>消息(&amp;M)：</translation>
     </message>
     <message>
-        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the Bitcoin network.</source>
-        <translation>可在付款请求上备注一条信息，在打开付款请求时可以看到。注意：该消息不是通过比特币网络传送。</translation>
+        <source>An optional message to attach to the payment request, which will be displayed when the request is opened. Note: The message will not be sent with the payment over the Lava network.</source>
+        <translation>可在付款请求上备注一条信息，在打开付款请求时可以看到。注意：该消息不是通过Lava网络传送。</translation>
     </message>
     <message>
         <source>An optional label to associate with the new receiving address.</source>
@@ -1966,7 +2348,7 @@
         <translation>清除</translation>
     </message>
     <message>
-        <source>Native segwit addresses (aka Bech32 or BIP-173) reduce your transaction fees later on and offer better protection against typos, but old wallets don't support them. When unchecked, an address compatible with older wallets will be created instead.</source>
+        <source>Native segwit addresses (aka Bech32 or BIP-173) reduce your transaction fees later on and offer better protection against typos, but old wallets don&apos;t support them. When unchecked, an address compatible with older wallets will be created instead.</source>
         <translation>原生隔离见证地址（又称为Bech32或者BIP-173）可减少您日后的交易费用，并且可以更好的防范打字错误，但旧版本的钱包不能识别这种地址。如果取消勾选，则会生成一个与旧版本钱包兼容的地址。</translation>
     </message>
     <message>
@@ -2179,12 +2561,12 @@
         <translation>收起  费用设置 </translation>
     </message>
     <message>
-        <source>Specify a custom fee per kB (1,000 bytes) of the transaction's virtual size.
+        <source>Specify a custom fee per kB (1,000 bytes) of the transaction&apos;s virtual size.
 
-Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis per kB" for a transaction size of 500 bytes (half of 1 kB) would ultimately yield a fee of only 50 satoshis.</source>
+Note:  Since the fee is calculated on a per-byte basis, a fee of &quot;100 satoshis per kB&quot; for a transaction size of 500 bytes (half of 1 kB) would ultimately yield a fee of only 50 satoshis.</source>
         <translation>按照交易的虚拟大小自定义每kB ( 1,000 字节 )要交多少手续费。
 
-注意：手续费是按照字节数计算的，对于一笔大小为500字节（1kB的一半）的交易来说，"每kB付100聪手续费"就意味着手续费一共只付了50聪。</translation>
+注意：手续费是按照字节数计算的，对于一笔大小为500字节（1kB的一半）的交易来说，&quot;每kB付100聪手续费&quot;就意味着手续费一共只付了50聪。</translation>
     </message>
     <message>
         <source>per kilobyte</source>
@@ -2223,8 +2605,8 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <translation>粉尘：</translation>
     </message>
     <message>
-        <source>When there is less transaction volume than space in the blocks, miners as well as relaying nodes may enforce a minimum fee. Paying only this minimum fee is just fine, but be aware that this can result in a never confirming transaction once there is more demand for bitcoin transactions than the network can process.</source>
-        <translation>当交易量小于可用区块空间时，矿工和中继节点可能会执行最低手续费率限制。按照这个最低费率来支付手续费也是可以的，但请注意，一旦交易需求超出比特币网络能处理的限度，你的交易可能永远也无法确认。</translation>
+        <source>When there is less transaction volume than space in the blocks, miners as well as relaying nodes may enforce a minimum fee. Paying only this minimum fee is just fine, but be aware that this can result in a never confirming transaction once there is more demand for Lava transactions than the network can process.</source>
+        <translation type="vanished">当交易量小于可用区块空间时，矿工和中继节点可能会执行最低手续费率限制。按照这个最低费率来支付手续费也是可以的，但请注意，一旦交易需求超出Lava网络能处理的限度，你的交易可能永远也无法确认。</translation>
     </message>
     <message>
         <source>A too low fee might result in a never confirming transaction (read the tooltip)</source>
@@ -2239,7 +2621,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <translation>启用手续费追加</translation>
     </message>
     <message>
-        <source>With Replace-By-Fee (BIP-125) you can increase a transaction's fee after it is sent. Without this, a higher fee may be recommended to compensate for increased transaction delay risk.</source>
+        <source>With Replace-By-Fee (BIP-125) you can increase a transaction&apos;s fee after it is sent. Without this, a higher fee may be recommended to compensate for increased transaction delay risk.</source>
         <translation>手续费追加（Replace-By-Fee，BIP-125）可以让你在送出交易后才来提高手续费。不用这个功能的话，建议付比较高的手续费来降低交易延迟的风险。</translation>
     </message>
     <message>
@@ -2368,11 +2750,13 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
     </message>
     <message numerus="yes">
         <source>Estimated to begin confirmation within %n block(s).</source>
-        <translation><numerusform>预计在等待 %n 个区块后会有第一个确认。</numerusform></translation>
+        <translation>
+            <numerusform>预计在等待 %n 个区块后会有第一个确认。</numerusform>
+        </translation>
     </message>
     <message>
-        <source>Warning: Invalid Bitcoin address</source>
-        <translation>警告: 比特币地址无效</translation>
+        <source>Warning: Invalid Lava address</source>
+        <translation>警告: Lava地址无效</translation>
     </message>
     <message>
         <source>Warning: Unknown change address</source>
@@ -2389,6 +2773,10 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
     <message>
         <source>(no label)</source>
         <translation>(无标签)</translation>
+    </message>
+    <message>
+        <source>When there is less transaction volume than space in the blocks, miners as well as relaying nodes may enforce a minimum fee. Paying only this minimum fee is just fine, but be aware that this can result in a never confirming transaction once there is more demand for lava transactions than the network can process.</source>
+        <translation>当交易量小于可用区块空间时，矿工和中继节点可能会执行最低手续费率限制。按照这个最低费率来支付手续费也是可以的，但请注意，一旦交易需求超出Lava网络能处理的限度，你的交易可能永远也无法确认。</translation>
     </message>
 </context>
 <context>
@@ -2414,7 +2802,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <translation>这是笔正常的支付。</translation>
     </message>
     <message>
-        <source>The Bitcoin address to send the payment to</source>
+        <source>The Lava address to send the payment to</source>
         <translation>付款目的地址</translation>
     </message>
     <message>
@@ -2434,8 +2822,8 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <translation>移除此项</translation>
     </message>
     <message>
-        <source>The fee will be deducted from the amount being sent. The recipient will receive less bitcoins than you enter in the amount field. If multiple recipients are selected, the fee is split equally.</source>
-        <translation>交易费将从发送总额中扣除。接收人将收到比您在金额框中输入的更少的比特币。如果选中了多个收件人，交易费平分。</translation>
+        <source>The fee will be deducted from the amount being sent. The recipient will receive less Lavas than you enter in the amount field. If multiple recipients are selected, the fee is split equally.</source>
+        <translation>交易费将从发送总额中扣除。接收人将收到比您在金额框中输入的更少的Lava。如果选中了多个收件人，交易费平分。</translation>
     </message>
     <message>
         <source>S&amp;ubtract fee from amount</source>
@@ -2462,8 +2850,8 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <translation>请为此地址输入一个标签以将它加入用过的地址列表</translation>
     </message>
     <message>
-        <source>A message that was attached to the bitcoin: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the Bitcoin network.</source>
-        <translation>bitcoin:URI 附带的备注信息，将会和交易一起存储，备查。 注意：该消息不会通过比特币网络传输。</translation>
+        <source>A message that was attached to the Lava: URI which will be stored with the transaction for your reference. Note: This message will not be sent over the Lava network.</source>
+        <translation>Lava:URI 附带的备注信息，将会和交易一起存储，备查。 注意：该消息不会通过Lava网络传输。</translation>
     </message>
     <message>
         <source>Pay To:</source>
@@ -2507,11 +2895,11 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <translation>签名消息(&amp;S)</translation>
     </message>
     <message>
-        <source>You can sign messages/agreements with your addresses to prove you can receive bitcoins sent to them. Be careful not to sign anything vague or random, as phishing attacks may try to trick you into signing your identity over to them. Only sign fully-detailed statements you agree to.</source>
-        <translation>您可以用你的地址对消息/协议进行签名，以证明您可以接收发送到该地址的比特币。注意不要对任何模棱两可或者随机的消息进行签名，以免遭受钓鱼式攻击。请确保消息内容准确的表达了您的真实意愿。</translation>
+        <source>You can sign messages/agreements with your addresses to prove you can receive Lavas sent to them. Be careful not to sign anything vague or random, as phishing attacks may try to trick you into signing your identity over to them. Only sign fully-detailed statements you agree to.</source>
+        <translation>您可以用你的地址对消息/协议进行签名，以证明您可以接收发送到该地址的Lava。注意不要对任何模棱两可或者随机的消息进行签名，以免遭受钓鱼式攻击。请确保消息内容准确的表达了您的真实意愿。</translation>
     </message>
     <message>
-        <source>The Bitcoin address to sign the message with</source>
+        <source>The Lava address to sign the message with</source>
         <translation>用来对消息签名的地址 </translation>
     </message>
     <message>
@@ -2543,8 +2931,8 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <translation>复制当前签名至剪切板</translation>
     </message>
     <message>
-        <source>Sign the message to prove you own this Bitcoin address</source>
-        <translation>签名消息，证明这个地址属于您。</translation>
+        <source>Sign the message to prove you own this Lava address</source>
+        <translation type="vanished">签名消息，证明这个地址属于您。</translation>
     </message>
     <message>
         <source>Sign &amp;Message</source>
@@ -2563,16 +2951,16 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <translation>验证消息(&amp;V)</translation>
     </message>
     <message>
-        <source>Enter the receiver's address, message (ensure you copy line breaks, spaces, tabs, etc. exactly) and signature below to verify the message. Be careful not to read more into the signature than what is in the signed message itself, to avoid being tricked by a man-in-the-middle attack. Note that this only proves the signing party receives with the address, it cannot prove sendership of any transaction!</source>
+        <source>Enter the receiver&apos;s address, message (ensure you copy line breaks, spaces, tabs, etc. exactly) and signature below to verify the message. Be careful not to read more into the signature than what is in the signed message itself, to avoid being tricked by a man-in-the-middle attack. Note that this only proves the signing party receives with the address, it cannot prove sendership of any transaction!</source>
         <translation>请在下面输入接收者地址、消息（确保换行符、空格符、制表符等完全相同）和签名以验证消息。请仔细核对签名信息，以提防中间人攻击。请注意，这只是证明接收方签名的地址，它不能证明任何交易！</translation>
     </message>
     <message>
-        <source>The Bitcoin address the message was signed with</source>
-        <translation>消息使用的签名地址</translation>
+        <source>The Lava address the message was signed with</source>
+        <translation type="vanished">消息使用的签名地址</translation>
     </message>
     <message>
-        <source>Verify the message to ensure it was signed with the specified Bitcoin address</source>
-        <translation>验证消息，确保消息是由指定的比特币地址签名过的。</translation>
+        <source>Verify the message to ensure it was signed with the specified Lava address</source>
+        <translation>验证消息，确保消息是由指定的Lava地址签名过的。</translation>
     </message>
     <message>
         <source>Verify &amp;Message</source>
@@ -2583,7 +2971,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <translation>清空所有验证消息栏</translation>
     </message>
     <message>
-        <source>Click "Sign Message" to generate signature</source>
+        <source>Click &quot;Sign Message&quot; to generate signature</source>
         <translation>单击“签名消息“产生签名。</translation>
     </message>
     <message>
@@ -2634,6 +3022,14 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <source>Message verified.</source>
         <translation>消息验证成功。</translation>
     </message>
+    <message>
+        <source>Sign the message to prove you own this Bitcoin address</source>
+        <translation>签名消息，证明这个地址属于您。</translation>
+    </message>
+    <message>
+        <source>The Bitcoin address the message was signed with</source>
+        <translation>消息使用的签名地址</translation>
+    </message>
 </context>
 <context>
     <name>SplashScreen</name>
@@ -2653,7 +3049,9 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
     <name>TransactionDesc</name>
     <message numerus="yes">
         <source>Open for %n more block(s)</source>
-        <translation><numerusform>在进一步同步完%n个区块前状态待定</numerusform></translation>
+        <translation>
+            <numerusform>在进一步同步完%n个区块前状态待定</numerusform>
+        </translation>
     </message>
     <message>
         <source>Open until %1</source>
@@ -2733,7 +3131,9 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
     </message>
     <message numerus="yes">
         <source>matures in %n more block(s)</source>
-        <translation><numerusform>还差 %n 个区块成熟</numerusform></translation>
+        <translation>
+            <numerusform>还差 %n 个区块成熟</numerusform>
+        </translation>
     </message>
     <message>
         <source>not accepted</source>
@@ -2788,8 +3188,8 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <translation>商家</translation>
     </message>
     <message>
-        <source>Generated coins must mature %1 blocks before they can be spent. When you generated this block, it was broadcast to the network to be added to the block chain. If it fails to get into the chain, its state will change to "not accepted" and it won't be spendable. This may occasionally happen if another node generates a block within a few seconds of yours.</source>
-        <translation>新挖出的比特币在可以使用前必须经过 %1 个区块确认的成熟过程。当您挖出此区块后，它将被广播到网络中以加入区块链。如果它未成功进入区块链，其状态将变更为“不接受”并且不可使用。这可能偶尔会发生，在另一个节点比你早几秒钟成功挖出一个区块时就会这样。</translation>
+        <source>Generated coins must mature %1 blocks before they can be spent. When you generated this block, it was broadcast to the network to be added to the block chain. If it fails to get into the chain, its state will change to &quot;not accepted&quot; and it won&apos;t be spendable. This may occasionally happen if another node generates a block within a few seconds of yours.</source>
+        <translation>新挖出的Lava在可以使用前必须经过 %1 个区块确认的成熟过程。当您挖出此区块后，它将被广播到网络中以加入区块链。如果它未成功进入区块链，其状态将变更为“不接受”并且不可使用。这可能偶尔会发生，在另一个节点比你早几秒钟成功挖出一个区块时就会这样。</translation>
     </message>
     <message>
         <source>Debug information</source>
@@ -2843,7 +3243,9 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
     </message>
     <message numerus="yes">
         <source>Open for %n more block(s)</source>
-        <translation><numerusform>在进一步同步完%n个区块前状态待定</numerusform></translation>
+        <translation>
+            <numerusform>在进一步同步完%n个区块前状态待定</numerusform>
+        </translation>
     </message>
     <message>
         <source>Open until %1</source>
@@ -3157,7 +3559,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <translation>确认手续费提升</translation>
     </message>
     <message>
-        <source>Can't sign transaction.</source>
+        <source>Can&apos;t sign transaction.</source>
         <translation>无法签署交易。</translation>
     </message>
     <message>
@@ -3239,15 +3641,15 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <translation>无法启动HTTP服务，查看日志获取更多信息</translation>
     </message>
     <message>
-        <source>Bitcoin Core</source>
-        <translation>Bitcoin Core</translation>
+        <source>Lava Core</source>
+        <translation>Lava Core</translation>
     </message>
     <message>
         <source>The %s developers</source>
         <translation>%s 开发人员</translation>
     </message>
     <message>
-        <source>Can't generate a change-address key. No keys in the internal keypool and can't generate any keys.</source>
+        <source>Can&apos;t generate a change-address key. No keys in the internal keypool and can&apos;t generate any keys.</source>
         <translation>无法生成找零地址密钥。 内部密钥池中没有密钥，也无法生成任何密钥。</translation>
     </message>
     <message>
@@ -3263,7 +3665,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <translation>读取 %s 时发生错误！所有的密钥都可以正确读取，但是交易记录或地址簿数据可能已经丢失或出错。</translation>
     </message>
     <message>
-        <source>Please check that your computer's date and time are correct! If your clock is wrong, %s will not work properly.</source>
+        <source>Please check that your computer&apos;s date and time are correct! If your clock is wrong, %s will not work properly.</source>
         <translation>请检查电脑的日期时间设置是否正确！时间错误可能会导致 %s 运行异常。</translation>
     </message>
     <message>
@@ -3271,7 +3673,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <translation>如果你认为%s对你比较有用的话，请对我们进行一些捐赠支持。请访问%s网站来获取有关这个软件的更多信息。</translation>
     </message>
     <message>
-        <source>The block database contains a block which appears to be from the future. This may be due to your computer's date and time being set incorrectly. Only rebuild the block database if you are sure that your computer's date and time are correct</source>
+        <source>The block database contains a block which appears to be from the future. This may be due to your computer&apos;s date and time being set incorrectly. Only rebuild the block database if you are sure that your computer&apos;s date and time are correct</source>
         <translation>区块数据库包含未来的交易，这可能是由本机错误的日期时间引起。若确认本机日期时间正确，请重新建立区块数据库。</translation>
     </message>
     <message>
@@ -3311,8 +3713,8 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <translation>-maxmempool 最小为%d MB</translation>
     </message>
     <message>
-        <source>Cannot resolve -%s address: '%s'</source>
-        <translation>无法解析 - %s 地址： '%s'</translation>
+        <source>Cannot resolve -%s address: &apos;%s&apos;</source>
+        <translation>无法解析 - %s 地址： &apos;%s&apos;</translation>
     </message>
     <message>
         <source>Change index out of range</source>
@@ -3387,24 +3789,24 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <translation>不正确或没有找到起源区块。网络错误？</translation>
     </message>
     <message>
-        <source>Invalid amount for -%s=&lt;amount&gt;: '%s'</source>
-        <translation>无效的金额 -%s=&lt;amount&gt;: '%s'</translation>
+        <source>Invalid amount for -%s=&lt;amount&gt;: &apos;%s&apos;</source>
+        <translation>无效的金额 -%s=&lt;amount&gt;: &apos;%s&apos;</translation>
     </message>
     <message>
-        <source>Invalid amount for -discardfee=&lt;amount&gt;: '%s'</source>
-        <translation>无效的金额 -discardfee=&lt;amount&gt;: '%s'</translation>
+        <source>Invalid amount for -discardfee=&lt;amount&gt;: &apos;%s&apos;</source>
+        <translation>无效的金额 -discardfee=&lt;amount&gt;: &apos;%s&apos;</translation>
     </message>
     <message>
-        <source>Invalid amount for -fallbackfee=&lt;amount&gt;: '%s'</source>
-        <translation>-fallbackfee 的无效数额=&lt;amount&gt;: '%s'</translation>
+        <source>Invalid amount for -fallbackfee=&lt;amount&gt;: &apos;%s&apos;</source>
+        <translation>-fallbackfee 的无效数额=&lt;amount&gt;: &apos;%s&apos;</translation>
     </message>
     <message>
-        <source>Specified blocks directory "%s" does not exist.</source>
-        <translation>指定的区块目录"%s"不存在。</translation>
+        <source>Specified blocks directory &quot;%s&quot; does not exist.</source>
+        <translation>指定的区块目录&quot;%s&quot;不存在。</translation>
     </message>
     <message>
-        <source>Unable to create the PID file '%s': %s</source>
-        <translation>无法创建PID文件'%s': %s</translation>
+        <source>Unable to create the PID file &apos;%s&apos;: %s</source>
+        <translation>无法创建PID文件&apos;%s&apos;: %s</translation>
     </message>
     <message>
         <source>Upgrading txindex database</source>
@@ -3479,8 +3881,8 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <translation>错误：监听外部连接失败 (监听返回错误 %s) </translation>
     </message>
     <message>
-        <source>Invalid amount for -maxtxfee=&lt;amount&gt;: '%s' (must be at least the minrelay fee of %s to prevent stuck transactions)</source>
-        <translation>-maxtxfee=&lt;amount&gt;: '%s' 的金额无效（交易费至少为 %s，以免交易滞留过久）</translation>
+        <source>Invalid amount for -maxtxfee=&lt;amount&gt;: &apos;%s&apos; (must be at least the minrelay fee of %s to prevent stuck transactions)</source>
+        <translation>-maxtxfee=&lt;amount&gt;: &apos;%s&apos; 的金额无效（交易费至少为 %s，以免交易滞留过久）</translation>
     </message>
     <message>
         <source>The transaction amount is too small to send after the fee has been deducted</source>
@@ -3507,24 +3909,24 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <translation>信息</translation>
     </message>
     <message>
-        <source>Invalid -onion address or hostname: '%s'</source>
-        <translation>无效的 -onion 地址: '%s'</translation>
+        <source>Invalid -onion address or hostname: &apos;%s&apos;</source>
+        <translation>无效的 -onion 地址: &apos;%s&apos;</translation>
     </message>
     <message>
-        <source>Invalid -proxy address or hostname: '%s'</source>
-        <translation>无效的 -proxy 地址: '%s'</translation>
+        <source>Invalid -proxy address or hostname: &apos;%s&apos;</source>
+        <translation>无效的 -proxy 地址: &apos;%s&apos;</translation>
     </message>
     <message>
-        <source>Invalid amount for -paytxfee=&lt;amount&gt;: '%s' (must be at least %s)</source>
-        <translation>无效的金额 -paytxfee=&lt;amount&gt;: '%s' (必须至少为 %s)</translation>
+        <source>Invalid amount for -paytxfee=&lt;amount&gt;: &apos;%s&apos; (must be at least %s)</source>
+        <translation>无效的金额 -paytxfee=&lt;amount&gt;: &apos;%s&apos; (必须至少为 %s)</translation>
     </message>
     <message>
-        <source>Invalid netmask specified in -whitelist: '%s'</source>
-        <translation>-whitelist: '%s' 指定的网络掩码无效</translation>
+        <source>Invalid netmask specified in -whitelist: &apos;%s&apos;</source>
+        <translation>-whitelist: &apos;%s&apos; 指定的网络掩码无效</translation>
     </message>
     <message>
-        <source>Need to specify a port with -whitebind: '%s'</source>
-        <translation>-whitebind: '%s' 需要指定一个端口</translation>
+        <source>Need to specify a port with -whitebind: &apos;%s&apos;</source>
+        <translation>-whitebind: &apos;%s&apos; 需要指定一个端口</translation>
     </message>
     <message>
         <source>Reducing -maxconnections from %d to %d, because of system limitations.</source>
@@ -3539,15 +3941,15 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <translation>签署交易失败</translation>
     </message>
     <message>
-        <source>Specified -walletdir "%s" does not exist</source>
+        <source>Specified -walletdir &quot;%s&quot; does not exist</source>
         <translation>以-walletdir指定的路径“%s”不存在</translation>
     </message>
     <message>
-        <source>Specified -walletdir "%s" is a relative path</source>
+        <source>Specified -walletdir &quot;%s&quot; is a relative path</source>
         <translation>以-walletdir指定的路径“%s”是相对路径</translation>
     </message>
     <message>
-        <source>Specified -walletdir "%s" is not a directory</source>
+        <source>Specified -walletdir &quot;%s&quot; is not a directory</source>
         <translation>以-walletdir指定的路径“%s”不是个目录</translation>
     </message>
     <message>
@@ -3665,7 +4067,7 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <translation>交易必须包含至少一个接收人</translation>
     </message>
     <message>
-        <source>Unknown network specified in -onlynet: '%s'</source>
+        <source>Unknown network specified in -onlynet: &apos;%s&apos;</source>
         <translation>-onlynet 指定的是未知网络：%s</translation>
     </message>
     <message>
@@ -3685,8 +4087,8 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
         <translation>警告：在已经禁用私钥的钱包 {%s} 中仍然检测到私钥</translation>
     </message>
     <message>
-        <source>Cannot write to data directory '%s'; check permissions.</source>
-        <translation>不能写入到数据目录'%s'；请检查文件权限。</translation>
+        <source>Cannot write to data directory &apos;%s&apos;; check permissions.</source>
+        <translation>不能写入到数据目录&apos;%s&apos;；请检查文件权限。</translation>
     </message>
     <message>
         <source>Loading block index...</source>
@@ -3711,6 +4113,10 @@ Note:  Since the fee is calculated on a per-byte basis, a fee of "100 satoshis p
     <message>
         <source>Error</source>
         <translation>错误</translation>
+    </message>
+    <message>
+        <source>Initialization sanity check failed. %s is shutting down.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

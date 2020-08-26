@@ -17,6 +17,7 @@
 #include <checkpoints.h>
 #include <compat/sanity.h>
 #include <consensus/validation.h>
+#include <issuance.h>
 #include <fs.h>
 #include <httpserver.h>
 #include <httprpc.h>
@@ -555,9 +556,9 @@ void SetupServerArgs()
 std::string LicenseInfo()
 {
     const std::string URL_SOURCE_CODE = "<https://github.com/lavaio/lava>";
-    const std::string URL_WEBSITE = "<https://lava-tech.org>";
+    const std::string URL_WEBSITE = "<http://lavatech.org>";
 
-    return CopyrightHolders(strprintf(_("Copyright (C) %i-%i"), 2009, COPYRIGHT_YEAR) + " ") + "\n" +
+    return CopyrightHolders(strprintf(_("Copyright (C) %i-%i"), 2019, COPYRIGHT_YEAR) + " ") + "\n" +
            "\n" +
            strprintf(_("Please contribute if you find %s useful. "
                        "Visit %s for further information about the software."),
@@ -1271,6 +1272,8 @@ bool AppInitMain(InitInterfaces& interfaces)
 
     InitSignatureCache();
     InitScriptExecutionCache();
+    InitRangeproofCache();
+    InitSurjectionproofCache();
 
     LogPrintf("Using %u threads for script verification\n", nScriptCheckThreads);
     if (nScriptCheckThreads) {
@@ -1302,6 +1305,11 @@ bool AppInitMain(InitInterfaces& interfaces)
 #if ENABLE_ZMQ
     RegisterZMQRPCCommands(tableRPC);
 #endif
+
+    uint256 entropy;
+    const auto& genesis = chainparams.GenesisBlock();
+    GenerateAssetEntropy(entropy,  COutPoint(uint256(genesis.vtx[0]->GetHash()), 0), genesis.GetHash());
+    CalculateAsset(policyAsset, entropy);
 
     /* Start the RPC server already.  It will be started in "warmup" mode
      * and not really process calls already (but it will signify connections

@@ -89,7 +89,7 @@ private:
     CTxOut &txout;
 
 public:
-    explicit CTxOutCompressor(CTxOut &txoutIn) : txout(txoutIn) { }
+    explicit CTxOutCompressor(CTxOut &txoutIn, int versionIn = 0) : txout(txoutIn){ }
 
     ADD_SERIALIZE_METHODS;
 
@@ -105,6 +105,42 @@ public:
         }
         CScriptCompressor cscript(REF(txout.scriptPubKey));
         READWRITE(cscript);
+
+        if (s.GetExtra() == 0){
+            return;
+        }
+
+         //CA:
+        if (!ser_action.ForRead()) {
+            READWRITE(txout.flags);
+            if (txout.flags == 1){
+                if (txout.nValueCA.IsExplicit()) {
+                    uint8_t b = 0;
+                    READWRITE(b);
+                    uint64_t nVal = CompressAmount(txout.nValueCA.GetAmount());
+                    READWRITE(VARINT(nVal));
+                } else {
+                    uint8_t b = 1;
+                    READWRITE(b);
+                    READWRITE(txout.nValueCA);
+                }  
+                READWRITE(txout.nAsset);
+            }
+        } else {
+            READWRITE(txout.flags);
+            if (txout.flags == 1){
+                uint8_t type = 0;
+                READWRITE(type);
+                if (type == 0) {
+                    uint64_t nVal = 0;
+                    READWRITE(VARINT(nVal));
+                    txout.nValueCA = DecompressAmount(nVal);
+                } else {
+                    READWRITE(txout.nValueCA);
+                }
+                READWRITE(txout.nAsset);
+            }
+        }
     }
 };
 

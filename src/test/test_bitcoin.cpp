@@ -40,6 +40,8 @@ BasicTestingSetup::BasicTestingSetup(const std::string& chainName)
     SetupNetworking();
     InitSignatureCache();
     InitScriptExecutionCache();
+    InitRangeproofCache();
+    InitSurjectionproofCache();
     fCheckBlockIndex = true;
     // CreateAndProcessBlock() does not support building SegWit blocks, so don't activate in these tests.
     // TODO: fix the code to support SegWit blocks.
@@ -133,7 +135,7 @@ CBlock
 TestChain100Setup::CreateAndProcessBlock(const std::vector<CMutableTransaction>& txns, const CScript& scriptPubKey)
 {
     const CChainParams& chainparams = Params();
-    std::unique_ptr<CBlockTemplate> pblocktemplate = BlockAssembler(chainparams).CreateNewBlock(scriptPubKey,0,CKeyID(),0,0,CTransactionRef());
+    std::unique_ptr<CBlockTemplate> pblocktemplate = BlockAssembler(chainparams).CreateNewBlock(scriptPubKey,0,CKeyID(),0,0,MakeTransactionRef());
     CBlock& block = pblocktemplate->block;
 
     // Replace mempool-selected txns with just coinbase plus passed-in txns:

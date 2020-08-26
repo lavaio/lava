@@ -29,6 +29,7 @@ class OverrideStream
 
     const int nType;
     const int nVersion;
+    int nExtra{0};
 
 public:
     OverrideStream(Stream* stream_, int nType_, int nVersion_) : stream(stream_), nType(nType_), nVersion(nVersion_) {}
@@ -61,6 +62,8 @@ public:
 
     int GetVersion() const { return nVersion; }
     int GetType() const { return nType; }
+    void SetExtra(int n) { nExtra = n; }
+    int GetExtra() const { return nExtra; }
     size_t size() const { return stream->size(); }
 };
 
@@ -120,11 +123,14 @@ class CVectorWriter
     {
         return nType;
     }
+    void SetExtra(int n) { nExtra = n; }
+    int GetExtra() const { return nExtra; }
 private:
     const int nType;
     const int nVersion;
     std::vector<unsigned char>& vchData;
     size_t nPos;
+    int nExtra{0};
 };
 
 /** Minimal stream for reading from an existing vector by reference
@@ -209,6 +215,7 @@ protected:
 
     int nType;
     int nVersion;
+    int nExtra{0};
 public:
 
     typedef vector_type::allocator_type   allocator_type;
@@ -395,6 +402,8 @@ public:
     int GetType() const          { return nType; }
     void SetVersion(int n)       { nVersion = n; }
     int GetVersion() const       { return nVersion; }
+    void SetExtra(int n)       { nExtra = n; }
+    int GetExtra() const       { return nExtra; }
 
     void read(char* pch, size_t nSize)
     {
@@ -605,6 +614,7 @@ class CAutoFile
 private:
     const int nType;
     const int nVersion;
+    int nExtra{0};
 
     FILE* file;
 
@@ -652,6 +662,8 @@ public:
     //
     int GetType() const          { return nType; }
     int GetVersion() const       { return nVersion; }
+    void SetExtra(int n) { nExtra = n; }
+    int GetExtra() const { return nExtra; }
 
     void read(char* pch, size_t nSize)
     {
@@ -714,6 +726,7 @@ class CBufferedFile
 private:
     const int nType;
     const int nVersion;
+    int nExtra{0};
 
     FILE *src;            //!< source file
     uint64_t nSrcPos;     //!< how many bytes have been read from source
@@ -759,6 +772,8 @@ public:
 
     int GetVersion() const { return nVersion; }
     int GetType() const { return nType; }
+    void SetExtra(int n) { nExtra = n; }
+    int GetExtra() const { return nExtra; }
 
     void fclose()
     {

@@ -121,12 +121,15 @@ private:
 
     const int nType;
     const int nVersion;
+    int nExtra{0};
 public:
 
     CHashWriter(int nTypeIn, int nVersionIn) : nType(nTypeIn), nVersion(nVersionIn) {}
 
     int GetType() const { return nType; }
     int GetVersion() const { return nVersion; }
+    void SetExtra(int n) { nExtra = n; }
+    int GetExtra() const { return nExtra; }
 
     void write(const char *pch, size_t size) {
         ctx.Write((const unsigned char*)pch, size);
@@ -203,5 +206,12 @@ uint256 SerializeHash(const T& obj, int nType=SER_GETHASH, int nVersion=PROTOCOL
 unsigned int MurmurHash3(unsigned int nHashSeed, const std::vector<unsigned char>& vDataToHash);
 
 void BIP32Hash(const ChainCode &chainCode, unsigned int nChild, unsigned char header, const unsigned char data[32], unsigned char output[64]);
+
+/*
+ * Compute the Merkle root of the transactions in a block using mid-state only.
+ * Note that the merkle root calculated with this method is not the same as the
+ * one computed by ComputeMerkleRoot.
+ */
+uint256 ComputeFastMerkleRoot(const std::vector<uint256>& hashes);
 
 #endif // BITCOIN_HASH_H

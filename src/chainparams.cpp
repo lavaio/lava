@@ -71,7 +71,7 @@ public:
         consensus.LVIP05Height = 67584;
         consensus.powLimit = uint256S("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
-        consensus.nPowTargetSpacing = 10 * 60;
+        consensus.nPowTargetSpacing = 4 * 60;
         consensus.fPowAllowMinDifficultyBlocks = false;
         consensus.fPowNoRetargeting = false;
         consensus.nRuleChangeActivationThreshold = 1916; // 95% of 2016
@@ -109,10 +109,16 @@ public:
         pchMessageStart[1] = 0xb4;
         pchMessageStart[2] = 0xbe;
         pchMessageStart[3] = 0xf9;
+
+        pchMessageStartToDisk[0] = 0xd9;
+        pchMessageStartToDisk[1] = 0xb4;
+        pchMessageStartToDisk[2] = 0xbe;
+        pchMessageStartToDisk[3] = 0xfa;
+
         nDefaultPort = 6868;
         nPruneAfterHeight = 100000;
-        m_assumed_blockchain_size = 240;
-        m_assumed_chain_state_size = 3;
+        m_assumed_blockchain_size = 1;
+        m_assumed_chain_state_size = 1;
 
         std::vector<unsigned char> scriptData(ParseHex("76a91400f3ce606cf8a5fdebdcff65c6b059d66cd6cc1e88ac"));
         const CScript genesisOutputScript = CScript(scriptData.begin(), scriptData.end());
@@ -140,10 +146,12 @@ public:
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,0);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,5);
         base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,128);
+        base58Prefixes[BLINDED_ADDRESS]= std::vector<unsigned char>(1,12);
         base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x88, 0xB2, 0x1E};
         base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x88, 0xAD, 0xE4};
 
         bech32_hrp = "bc";
+        blech32_hrp = bech32_hrp;
 
         vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_main, pnSeed6_main + ARRAYLEN(pnSeed6_main));
 
@@ -153,15 +161,27 @@ public:
 
         checkpointData = {
             {
-                {15000, uint256S("fe69381fef372e387dbe3d3df67829eac6646d7af739d7b518a558f4123db81f")}, // 15000
+                {10000, uint256S("2557bc48127fbe0a5866c580d1eeadb77744db2eeb7794a9528b6557aa881174")},
+                {20000, uint256S("2bc923cb3c4d62a4128c1362a7b8a2c60334d85635e93dc96e778ca095bf9cd2")},
+                {30000, uint256S("71cfe9c60a5df31d34143b323e4b19c363e4021822492b70eaa55334bea2ec52")},
+                {40000, uint256S("d52a8dbfaaab38b40adc6234ed52085ec7caebbe01233b4c769e0c95a4c03e9c")},
+                {50000, uint256S("b49ca1a8b9b9a68a6c19f2f222041da449a272ea24254f64da10fa041ba392d4")},
+                {60000, uint256S("d5dec9f18bd068e61f684b9b879b15a373ad4cc6180048ed1518e7eec19cc86c")},
+                {70000, uint256S("64bbc116d4ae79fcd32e7212bfd0fc648b9aeb89825b55b9d50dc084ea8ffa78")},
+                {80000, uint256S("5b95165fa371c31d42fd73cf4e923f8c7cbfb4e48dc5645d55a87313dc0ce04c")},
+                {90000, uint256S("2794b7b3aad7565fc5d6e9c71c0081da40649a3c672af3527c3684fa848e1580")},
+                {100000, uint256S("32c25eef47d3886403b74f8cf7fc5b419da9b8ba60babd83fabc4e540e767e94")},
+                {110000, uint256S("2ffb9c5d05107cba3057802b2351a95ee0d66e7a6e919e4b9f12d96d654176e3")},
+                {120000, uint256S("1a4bf155e28133100e545ac3063b0c06765b34cc564bbc281ae205072e4aa194")},
+                {129000, uint256S("654dea39d44928feb1b9256ffc547330c9fd64e2f84e4ab996b77695ca790d0f")},
             }
         };
 
         chainTxData = ChainTxData{
-            // Data from rpc: getchaintxstats 4096 0000000000000000000f1c54590ee18d15ec70e68c8cd4cfbadb1b4f11697eee
-            /* nTime    */ 1550374134,
-            /* nTxCount */ 383732546,
-            /* dTxRate  */ 3.685496590998308
+            // Data from rpc: getchaintxstats 4096
+            /* nTime    */ 1569246923,
+            /* nTxCount */ 18630,
+            /* dTxRate  */ 0.0106859392924438
         };
 
         /* disable fallback fee on mainnet */
@@ -217,6 +237,11 @@ public:
         pchMessageStart[2] = 0x11;
         pchMessageStart[3] = 0x0b;
         
+        pchMessageStartToDisk[0] = 0x07;
+        pchMessageStartToDisk[1] = 0x09;
+        pchMessageStartToDisk[2] = 0x11;
+        pchMessageStartToDisk[3] = 0x0c;
+
         nDefaultPort = 16868;
         nPruneAfterHeight = 1000;
         m_assumed_blockchain_size = 30;
@@ -239,10 +264,12 @@ public:
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);
         base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,239);
+        base58Prefixes[BLINDED_ADDRESS]= std::vector<unsigned char>(1,4);
         base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x35, 0x87, 0xCF};
         base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x35, 0x83, 0x94};
 
         bech32_hrp = "tb";
+        blech32_hrp = bech32_hrp;
 
         vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_test, pnSeed6_test + ARRAYLEN(pnSeed6_test));
 
@@ -252,6 +279,9 @@ public:
         consensus.nActionFee = 16 * COIN;
 
         checkpointData = {
+            {
+                {13333, uint256S("c5425517b7c9dd1b1002a6604ef9eca9e222601a4dff2f4f9b9bfdb32729ab99")},
+            }
         };
 
         chainTxData = ChainTxData{
@@ -310,6 +340,11 @@ public:
         pchMessageStart[1] = 0xbf;
         pchMessageStart[2] = 0xb5;
         pchMessageStart[3] = 0xda;
+
+        pchMessageStartToDisk[0] = 0xfa;
+        pchMessageStartToDisk[1] = 0xbf;
+        pchMessageStartToDisk[2] = 0xb5;
+        pchMessageStartToDisk[3] = 0xdb;
         nDefaultPort = 18444;
         nPruneAfterHeight = 1000;
         m_assumed_blockchain_size = 0;
@@ -348,10 +383,12 @@ public:
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);
         base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,239);
+        base58Prefixes[BLINDED_ADDRESS]= std::vector<unsigned char>(1,4);
         base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x35, 0x87, 0xCF};
         base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x35, 0x83, 0x94};
 
         bech32_hrp = "bcrt";
+        blech32_hrp = bech32_hrp;
 
         /* enable fallback fee on regtest */
         m_fallback_fee_enabled = true;

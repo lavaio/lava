@@ -102,22 +102,22 @@ public:
 
     std::vector<CTicketRef> GetTicketsBySlotIndex(const int slotIndex);
 
-    const int SlotIndex() const { return slotIndex; }
+    int SlotIndex() const { return slotIndex; }
     
     /** 
      * Slotlenth is 2048 each slot.
      * @return   the current slotlength.
      */
-    const int SlotLength();
+    int SlotLength() const;
 
-    const int LockTime();
+    int LockTime() const;
     
     /** 
      * 0 slot's locktime is 2047.
      * @param[in]  index, the slot index calculated by height/slotlength.
      * @return   the current lockheight, beyond which the firestone is USEABLE.
      */
-    const int LockTime(const int index);
+    int LockTime(const int index) const;
     
     /** 
      * Load the firestone set at height.

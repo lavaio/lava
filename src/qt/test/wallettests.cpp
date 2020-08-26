@@ -5,6 +5,7 @@
 #include <interfaces/chain.h>
 #include <interfaces/node.h>
 #include <base58.h>
+#include <policy/policy.h>
 #include <qt/bitcoinamountfield.h>
 #include <qt/optionsmodel.h>
 #include <qt/platformstyle.h>
@@ -124,9 +125,9 @@ void BumpFee(TransactionView& view, const uint256& txid, bool expectDisabled, st
 //
 // This also requires overriding the default minimal Qt platform:
 //
-//     src/qt/test/test_bitcoin-qt -platform xcb      # Linux
-//     src/qt/test/test_bitcoin-qt -platform windows  # Windows
-//     src/qt/test/test_bitcoin-qt -platform cocoa    # macOS
+//     src/qt/test/test_lava-qt -platform xcb      # Linux
+//     src/qt/test/test_lava-qt -platform windows  # Windows
+//     src/qt/test/test_lava-qt -platform cocoa    # macOS
 void TestGUI()
 {
     // Set up wallet and chain with 105 blocks (5 mature blocks for spending).
@@ -187,7 +188,7 @@ void TestGUI()
     QLabel* balanceLabel = overviewPage.findChild<QLabel*>("labelBalance");
     QString balanceText = balanceLabel->text();
     int unit = walletModel.getOptionsModel()->getDisplayUnit();
-    CAmount balance = walletModel.wallet().getBalance();
+    CAmount balance = walletModel.wallet().getBalance()[::policyAsset];
     QString balanceComparison = BitcoinUnits::formatWithUnit(unit, balance, false, BitcoinUnits::separatorAlways);
     QCOMPARE(balanceText, balanceComparison);
 
@@ -255,7 +256,7 @@ void WalletTests::walletTests()
         // and fails to handle returned nulls
         // (https://bugreports.qt.io/browse/QTBUG-49686).
         QWARN("Skipping WalletTests on mac build with 'minimal' platform set due to Qt bugs. To run AppTests, invoke "
-              "with 'test_bitcoin-qt -platform cocoa' on mac, or else use a linux or windows build.");
+              "with 'test_lava-qt -platform cocoa' on mac, or else use a linux or windows build.");
         return;
     }
 #endif

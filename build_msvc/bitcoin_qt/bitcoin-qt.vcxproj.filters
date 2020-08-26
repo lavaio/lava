@@ -1,0 +1,797 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Form Files">
+      <UniqueIdentifier>{99349809-55BA-4b9d-BF79-8FDBB0286EB3}</UniqueIdentifier>
+      <Extensions>ui</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Form Files">
+      <UniqueIdentifier>{99349809-55BA-4b9d-BF79-8FDBB0286EB3}</UniqueIdentifier>
+      <Extensions>ui</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;moc;h;def;odl;idl;res;</Extensions>
+    </Filter>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;moc;h;def;odl;idl;res;</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Translation Files">
+      <UniqueIdentifier>{639EADAA-A684-42e4-A9AD-28FC9BCB8F7C}</UniqueIdentifier>
+      <Extensions>ts;xlf</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Translation Files">
+      <UniqueIdentifier>{639EADAA-A684-42e4-A9AD-28FC9BCB8F7C}</UniqueIdentifier>
+      <Extensions>ts;xlf</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\qt\addressbookpage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\addresstablemodel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\amountspinbox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\askpassphrasedialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\bantablemodel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\bitcoin.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\bitcoinaddressvalidator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\bitcoinamountfield.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\bitcoingui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\bitcoinstrings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\bitcoinunits.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\clientmodel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\coincontroldialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\coincontroltreewidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\csvmodelwriter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\editaddressdialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\firestoneinfopage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\freespacechecker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\guiutil.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\intro.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\modaloverlay.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\networkstyle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\notificator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\openuridialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\optionsdialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\optionsmodel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\overviewpage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\paymentserver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\peertablemodel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\platformstyle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\plotinfopage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\qtrpctimerbase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\qvalidatedlineedit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\qvaluecombobox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\receivecoinsdialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\receiverequestdialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\recentrequeststablemodel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\rpcconsole.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\rpcexecutor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\sendcoinsdialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\sendcoinsentry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\signverifymessagedialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\slotinfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\splashscreen.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\trafficgraphwidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\transactiondesc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\transactiondescdialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\transactionfilterproxy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\transactionrecord.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\transactiontablemodel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\transactionview.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\txfeemodifier.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\txviewdelegate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\uiexception.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\utilitydialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\walletcontroller.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\walletframe.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\walletmodel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\walletmodeltransaction.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\walletview.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt\winshutdownmonitor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="\">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <QtMoc Include="..\..\src\qt\addressbookpage.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\addresstablemodel.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\amountspinbox.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\askpassphrasedialog.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\bantablemodel.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\bitcoin.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\bitcoinaddressvalidator.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\bitcoinamountfield.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\bitcoingui.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\bitcoinunits.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\clientmodel.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\coincontroldialog.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\coincontroltreewidget.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\csvmodelwriter.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\editaddressdialog.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\firestoneinfopage.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\freespacechecker.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <ClInclude Include="..\..\src\qt\guiconstants.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <QtMoc Include="..\..\src\qt\guiutil.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\intro.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\modaloverlay.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <ClInclude Include="..\..\src\qt\networkstyle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <QtMoc Include="..\..\src\qt\notificator.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\openuridialog.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\optionsdialog.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\optionsmodel.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\overviewpage.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\paymentserver.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\peertablemodel.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <ClInclude Include="..\..\src\qt\platformstyle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <QtMoc Include="..\..\src\qt\plotinfopage.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\qtrpctimerbase.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\qvalidatedlineedit.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\qvaluecombobox.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\receivecoinsdialog.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\receiverequestdialog.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\recentrequeststablemodel.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\rpcconsole.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\rpcexecutor.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\sendcoinsdialog.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\sendcoinsentry.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\signverifymessagedialog.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <ClInclude Include="..\..\src\qt\slotinfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <QtMoc Include="..\..\src\qt\splashscreen.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\trafficgraphwidget.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\transactiondesc.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\transactiondescdialog.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\transactionfilterproxy.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <ClInclude Include="..\..\src\qt\transactionrecord.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <QtMoc Include="..\..\src\qt\transactiontablemodel.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\transactionview.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <ClInclude Include="..\..\src\qt\txfeemodifier.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <QtMoc Include="..\..\src\qt\txviewdelegate.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <ClInclude Include="..\..\src\qt\uiexception.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <QtMoc Include="..\..\src\qt\utilitydialog.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\walletcontroller.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\walletframe.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\..\src\qt\walletmodel.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <ClInclude Include="..\..\src\qt\walletmodeltransaction.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <QtMoc Include="..\..\src\qt\walletview.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <ClInclude Include="..\..\src\qt\winshutdownmonitor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="debug\moc_predefs.h.cbt">
+      <Filter>Generated Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="release\moc_predefs.h.cbt">
+      <Filter>Generated Files</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\src\qt\locale\bitcoin_zh_CN.ts">
+      <Filter>Translation Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\src\qt\res\icons\about.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\about_qt.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\add.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\address-book.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\bitcoin.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <QtRcc Include="..\..\src\qt\bitcoin.qrc">
+      <Filter>Resource Files</Filter>
+    </QtRcc>
+    <QtRcc Include="..\..\src\qt\bitcoin_locale.qrc">
+      <Filter>Resource Files</Filter>
+    </QtRcc>
+    <None Include="..\..\src\qt\locale\bitcoin_zh_CN.qm">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\chevron.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\clock1.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\clock2.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\clock3.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\clock4.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\clock5.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\configure.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\connect0.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\connect1.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\connect2.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\connect3.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\connect4.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\debugwindow.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\edit.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\editcopy.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\editpaste.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\export.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\eye.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\eye_minus.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\eye_plus.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\filesave.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\firestone.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\fontbigger.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\fontsmaller.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\hd_disabled.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\hd_enabled.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\history.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\info.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\key.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\lock_closed.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\lock_open.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\network_disabled.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\open.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\overview.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\proxy.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\quit.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\receive.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\remove.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\send.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-000.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-001.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-002.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-003.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-004.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-005.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-006.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-007.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-008.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-009.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-010.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-011.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-012.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-013.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-014.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-015.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-016.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-017.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-018.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-019.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-020.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-021.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-022.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-023.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-024.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-025.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-026.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-027.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-028.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-029.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-030.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-031.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-032.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-033.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-034.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\movies\spinner-035.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\synced.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\transaction0.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\transaction2.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\transaction_abandoned.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\transaction_conflicted.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\tx_inout.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\tx_input.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\tx_mined.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\tx_output.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\verify.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\src\qt\res\icons\warning.png">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <QtUic Include="..\..\src\qt\forms\addressbookpage.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="..\..\src\qt\forms\askpassphrasedialog.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="..\..\src\qt\forms\coincontroldialog.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="..\..\src\qt\forms\debugwindow.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="..\..\src\qt\forms\editaddressdialog.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="..\..\src\qt\forms\firestoneinfopage.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="..\..\src\qt\forms\helpmessagedialog.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="..\..\src\qt\forms\intro.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="..\..\src\qt\forms\minerviewpage.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="..\..\src\qt\forms\modaloverlay.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="..\..\src\qt\forms\openuridialog.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="..\..\src\qt\forms\optionsdialog.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="..\..\src\qt\forms\overviewpage.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="..\..\src\qt\forms\plotinfopage.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="..\..\src\qt\forms\receivecoinsdialog.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="..\..\src\qt\forms\receiverequestdialog.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="..\..\src\qt\forms\sendcoinsdialog.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="..\..\src\qt\forms\sendcoinsentry.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="..\..\src\qt\forms\signverifymessagedialog.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="..\..\src\qt\forms\transactiondescdialog.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\..\src\qt\res\bitcoin-qt-res.rc" />
+  </ItemGroup>
+</Project>

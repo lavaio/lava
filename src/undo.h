@@ -35,13 +35,12 @@ public:
         ::Serialize(s, CTxOutCompressor(REF(txout->out)));
     }
 
-    explicit TxInUndoSerializer(const Coin* coin) : txout(coin) {}
+    explicit TxInUndoSerializer(const Coin* coin, int versionIn = 0) : txout(coin) {}
 };
 
 class TxInUndoDeserializer
 {
     Coin* txout;
-
 public:
     template<typename Stream>
     void Unserialize(Stream &s) {
@@ -59,7 +58,7 @@ public:
         ::Unserialize(s, CTxOutCompressor(REF(txout->out)));
     }
 
-    explicit TxInUndoDeserializer(Coin* coin) : txout(coin) {}
+    explicit TxInUndoDeserializer(Coin* coin, int versionIn = 0) : txout(coin) {}
 };
 
 static const size_t MIN_TRANSACTION_INPUT_WEIGHT = WITNESS_SCALE_FACTOR * ::GetSerializeSize(CTxIn(), PROTOCOL_VERSION);
@@ -71,7 +70,6 @@ class CTxUndo
 public:
     // undo information for all txins
     std::vector<Coin> vprevout;
-
     template <typename Stream>
     void Serialize(Stream& s) const {
         // TODO: avoid reimplementing vector serializer
@@ -102,7 +100,6 @@ class CBlockUndo
 {
 public:
     std::vector<CTxUndo> vtxundo; // for all but the coinbase
-
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

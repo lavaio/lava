@@ -102,10 +102,12 @@ endif
 BITCOIN_CORE_H = \
   addrdb.h \
   addrman.h \
+  asset.h \
   attributes.h \
   banman.h \
   base58.h \
   bech32.h \
+  blech32.h \
   bloom.h \
   blockencodings.h \
   blockfilter.h \
@@ -123,6 +125,7 @@ BITCOIN_CORE_H = \
   compat/endian.h \
   compat/sanity.h \
   compressor.h \
+  confidential_validation.h \
   consensus/consensus.h \
   consensus/tx_verify.h \
   core_io.h \
@@ -139,6 +142,7 @@ BITCOIN_CORE_H = \
   interfaces/handler.h \
   interfaces/node.h \
   interfaces/wallet.h \
+  issuance.h \
   key.h \
   key_io.h \
   keystore.h \
@@ -246,6 +250,7 @@ libbitcoin_server_a_SOURCES = \
   blockfilter.cpp \
   chain.cpp \
   checkpoints.cpp \
+  confidential_validation.cpp \
   consensus/tx_verify.cpp \
   httprpc.cpp \
   httpserver.cpp \
@@ -390,6 +395,7 @@ libbitcoin_consensus_a_SOURCES = \
   amount.h \
   arith_uint256.cpp \
   arith_uint256.h \
+  asset.cpp \
   consensus/merkle.cpp \
   consensus/merkle.h \
   consensus/params.h \
@@ -399,6 +405,8 @@ libbitcoin_consensus_a_SOURCES = \
   prevector.h \
   primitives/block.cpp \
   primitives/block.h \
+  primitives/confidential.cpp \
+  primitives/confidential.h \
   primitives/transaction.cpp \
   primitives/transaction.h \
   ticket.cpp \
@@ -429,11 +437,14 @@ endif
 libbitcoin_common_a_SOURCES = \
   base58.cpp \
   bech32.cpp \
+  blech32.cpp \
+  blind.cpp \
   chainparams.cpp \
   coins.cpp \
   compressor.cpp \
   core_read.cpp \
   core_write.cpp \
+  issuance.cpp \
   key.cpp \
   key_io.cpp \
   keystore.cpp \
@@ -562,7 +573,7 @@ lava_tx_LDADD = \
   $(LIBMEMENV) \
   $(LIBSECP256K1)
 
-lava_tx_LDADD += $(BOOST_LIBS) $(CRYPTO_LIBS)
+lava_tx_LDADD += $(BOOST_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS)
 #
 
 # lava-wallet binary #
@@ -583,12 +594,13 @@ lava_wallet_LDADD = \
   $(LIBBITCOIN_CONSENSUS) \
   $(LIBBITCOIN_UTIL) \
   $(LIBBITCOIN_CRYPTO) \
+  $(LIBUNIVALUE) \
   $(LIBLEVELDB) \
   $(LIBLEVELDB_SSE42) \
   $(LIBMEMENV) \
   $(LIBSECP256K1)
 
-lava_wallet_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS)
+lava_wallet_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_LIBS)
 #
 
 # bitcoinconsensus library #

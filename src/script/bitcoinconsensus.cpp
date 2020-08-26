@@ -48,11 +48,14 @@ public:
 
     int GetVersion() const { return m_version; }
     int GetType() const { return m_type; }
+    void SetExtra(int n) { nExtra = n; }
+    int GetExtra() const { return nExtra; }
 private:
     const int m_type;
     const int m_version;
     const unsigned char* m_data;
     size_t m_remaining;
+    int nExtra{0};
 };
 
 inline int set_error(bitcoinconsensus_error* ret, bitcoinconsensus_error serror)
@@ -76,7 +79,7 @@ static bool verify_flags(unsigned int flags)
     return (flags & ~(bitcoinconsensus_SCRIPT_FLAGS_VERIFY_ALL)) == 0;
 }
 
-static int verify_script(const unsigned char *scriptPubKey, unsigned int scriptPubKeyLen, CAmount amount,
+static int verify_script(const unsigned char *scriptPubKey, unsigned int scriptPubKeyLen, CConfidentialValue amount,
                                     const unsigned char *txTo        , unsigned int txToLen,
                                     unsigned int nIn, unsigned int flags, bitcoinconsensus_error* err)
 {
@@ -101,12 +104,11 @@ static int verify_script(const unsigned char *scriptPubKey, unsigned int scriptP
     }
 }
 
-int bitcoinconsensus_verify_script_with_amount(const unsigned char *scriptPubKey, unsigned int scriptPubKeyLen, int64_t amount,
+int bitcoinconsensus_verify_script_with_amount(const unsigned char *scriptPubKey, unsigned int scriptPubKeyLen, CConfidentialValue amount,
                                     const unsigned char *txTo        , unsigned int txToLen,
                                     unsigned int nIn, unsigned int flags, bitcoinconsensus_error* err)
 {
-    CAmount am(amount);
-    return ::verify_script(scriptPubKey, scriptPubKeyLen, am, txTo, txToLen, nIn, flags, err);
+    return ::verify_script(scriptPubKey, scriptPubKeyLen, amount, txTo, txToLen, nIn, flags, err);
 }
 
 
@@ -118,7 +120,7 @@ int bitcoinconsensus_verify_script(const unsigned char *scriptPubKey, unsigned i
         return set_error(err, bitcoinconsensus_ERR_AMOUNT_REQUIRED);
     }
 
-    CAmount am(0);
+    CConfidentialValue am(0);
     return ::verify_script(scriptPubKey, scriptPubKeyLen, am, txTo, txToLen, nIn, flags, err);
 }
 

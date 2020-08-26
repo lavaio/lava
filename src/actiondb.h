@@ -3,6 +3,7 @@
 
 #include <dbwrapper.h>
 #include <pubkey.h>
+#include <script/standard.h>
 #include <key.h>
 #include <streams.h>
 #include <primitives/block.h>

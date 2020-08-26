@@ -2,7 +2,7 @@
 #define LAVA_ASSEMBER_H
 
 #include <config/bitcoin-config.h>
-#include <pubkey.h>
+#include <script/standard.h>
 #include <key.h>
 #include <chain.h>
 

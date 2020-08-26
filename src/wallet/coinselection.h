@@ -6,6 +6,7 @@
 #define BITCOIN_WALLET_COINSELECTION_H
 
 #include <amount.h>
+#include <chainparams.h>
 #include <primitives/transaction.h>
 #include <random.h>
 
@@ -14,21 +15,15 @@ static constexpr CAmount MIN_CHANGE{COIN / 100};
 //! final minimum change amount after paying for fees
 static const CAmount MIN_FINAL_CHANGE = MIN_CHANGE/2;
 
+class CWalletTx;
+class uint256;
+
 class CInputCoin {
 public:
-    CInputCoin(const CTransactionRef& tx, unsigned int i)
-    {
-        if (!tx)
-            throw std::invalid_argument("tx should not be null");
-        if (i >= tx->vout.size())
-            throw std::out_of_range("The output index is out of range");
+    CInputCoin(const CWalletTx* wtx, unsigned int i);
 
-        outpoint = COutPoint(tx->GetHash(), i);
-        txout = tx->vout[i];
-        effective_value = txout.nValue;
-    }
 
-    CInputCoin(const CTransactionRef& tx, unsigned int i, int input_bytes) : CInputCoin(tx, i)
+    CInputCoin(const CWalletTx* wtx, unsigned int i, int input_bytes) : CInputCoin(wtx, i)
     {
         m_input_bytes = input_bytes;
     }
@@ -36,6 +31,11 @@ public:
     COutPoint outpoint;
     CTxOut txout;
     CAmount effective_value;
+    // CA:
+    CAmount value;
+    CAsset asset;
+    uint256 bf_value;
+    uint256 bf_asset;
 
     /** Pre-computed estimated size of this output as a fully-signed input in a transaction. Can be -1 if it could not be calculated */
     int m_input_bytes{-1};
@@ -97,5 +97,9 @@ bool SelectCoinsBnB(std::vector<OutputGroup>& utxo_pool, const CAmount& target_v
 
 // Original coin selection algorithm as a fallback
 bool KnapsackSolver(const CAmount& nTargetValue, std::vector<OutputGroup>& groups, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet);
+
+// CA:
+// Knapsack that delegates for every asset individually.
+bool KnapsackSolver(const CAmountMap& mapTargetValue, std::vector<OutputGroup>& groups, std::set<CInputCoin>& setCoinsRet, CAmountMap& mapValueRet);
 
 #endif // BITCOIN_WALLET_COINSELECTION_H

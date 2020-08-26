@@ -8,7 +8,8 @@ src/lava-tx
 src/lava-wallet
 src/test/test_lava
 src/test/test_bitcoin_fuzzy
-src/qt/test/test_bitcoin-qt
+src/qt/lava-qt
+src/qt/test/test_lava-qt
 
 # autoreconf
 Makefile.in
@@ -45,12 +46,16 @@ src/qt/forms/ui_*.h
 
 src/qt/test/moc*.cpp
 
-src/qt/bitcoin-qt.config
-src/qt/bitcoin-qt.creator
-src/qt/bitcoin-qt.creator.user
-src/qt/bitcoin-qt.files
-src/qt/bitcoin-qt.includes
+src/qt/lava-qt.cflags
+src/qt/lava-qt.cxxflags
+src/qt/lava-qt.config
+src/qt/lava-qt.creator
+src/qt/lava-qt.creator.user
+src/qt/lava-qt.files
+src/qt/lava-qt.includes
+src/qt/lava-qt.pro.user
 
+.vscode
 .deps
 .dirstamp
 .libs

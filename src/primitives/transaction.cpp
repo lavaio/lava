@@ -9,6 +9,7 @@
 #include <tinyformat.h>
 #include <util/strencodings.h>
 #include <script/standard.h>
+#include <policy/policy.h>
 
 std::string COutPoint::ToString() const
 {
@@ -40,6 +41,8 @@ std::string CTxIn::ToString() const
         str += strprintf(", scriptSig=%s", HexStr(scriptSig).substr(0, 24));
     if (nSequence != SEQUENCE_FINAL)
         str += strprintf(", nSequence=%u", nSequence);
+    if (!assetIssuance.IsNull())
+        str += strprintf(", %s", assetIssuance.ToString());
     str += ")";
     return str;
 }
@@ -50,13 +53,47 @@ CTxOut::CTxOut(const CAmount& nValueIn, CScript scriptPubKeyIn)
     scriptPubKey = scriptPubKeyIn;
 }
 
+CTxOut::CTxOut(const CConfidentialAsset& nAssetIn, const CConfidentialValue& nValueIn, CScript scriptPubKeyIn)
+{
+    if(nAssetIn.IsExplicit() && (nAssetIn.GetAsset().IsNull() || nAssetIn.GetAsset() == ::policyAsset))
+    {
+        assert(nValueIn.IsExplicit());
+        nValue = nValueIn.GetAmount();
+        flags = 0;
+    } else {
+        nValueCA = nValueIn;
+        nValue = 0;
+        flags = 1;
+    }
+    nAsset = nAssetIn;
+    scriptPubKey = scriptPubKeyIn;
+}
+
+CTxOut::CTxOut(const CAmount& nValueIn, CScript scriptPubKeyIn, const CConfidentialAsset& nAssetIn, const CConfidentialValue& nValueCAIn, const CConfidentialNonce& nNonceIn, unsigned char flagsIn)
+{
+    nValue = nValueIn;
+    scriptPubKey = scriptPubKeyIn;
+    flags = flagsIn;
+    nAsset = nAssetIn;
+    nValueCA = nValueCAIn;
+    nNonce = nNonceIn;
+}
+
 std::string CTxOut::ToString() const
 {
-    return strprintf("CTxOut(nValue=%d.%08d, scriptPubKey=%s)", nValue / COIN, nValue % COIN, HexStr(scriptPubKey).substr(0, 30));
+    if (!flags)
+        return strprintf("CTxOut(nValue=%d.%08d, scriptPubKey=%s)", nValue / COIN, nValue % COIN, HexStr(scriptPubKey).substr(0, 30));
+    std::string strAsset;
+    if (nAsset.IsExplicit())
+        strAsset = strprintf("nAsset=%s, ", nAsset.GetAsset().GetHex());
+    else if (nAsset.IsCommitment())
+        strAsset = std::string("nAsset=CONFIDENTIAL, ");
+    return strprintf("CTxOut(%snValue=%s, scriptPubKey=%s)", strAsset, (nValueCA.IsExplicit() ? strprintf("%d.%08d", nValueCA.GetAmount() / COIN, nValueCA.GetAmount() % COIN) : std::string("CONFIDENTIAL")), HexStr(scriptPubKey).substr(0, 30));
 }
 
 CMutableTransaction::CMutableTransaction() : nVersion(CTransaction::CURRENT_VERSION), nLockTime(0) {}
-CMutableTransaction::CMutableTransaction(const CTransaction& tx) : vin(tx.vin), vout(tx.vout), nVersion(tx.nVersion), nLockTime(tx.nLockTime) {}
+CMutableTransaction::CMutableTransaction(const CTransaction& tx) :
+        vin(tx.vin), vout(tx.vout), nVersion(tx.nVersion), nLockTime(tx.nLockTime) {}
 
 uint256 CMutableTransaction::GetHash() const
 {
@@ -78,8 +115,10 @@ uint256 CTransaction::ComputeWitnessHash() const
 
 /* For backward compatibility, the hash is initialized to 0. TODO: remove the need for this default constructor entirely. */
 CTransaction::CTransaction() : vin(), vout(), nVersion(CTransaction::CURRENT_VERSION), nLockTime(0), hash{}, m_witness_hash{} {}
-CTransaction::CTransaction(const CMutableTransaction& tx) : vin(tx.vin), vout(tx.vout), nVersion(tx.nVersion), nLockTime(tx.nLockTime), hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}
-CTransaction::CTransaction(CMutableTransaction&& tx) : vin(std::move(tx.vin)), vout(std::move(tx.vout)), nVersion(tx.nVersion), nLockTime(tx.nLockTime), hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}
+CTransaction::CTransaction(const CMutableTransaction& tx) :
+        vin(tx.vin), vout(tx.vout), nVersion(tx.nVersion), nLockTime(tx.nLockTime), hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}
+CTransaction::CTransaction(CMutableTransaction&& tx) :
+        vin(std::move(tx.vin)), vout(std::move(tx.vout)), nVersion(tx.nVersion), nLockTime(tx.nLockTime), hash{ComputeHash()}, m_witness_hash{ComputeWitnessHash()} {}
 
 CAmount CTransaction::GetValueOut() const
 {
@@ -122,14 +161,14 @@ bool IsTicketVout(const CScript script, CScriptID &scriptID)
     opcodetype opcodeRet;
     std::vector<unsigned char> vchRet;
     if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_HASH160) {
-	vchRet.clear();
-	if (script.GetOp(pc, opcodeRet, vchRet)) {
-	    scriptID = CScriptID(uint160(vchRet));
-	    if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_EQUAL) {
-		vchRet.clear();
-		return true;
-	    }
-	}
+        vchRet.clear();
+        if (script.GetOp(pc, opcodeRet, vchRet)) {
+            scriptID = CScriptID(uint160(vchRet));
+            if (script.GetOp(pc, opcodeRet, vchRet) && opcodeRet == OP_EQUAL) {
+                vchRet.clear();
+                return true;
+            }
+        }
     }
     return false;
 }
@@ -138,27 +177,27 @@ bool CTransaction::IsTicketTx() const
 {
     // check the vout size is 2 or 3.
     if(vout.size()!=2 && vout.size()!=3){
-	    return false;
+        return false;
     }
-    
+
     CScript redeemscript;
     CScriptID scriptID;
     CScript scriptzero;
     bool HasTicketVout = false;
-    for (auto i=0; i<vout.size();i++){
-	if (vout[i].nValue == 0){
-	    // from 0 value vout's script decode the redeemScript.
-	    CScript script = vout[i].scriptPubKey;
-	    scriptzero = script;
-	    if (!GetRedeemFromScript(script,redeemscript)){
+    for (size_t i = 0; i < vout.size(); i++){
+        if (vout[i].nValue == 0){
+            // from 0 value vout's script decode the redeemScript.
+            CScript script = vout[i].scriptPubKey;
+            scriptzero = script;
+            if (!GetRedeemFromScript(script,redeemscript)){
                 return false;
-	    }
-	}
+            }
+        }
 
-	auto ticketScript = vout[i].scriptPubKey;
-	if (IsTicketVout(ticketScript, scriptID)){
-	    HasTicketVout=true;
-	}
+        auto ticketScript = vout[i].scriptPubKey;
+        if (IsTicketVout(ticketScript, scriptID)){
+            HasTicketVout=true;
+        }
     }
 
     if (!HasTicketVout) 
@@ -181,7 +220,7 @@ CTicketRef CTransaction::Ticket() const
         return ticket;
     CScript redeemScript;
     CScript ticketScript;
-    for (int i = 0; i < vout.size(); i++) {
+    for (size_t i = 0; i < vout.size(); i++) {
         auto out = vout[i];
         if (out.nValue == 0) { // op_return script
             if (!GetRedeemFromScript(out.scriptPubKey, redeemScript)) {
@@ -191,7 +230,7 @@ CTicketRef CTransaction::Ticket() const
             ticketScript << OP_HASH160 << ToByteVector(CScriptID(redeemScript)) << OP_EQUAL;
         } 
     }
-    for (int i = 0; i < vout.size(); i++) {
+    for (size_t i = 0; i < vout.size(); i++) {
         auto out = vout[i];
         if (out.nValue != 0 && ticketScript == out.scriptPubKey) {
             ticket.reset(new CTicket(COutPoint(hash, i), out.nValue, redeemScript, ticketScript));

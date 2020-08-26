@@ -1109,7 +1109,7 @@ bool ReadRawBlockFromDisk(std::vector<uint8_t>& block, const CDiskBlockPos& pos,
 
         filein >> blk_start >> blk_size;
 
-        if (memcmp(blk_start, message_start, CMessageHeader::MESSAGE_START_SIZE)) {
+        if (memcmp(blk_start, message_start, CMessageHeader::MESSAGE_START_SIZE) && memcmp(blk_start, Params().MessageStartForDisk(), CMessageHeader::MESSAGE_START_SIZE)) {
             return error("%s: Block magic mismatch for %s: %s versus expected %s", __func__, pos.ToString(),
                 HexStr(blk_start, blk_start + CMessageHeader::MESSAGE_START_SIZE),
                 HexStr(message_start, message_start + CMessageHeader::MESSAGE_START_SIZE));
@@ -1314,7 +1314,8 @@ bool CScriptCheck::operator()()
 {
     const CScript& scriptSig = ptxTo->vin[nIn].scriptSig;
     const CScriptWitness* witness = &ptxTo->vin[nIn].scriptWitness;
-    return VerifyScript(scriptSig, m_tx_out.scriptPubKey, witness, nFlags, CachingTransactionSignatureChecker(ptxTo, nIn, m_tx_out.nValue, cacheStore, *txdata), &error);
+
+    return VerifyScript(scriptSig, m_tx_out.scriptPubKey, witness, nFlags, CachingTransactionSignatureChecker(ptxTo, nIn, m_tx_out.IsCA() ? m_tx_out.nValueCA : m_tx_out.nValue , cacheStore, *txdata), &error);
 }
 
 int GetSpendHeight(const CCoinsViewCache& inputs)
@@ -1446,7 +1447,7 @@ bool UndoWriteToDisk(const CBlockUndo& blockundo, CDiskBlockPos& pos, const uint
     // Write index header
     unsigned int nSize = GetSerializeSize(blockundo, fileout.GetVersion());
     fileout << messageStart << nSize;
-
+    fileout.SetExtra(1);
     // Write undo data
     long fileOutPos = ftell(fileout.Get());
     if (fileOutPos < 0)
@@ -1456,6 +1457,7 @@ bool UndoWriteToDisk(const CBlockUndo& blockundo, CDiskBlockPos& pos, const uint
 
     // calculate & write checksum
     CHashWriter hasher(SER_GETHASH, PROTOCOL_VERSION);
+    hasher.SetExtra(1);
     hasher << hashBlock;
     hasher << blockundo;
     fileout << hasher.GetHash();
@@ -1469,6 +1471,12 @@ static bool UndoReadFromDisk(CBlockUndo& blockundo, const CBlockIndex* pindex)
     if (pos.IsNull()) {
         return error("%s: no undo data available", __func__);
     }
+    
+    CDiskBlockPos posheader = pos;
+    posheader.nPos = posheader.nPos - 8;
+    CAutoFile fileheader(OpenUndoFile(posheader, true), SER_DISK, CLIENT_VERSION);
+    CMessageHeader::MessageStartChars pchMessageStartHeader;
+    fileheader >> pchMessageStartHeader;
 
     // Open history file to read
     CAutoFile filein(OpenUndoFile(pos, true), SER_DISK, CLIENT_VERSION);
@@ -1479,6 +1487,12 @@ static bool UndoReadFromDisk(CBlockUndo& blockundo, const CBlockIndex* pindex)
     uint256 hashChecksum;
     CHashVerifier<CAutoFile> verifier(&filein); // We need a CHashVerifier as reserializing may lose data
     try {
+        if (!memcmp(pchMessageStartHeader, Params().MessageStart(), CMessageHeader::MESSAGE_START_SIZE)) {
+            verifier.SetExtra(0);
+        }else{
+            verifier.SetExtra(1);
+        }
+
         verifier << pindex->pprev->GetBlockHash();
         verifier >> blockundo;
         filein >> hashChecksum;
@@ -1535,6 +1549,15 @@ int ApplyTxInUndo(Coin&& undo, CCoinsViewCache& view, const COutPoint& out)
     return fClean ? DISCONNECT_OK : DISCONNECT_UNCLEAN;
 }
 
+// We don't want to compare things that are not stored in utxo db, specifically
+// the nonce commitment which has no consensus meaning for spending conditions
+static bool TxOutDBEntryIsSame(const CTxOut& block_txout, const CTxOut& txdb_txout)
+{
+    return txdb_txout.nValue == block_txout.nValue &&
+        txdb_txout.nAsset == block_txout.nAsset &&
+        txdb_txout.scriptPubKey == block_txout.scriptPubKey;
+}
+
 /** Undo the effects of this block (with given index) on the UTXO set represented by coins.
  *  When FAILED is returned, view is left in an indeterminate state. */
 DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockIndex* pindex, CCoinsViewCache& view)
@@ -1565,7 +1588,7 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
                 COutPoint out(hash, o);
                 Coin coin;
                 bool is_spent = view.SpendCoin(out, &coin);
-                if (!is_spent || tx.vout[o] != coin.out || pindex->nHeight != coin.nHeight || is_coinbase != coin.fCoinBase) {
+                if (!is_spent || !TxOutDBEntryIsSame(tx.vout[o], coin.out) || pindex->nHeight != coin.nHeight || is_coinbase != coin.fCoinBase) {
                     fClean = false; // transaction output mismatch
                 }
             }
@@ -1629,9 +1652,9 @@ static bool WriteUndoDataForBlock(const CBlockUndo& blockundo, CValidationState&
     // Write undo information to disk
     if (pindex->GetUndoPos().IsNull()) {
         CDiskBlockPos _pos;
-        if (!FindUndoPos(state, pindex->nFile, _pos, ::GetSerializeSize(blockundo, CLIENT_VERSION) + 40))
+        if (!FindUndoPos(state, pindex->nFile, _pos, ::GetSerializeSize(blockundo, CLIENT_VERSION, 1) + 40))
             return error("ConnectBlock(): FindUndoPos failed");
-        if (!UndoWriteToDisk(blockundo, _pos, pindex->pprev->GetBlockHash(), chainparams.MessageStart()))
+        if (!UndoWriteToDisk(blockundo, _pos, pindex->pprev->GetBlockHash(), chainparams.MessageStartForDisk()))
             return AbortNode(state, "Failed to write undo data");
 
         // update nUndoPos in block index
@@ -3306,6 +3329,35 @@ std::vector<unsigned char> GenerateCoinbaseCommitment(CBlock& block, const CBloc
     return commitment;
 }
 
+std::vector<unsigned char> GenerateCoinbaseCommitmentForCA(CBlock& block, const CBlockIndex* pindexPrev, const Consensus::Params& consensusParams)
+{
+    std::vector<unsigned char> commitment;
+    int commitpos = GetWitnessCommitmentIndex(block);
+    std::vector<unsigned char> ret(32, 0x00);
+    if (consensusParams.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout != 0) {
+        if (commitpos == -1) {
+            uint256 witnessroot = BlockWitnessMerkleRoot(block, nullptr);
+            CHash256().Write(witnessroot.begin(), 32).Write(ret.data(), 32).Finalize(witnessroot.begin());
+            CTxOut out;
+            out.nValue = 0;
+            out.scriptPubKey.resize(38);
+            out.scriptPubKey[0] = OP_RETURN;
+            out.scriptPubKey[1] = 0x24;
+            out.scriptPubKey[2] = 0xaa;
+            out.scriptPubKey[3] = 0x21;
+            out.scriptPubKey[4] = 0xa9;
+            out.scriptPubKey[5] = 0xed;
+            memcpy(&out.scriptPubKey[6], witnessroot.begin(), 32);
+            commitment = std::vector<unsigned char>(out.scriptPubKey.begin(), out.scriptPubKey.end());
+            CMutableTransaction tx(*block.vtx[0]);
+            tx.vout.push_back(out);
+            block.vtx[0] = MakeTransactionRef(std::move(tx));
+        }
+    }
+    UpdateUncommittedBlockStructures(block, pindexPrev, consensusParams);
+    return commitment;
+}
+
 /** Context-dependent validity checks.
  *  By "context", we mean only the previous block headers, but not the UTXO
  *  set; UTXO-related validity checks are done in ConnectBlock().
@@ -3349,7 +3401,7 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
         return state.Invalid(false, REJECT_OBSOLETE, strprintf("bad-version(0x%08x)", block.nVersion),
             strprintf("rejected nVersion=0x%08x block", block.nVersion));
     
-    
+
     if (block.nTime <= pindexPrev->nTime || block.nTime > GetSystemTimeInSeconds() + MAX_FUTURE_BLOCK_TIME) {
         return state.Invalid(false, REJECT_INVALID, "block-time-err", "block timestamp error");
     }
@@ -3417,6 +3469,36 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
         if (block.vtx[0]->vin[0].scriptSig.size() < expect.size() ||
             !std::equal(expect.begin(), expect.end(), block.vtx[0]->vin[0].scriptSig.begin())) {
             return state.DoS(100, false, REJECT_INVALID, "bad-cb-height", false, "block height mismatch in coinbase");
+        }
+    }
+
+    // Validation for witness commitments.
+    // * We compute the witness hash (which is the hash including witnesses) of all the block's transactions, except the
+    //   coinbase (where 0x0000....0000 is used instead).
+    // * The coinbase scriptWitness is a stack of a single 32-byte vector, containing a witness reserved value (unconstrained).
+    // * We build a merkle tree with all those witness hashes as leaves (similar to the hashMerkleRoot in the block header).
+    // * There must be at least one output whose scriptPubKey is a single 36-byte push, the first 4 bytes of which are
+    //   {0xaa, 0x21, 0xa9, 0xed}, and the following 32 bytes are SHA256^2(witness root, witness reserved value). In case there are
+    //   multiple, the last one is used.
+    bool fHaveCAWitness = false;
+    int commitpos = GetWitnessCommitmentIndex(block);
+    if (commitpos != -1) {
+        bool malleated = false;
+        uint256 hashCAWitness = BlockWitnessMerkleRoot(block, &malleated);
+        std::vector<unsigned char> ret(32, 0x00);
+        CHash256().Write(hashCAWitness.begin(), 32).Write(ret.data(), 32).Finalize(hashCAWitness.begin());
+        if (memcmp(hashCAWitness.begin(), &block.vtx[0]->vout[commitpos].scriptPubKey[6], 32)) {
+            return state.DoS(100, false, REJECT_INVALID, "bad-CA-witness-merkle-match", true, strprintf("%s : witness merkle commitment mismatch", __func__));
+        }
+        fHaveCAWitness = true;
+    }
+
+    // No witness data is allowed in blocks that don't commit to witness data, as this would otherwise leave room for spam
+    if (!fHaveCAWitness) {
+        for (const auto& tx : block.vtx) {
+            if (tx->HasCAProof()) {
+                return state.DoS(100, false, REJECT_INVALID, "unexpected-CA-witness", true, strprintf("%s : unexpected witness data found", __func__));
+            }
         }
     }
 
@@ -3556,7 +3638,7 @@ static CDiskBlockPos SaveBlockToDisk(const CBlock& block, int nHeight, const CCh
         return CDiskBlockPos();
     }
     if (dbp == nullptr) {
-        if (!WriteBlockToDisk(block, blockPos, chainparams.MessageStart())) {
+        if (!WriteBlockToDisk(block, blockPos, chainparams.MessageStartForDisk())) {
             AbortNode("Failed to write block");
             return CDiskBlockPos();
         }
@@ -4559,7 +4641,7 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                 blkdat.FindByte(chainparams.MessageStart()[0]);
                 nRewind = blkdat.GetPos() + 1;
                 blkdat >> buf;
-                if (memcmp(buf, chainparams.MessageStart(), CMessageHeader::MESSAGE_START_SIZE))
+                if (memcmp(buf, chainparams.MessageStart(), CMessageHeader::MESSAGE_START_SIZE) && memcmp(buf, chainparams.MessageStartForDisk(), CMessageHeader::MESSAGE_START_SIZE))
                     continue;
                 // read size
                 blkdat >> nSize;

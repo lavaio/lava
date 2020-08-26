@@ -24,6 +24,7 @@
     <ClCompile Include="..\..\src\assember.cpp">
       <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</TreatWarningAsError>
     </ClCompile>
+    <ClCompile Include="..\..\src\asset.cpp" />
     <ClCompile Include="..\..\src\consensus\merkle.cpp" />
     <ClCompile Include="..\..\src\crypto\aes.cpp" />
     <ClCompile Include="..\..\src\crypto\chacha20.cpp" />
@@ -37,6 +38,7 @@
     <ClCompile Include="..\..\src\hash.cpp" />
     <ClCompile Include="..\..\src\primitives\block.cpp" />
     <ClCompile Include="..\..\src\primitives\transaction.cpp" />
+    <ClCompile Include="..\..\src\primitives\confidential.cpp" />
     <ClCompile Include="..\..\src\pubkey.cpp" />
     <ClCompile Include="..\..\src\script\bitcoinconsensus.cpp" />
     <ClCompile Include="..\..\src\script\interpreter.cpp" />

@@ -5,6 +5,7 @@
 #ifndef BITCOIN_CONSENSUS_TX_VERIFY_H
 #define BITCOIN_CONSENSUS_TX_VERIFY_H
 
+#include <confidential_validation.h>
 #include <amount.h>
 
 #include <stdint.h>
@@ -14,6 +15,7 @@ class CBlockIndex;
 class CCoinsViewCache;
 class CTransaction;
 class CValidationState;
+class COutPoint;
 
 /** Transaction validation functions */
 
@@ -27,7 +29,7 @@ namespace Consensus {
  * @param[out] txfee Set to the transaction fee if successful.
  * Preconditions: tx.IsCoinBase() is false.
  */
-bool CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, int nSpendHeight, CAmount& txfee);
+bool CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoinsViewCache& inputs, int nSpendHeight, CAmount& txfee, std::vector<CCheck*> *pvChecks=nullptr, const bool cacheStore=false, bool fScriptChecks=false);
 } // namespace Consensus
 
 /** Auxiliary functions for transaction validation (ideally should not be exposed) */

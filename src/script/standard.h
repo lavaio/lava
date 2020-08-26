@@ -13,9 +13,34 @@
 
 #include <stdint.h>
 
+#include <pubkey.h> // blinding_pubkey
+
 static const bool DEFAULT_ACCEPT_DATACARRIER = true;
 
-class CKeyID;
+/** A reference to a CKey: the Hash160 of its serialized public key */
+class CKeyID : public uint160
+{
+public:
+    CKeyID() : uint160() {}
+    explicit CKeyID(const uint160& in) : uint160(in) {}
+    explicit CKeyID(const CPubKey& pubkey) : uint160(pubkey.GetID()) {}
+    explicit CKeyID(const CPubKey& pubkey, const CPubKey& blinding_pubkey_in) : uint160(pubkey.GetID()), blinding_pubkey(blinding_pubkey_in) {}
+    explicit CKeyID(const uint160& hash, const CPubKey& blinding_pubkey_in) : uint160(hash), blinding_pubkey(blinding_pubkey_in) {}
+
+    using uint160::uint160;
+    CPubKey blinding_pubkey;
+
+    uint64_t GetPlotID() const
+    {
+        uint64_t result = 0;
+        for (int i = 0; i < 8; i++) {
+            result <<= 8;
+            result |= (data[7 - i] & 0xFF);
+        }
+        return result;
+    }
+};
+
 class CScript;
 
 /** A reference to a CScript: the Hash160 of its serialization (see script.h) */
@@ -25,6 +50,10 @@ public:
     CScriptID() : uint160() {}
     explicit CScriptID(const CScript& in);
     CScriptID(const uint160& in) : uint160(in) {}
+    explicit CScriptID(const CScript& script, const CPubKey& blinding_pubkey);
+    explicit CScriptID(const uint160& hash, const CPubKey& blinding_pubkey);
+    using uint160::uint160;
+    CPubKey blinding_pubkey;
 };
 
 /**
@@ -78,14 +107,18 @@ struct WitnessV0ScriptHash : public uint256
     WitnessV0ScriptHash() : uint256() {}
     explicit WitnessV0ScriptHash(const uint256& hash) : uint256(hash) {}
     explicit WitnessV0ScriptHash(const CScript& script);
+    explicit WitnessV0ScriptHash(const CScript& script, const CPubKey& blinding_pubkey);
     using uint256::uint256;
+    CPubKey blinding_pubkey;
 };
 
 struct WitnessV0KeyHash : public uint160
 {
     WitnessV0KeyHash() : uint160() {}
     explicit WitnessV0KeyHash(const uint160& hash) : uint160(hash) {}
+    explicit WitnessV0KeyHash(const uint160& hash, const CPubKey& blinding_pubkey_in) : uint160(hash), blinding_pubkey(blinding_pubkey_in) {}
     using uint160::uint160;
+    CPubKey blinding_pubkey;
 };
 
 //! CTxDestination subtype to encode any future Witness version
@@ -94,6 +127,7 @@ struct WitnessUnknown
     unsigned int version;
     unsigned int length;
     unsigned char program[40];
+    CPubKey blinding_pubkey;
 
     friend bool operator==(const WitnessUnknown& w1, const WitnessUnknown& w2) {
         if (w1.version != w2.version) return false;
@@ -110,6 +144,21 @@ struct WitnessUnknown
     }
 };
 
+// CA:
+class NullData
+{
+public:
+    std::vector<std::vector<unsigned char>> null_data;
+    friend bool operator==(const NullData &a, const NullData &b) { return  true; }
+    friend bool operator<(const NullData &a, const NullData &b) { return  true; }
+
+    NullData& operator<<(std::vector<unsigned char> b)
+    {
+        null_data.push_back(b);
+        return *this;
+    }
+};
+
 /**
  * A txout script template with a specific destination. It is either:
  *  * CNoDestination: no destination set
@@ -120,7 +169,7 @@ struct WitnessUnknown
  *  * WitnessUnknown: TX_WITNESS_UNKNOWN destination (P2W???)
  *  A CTxDestination is the internal data type encoded in a bitcoin address
  */
-typedef boost::variant<CNoDestination, CKeyID, CScriptID, WitnessV0ScriptHash, WitnessV0KeyHash, WitnessUnknown> CTxDestination;
+typedef boost::variant<CNoDestination, CKeyID, CScriptID, WitnessV0ScriptHash, WitnessV0KeyHash, WitnessUnknown, NullData> CTxDestination;
 
 /** Check whether a CTxDestination is a CNoDestination. */
 bool IsValidDestination(const CTxDestination& dest);

@@ -2,7 +2,12 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#if defined(HAVE_CONFIG_H)
+#include <config/bitcoin-config.h>
+#endif
+
 #include <qt/walletview.h>
+#include <QDebug>
 
 #include <qt/addressbookpage.h>
 #include <qt/askpassphrasedialog.h>
@@ -11,6 +16,8 @@
 #include <qt/guiutil.h>
 #include <qt/optionsmodel.h>
 #include <qt/overviewpage.h>
+#include <qt/minerviewpage.h>
+#include <qt/plotinfopage.h>
 #include <qt/platformstyle.h>
 #include <qt/receivecoinsdialog.h>
 #include <qt/sendcoinsdialog.h>
@@ -18,6 +25,7 @@
 #include <qt/transactiontablemodel.h>
 #include <qt/transactionview.h>
 #include <qt/walletmodel.h>
+#include <qt/firestoneinfopage.h>
 
 #include <interfaces/node.h>
 #include <ui_interface.h>
@@ -30,6 +38,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
+
 WalletView::WalletView(const PlatformStyle *_platformStyle, QWidget *parent):
     QStackedWidget(parent),
     clientModel(nullptr),
@@ -38,6 +47,8 @@ WalletView::WalletView(const PlatformStyle *_platformStyle, QWidget *parent):
 {
     // Create tabs
     overviewPage = new OverviewPage(platformStyle);
+    plotInfoPage = new PlotInfoPage(platformStyle);
+    firestoneInfoPage = new FirestoneInfoPage(platformStyle);
 
     transactionsPage = new QWidget(this);
     QVBoxLayout *vbox = new QVBoxLayout();
@@ -64,6 +75,8 @@ WalletView::WalletView(const PlatformStyle *_platformStyle, QWidget *parent):
     addWidget(transactionsPage);
     addWidget(receiveCoinsPage);
     addWidget(sendCoinsPage);
+    addWidget(plotInfoPage);
+    addWidget(firestoneInfoPage);
 
     // Clicking on a transaction on the overview pre-selects the transaction on the transaction history page
     connect(overviewPage, &OverviewPage::transactionClicked, transactionView, static_cast<void (TransactionView::*)(const QModelIndex&)>(&TransactionView::focusTransaction));
@@ -127,6 +140,8 @@ void WalletView::setWalletModel(WalletModel *_walletModel)
     // Put transaction list in tabs
     transactionView->setModel(_walletModel);
     overviewPage->setWalletModel(_walletModel);
+    plotInfoPage->setWalletModel(_walletModel);
+    firestoneInfoPage->setWalletModel(_walletModel);
     receiveCoinsPage->setModel(_walletModel);
     sendCoinsPage->setModel(_walletModel);
     usedReceivingAddressesPage->setModel(_walletModel ? _walletModel->getAddressTableModel() : nullptr);
@@ -178,6 +193,24 @@ void WalletView::processNewTransaction(const QModelIndex& parent, int start, int
 void WalletView::gotoOverviewPage()
 {
     setCurrentWidget(overviewPage);
+}
+
+void WalletView::gotoMinerviewPage()
+{
+    setCurrentWidget(minerviewPage);
+}
+
+void WalletView::gotoMinerInfoviewPage()
+{
+  qInfo() << "set current widget" << endl;
+  plotInfoPage->updateData();
+  setCurrentWidget(plotInfoPage);
+}
+
+void WalletView::gotoFirestonePage()
+{
+  firestoneInfoPage->updateData();
+  setCurrentWidget(firestoneInfoPage);
 }
 
 void WalletView::gotoHistoryPage()

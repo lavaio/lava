@@ -266,18 +266,18 @@ std::vector<CTicketRef> CTicketView::FindeTickets(const CKeyID key)
     return ticketsInAddr[key];
 }
 
-const int CTicketView::SlotLength()
+int CTicketView::SlotLength() const
 {
     static int slotLength= Params().SlotLength();
     return slotLength;
 }
 
-const int CTicketView::LockTime()
+int CTicketView::LockTime() const
 {
     return (slotIndex + 1) * SlotLength() - 1;
 }
 
-const int CTicketView::LockTime(const int index)
+int CTicketView::LockTime(const int index) const
 {
     return std::max((index + 1) * SlotLength() - 1, SlotLength() -1);
 }

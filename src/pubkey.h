@@ -16,24 +16,7 @@
 
 const unsigned int BIP32_EXTKEY_SIZE = 74;
 
-/** A reference to a CKey: the Hash160 of its serialized public key */
-class CKeyID : public uint160
-{
-public:
-    CKeyID() : uint160() {}
-    explicit CKeyID(const uint160& in) : uint160(in) {}
-
-    uint64_t GetPlotID() const
-    {
-        uint64_t result = 0;
-        for (int i = 0; i < 8; i++) {
-            result <<= 8;
-            result |= (data[7 - i] & 0xFF);
-        }
-        return result;
-    }
-};
-
+class CKeyID; // moved to standard.h
 typedef uint256 ChainCode;
 
 /** An encapsulated public key. */
@@ -162,10 +145,7 @@ public:
     }
 
     //! Get the KeyID of this public key (hash of its serialization)
-    CKeyID GetID() const
-    {
-        return CKeyID(Hash160(vch, vch + size()));
-    }
+    CKeyID GetID() const;
 
     //! Get the 256-bit hash of this public key.
     uint256 GetHash() const
@@ -210,7 +190,7 @@ public:
     bool Decompress();
 
     //! Derive BIP32 child pubkey.
-    bool Derive(CPubKey& pubkeyChild, ChainCode &ccChild, unsigned int nChild, const ChainCode& cc) const;
+    bool Derive(CPubKey& pubkeyChild, ChainCode &ccChild, unsigned int nChild, const ChainCode& cc, std::vector<unsigned char>* tweak = nullptr) const;
 };
 
 struct CExtPubKey {

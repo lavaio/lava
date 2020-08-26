@@ -16,6 +16,7 @@
 static const std::string OUTPUT_TYPE_STRING_LEGACY = "legacy";
 static const std::string OUTPUT_TYPE_STRING_P2SH_SEGWIT = "p2sh-segwit";
 static const std::string OUTPUT_TYPE_STRING_BECH32 = "bech32";
+static const std::string OUTPUT_TYPE_STRING_BLECH32 = "blech32";
 
 bool ParseOutputType(const std::string& type, OutputType& output_type)
 {
@@ -25,7 +26,7 @@ bool ParseOutputType(const std::string& type, OutputType& output_type)
     } else if (type == OUTPUT_TYPE_STRING_P2SH_SEGWIT) {
         output_type = OutputType::P2SH_SEGWIT;
         return true;
-    } else if (type == OUTPUT_TYPE_STRING_BECH32) {
+    } else if (type == OUTPUT_TYPE_STRING_BECH32 || type == OUTPUT_TYPE_STRING_BLECH32) {
         output_type = OutputType::BECH32;
         return true;
     }
@@ -60,6 +61,27 @@ CTxDestination GetDestinationForKey(const CPubKey& key, OutputType type)
     default: assert(false);
     }
 }
+
+// CA
+CTxDestination GetDestinationForKey(const CPubKey& key, OutputType type, const CPubKey& blinding_pubkey)
+{
+    switch (type) {
+    case OutputType::LEGACY: return CKeyID(key, blinding_pubkey);
+    case OutputType::P2SH_SEGWIT:
+    case OutputType::BECH32: {
+        if (!key.IsCompressed()) return CKeyID(key, blinding_pubkey);
+        CTxDestination witdest = WitnessV0KeyHash(CKeyID(key), blinding_pubkey);
+        CScript witprog = GetScriptForDestination(witdest);
+        if (type == OutputType::P2SH_SEGWIT) {
+            return CScriptID(witprog, blinding_pubkey);
+        } else {
+            return witdest;
+        }
+    }
+    default: assert(false);
+    }
+}
+//
 
 std::vector<CTxDestination> GetAllDestinationsForKey(const CPubKey& key)
 {

@@ -10,7 +10,7 @@
 #include <consensus/validation.h>
 
 namespace block_bench {
-#include <bench/data/block413567.raw.h>
+#include <bench/data/block39600.raw.h>
 } // namespace block_bench
 
 // These are the two major time-sinks which happen after we have fully received
@@ -19,8 +19,8 @@ namespace block_bench {
 
 static void DeserializeBlockTest(benchmark::State& state)
 {
-    CDataStream stream((const char*)block_bench::block413567,
-            (const char*)block_bench::block413567 + sizeof(block_bench::block413567),
+    CDataStream stream((const char*)block_bench::block39600,
+            (const char*)block_bench::block39600 + sizeof(block_bench::block39600),
             SER_NETWORK, PROTOCOL_VERSION);
     char a = '\0';
     stream.write(&a, 1); // Prevent compaction
@@ -28,29 +28,29 @@ static void DeserializeBlockTest(benchmark::State& state)
     while (state.KeepRunning()) {
         CBlock block;
         stream >> block;
-        bool rewound = stream.Rewind(sizeof(block_bench::block413567));
+        bool rewound = stream.Rewind(sizeof(block_bench::block39600));
         assert(rewound);
     }
 }
 
 static void DeserializeAndCheckBlockTest(benchmark::State& state)
 {
-    CDataStream stream((const char*)block_bench::block413567,
-            (const char*)block_bench::block413567 + sizeof(block_bench::block413567),
+    CDataStream stream((const char*)block_bench::block39600,
+            (const char*)block_bench::block39600 + sizeof(block_bench::block39600),
             SER_NETWORK, PROTOCOL_VERSION);
     char a = '\0';
     stream.write(&a, 1); // Prevent compaction
 
-    const auto chainParams = CreateChainParams(CBaseChainParams::MAIN);
+    SelectParams(CBaseChainParams::MAIN);
 
     while (state.KeepRunning()) {
         CBlock block; // Note that CBlock caches its checked state, so we need to recreate it here
         stream >> block;
-        bool rewound = stream.Rewind(sizeof(block_bench::block413567));
+        bool rewound = stream.Rewind(sizeof(block_bench::block39600));
         assert(rewound);
 
         CValidationState validationState;
-        bool checked = CheckBlock(block, validationState, chainParams->GetConsensus());
+        bool checked = CheckBlock(block, validationState, Params().GetConsensus());
         assert(checked);
     }
 }

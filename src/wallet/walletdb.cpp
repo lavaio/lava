@@ -156,6 +156,14 @@ bool WalletBatch::WriteMinVersion(int nVersion)
     return WriteIC(std::string("minversion"), nVersion);
 }
 
+bool WalletBatch::WriteBlindingDerivationKey(const uint256& key) {
+     return WriteIC(std::string("blindingderivationkey"), key);
+}
+
+bool WalletBatch::WriteSpecificBlindingKey(const uint160& scriptid, const uint256& key) {
+    return WriteIC(std::make_pair(std::string("specificblindingkey"), scriptid), key);
+}
+
 class CWalletScanState {
 public:
     unsigned int nKeys{0};
@@ -416,6 +424,24 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
             ssValue >> flags;
             if (!pwallet->SetWalletFlags(flags, true)) {
                 strErr = "Error reading wallet database: Unknown non-tolerable wallet flags found";
+                return false;
+            }
+        }
+        else if (strType == "blindingderivationkey")
+        {
+            assert(pwallet->blinding_derivation_key.IsNull());
+            uint256 key;
+            ssValue >> key;
+            pwallet->blinding_derivation_key = key;
+        }
+        else if (strType == "specificblindingkey")
+        {
+            CScriptID scriptid;
+            ssKey >> scriptid;
+            uint256 key;
+            ssValue >> key;
+            if (!pwallet->LoadSpecificBlindingKey(scriptid, key)) {
+                strErr = "Error reading wallet database: LoadSpecificBlindingKey failed";
                 return false;
             }
         } else if (strType != "bestblock" && strType != "bestblock_nomerkle" &&

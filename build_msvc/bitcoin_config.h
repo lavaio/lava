@@ -5,7 +5,7 @@
 /* #undef AC_APPLE_UNIVERSAL_BUILD */
 
 /* Version Build */
-//#define CLIENT_VERSION_BUILD 0
+#define CLIENT_VERSION_BUILD 0
 
 /* Version is release */
 #define CLIENT_VERSION_IS_RELEASE true
@@ -14,10 +14,10 @@
 #define CLIENT_VERSION_MAJOR 0
 
 /* Minor version */
-#define CLIENT_VERSION_MINOR 4
+#define CLIENT_VERSION_MINOR 5
 
 /* Build revision */
-#define CLIENT_VERSION_REVISION 4
+#define CLIENT_VERSION_REVISION 0
 
 /* Copyright holder(s) before %s replacement */
 #define COPYRIGHT_HOLDERS "The %s developers"
@@ -29,7 +29,7 @@
 #define COPYRIGHT_HOLDERS_SUBSTITUTION "Lava Core"
 
 /* Copyright year */
-#define COPYRIGHT_YEAR 2019
+#define COPYRIGHT_YEAR 2020
 
 /* Define to 1 to enable wallet functions */
 #define ENABLE_WALLET 1
@@ -60,6 +60,9 @@
 
 /* define if the Boost::Unit_Test_Framework library is available */
 #define HAVE_BOOST_UNIT_TEST_FRAMEWORK /**/
+
+/* define if the obj/build.h is available */
+#define HAVE_BUILD_INFO 1
 
 /* Define to 1 if you have the <byteswap.h> header file. */
 /* #undef HAVE_BYTESWAP_H */
@@ -392,7 +395,10 @@
 /* #undef USE_DBUS */
 
 /* Define if QR support should be compiled in */
-//#define USE_QRCODE 1
+#define USE_QRCODE 1
+
+/* Define if not use shabal.asm */
+#define WITHOUT_ASM
 
 /* Define if not use shabal.asm */
 #define WITHOUT_ASM

@@ -132,14 +132,15 @@ public:
     CWalletTx& AddTx(CRecipient recipient)
     {
         CTransactionRef tx;
-        CReserveKey reservekey(wallet.get());
+        std::vector<std::unique_ptr<CReserveKey>> reservekeys;
+        reservekeys.push_back(std::unique_ptr<CReserveKey>(new CReserveKey(wallet.get())));
         CAmount fee;
         int changePos = -1;
         std::string error;
         CCoinControl dummy;
-        BOOST_CHECK(wallet->CreateTransaction(*m_locked_chain, {recipient}, tx, reservekey, fee, changePos, error, dummy));
+        BOOST_CHECK(wallet->CreateTransaction(*m_locked_chain, {recipient}, tx, reservekeys, fee, changePos, error, dummy));
         CValidationState state;
-        BOOST_CHECK(wallet->CommitTransaction(tx, {}, {}, reservekey, nullptr, state));
+        BOOST_CHECK(wallet->CommitTransaction(tx, {}, {}, reservekeys, nullptr, state));
         CMutableTransaction blocktx;
         {
             LOCK(wallet->cs_wallet);

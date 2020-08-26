@@ -4,6 +4,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <pubkey.h>
+#include <script/standard.h>
 
 #include <secp256k1.h>
 #include <secp256k1_recovery.h>
@@ -166,6 +167,10 @@ static int ecdsa_signature_parse_der_lax(const secp256k1_context* ctx, secp256k1
     return 1;
 }
 
+CKeyID CPubKey::GetID() const {
+    return CKeyID(Hash160(vch, vch + size()));
+}
+
 bool CPubKey::Verify(const uint256 &hash, const std::vector<unsigned char>& vchSig) const {
     if (!IsValid())
         return false;
@@ -224,13 +229,17 @@ bool CPubKey::Decompress() {
     return true;
 }
 
-bool CPubKey::Derive(CPubKey& pubkeyChild, ChainCode &ccChild, unsigned int nChild, const ChainCode& cc) const {
+bool CPubKey::Derive(CPubKey& pubkeyChild, ChainCode &ccChild, unsigned int nChild, const ChainCode& cc, std::vector<unsigned char>* tweak) const {
     assert(IsValid());
     assert((nChild >> 31) == 0);
     assert(size() == COMPRESSED_PUBLIC_KEY_SIZE);
     unsigned char out[64];
     BIP32Hash(cc, nChild, *begin(), begin()+1, out);
     memcpy(ccChild.begin(), out+32, 32);
+    if (tweak) {
+        tweak->clear();
+        *tweak = std::vector<unsigned char>(out, out+32);
+    }
     secp256k1_pubkey pubkey;
     if (!secp256k1_ec_pubkey_parse(secp256k1_context_verify, &pubkey, vch, size())) {
         return false;

@@ -6,7 +6,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libbitcoin_consensus", "lib
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_libbitcoinconsensus", "testconsensus\testconsensus.vcxproj", "{E78473E9-B850-456C-9120-276301E04C06}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bitcoind", "bitcoind\bitcoind.vcxproj", "{D4513DDF-6013-44DC-ADCC-12EAF6D1F038}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lavad", "bitcoind\bitcoind.vcxproj", "{D4513DDF-6013-44DC-ADCC-12EAF6D1F038}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libbitcoin_util", "libbitcoin_util\libbitcoin_util.vcxproj", "{B53A5535-EE9D-4C6F-9A26-F79EE3BC3754}"
 EndProject
@@ -26,7 +26,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_bitcoin", "test_bitcoi
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libbitcoin_cli", "libbitcoin_cli\libbitcoin_cli.vcxproj", "{0667528C-D734-4009-ADF9-C0D6C4A5A5A6}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bitcoin-cli", "bitcoin-cli\bitcoin-cli.vcxproj", "{0B2D7431-F876-4A58-87BF-F748338CD3BF}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lava-cli", "bitcoin-cli\bitcoin-cli.vcxproj", "{0B2D7431-F876-4A58-87BF-F748338CD3BF}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bench_bitcoin", "bench_bitcoin\bench_bitcoin.vcxproj", "{1125654E-E1B2-4431-8B5C-62EA9A2FEECB}"
 EndProject

@@ -37,7 +37,7 @@ The instructions below use `vcpkg` to install the dependencies.
 - Install the required packages (replace x64 with x86 as required):
 
 ```powershell
-    PS >.\vcpkg install --triplet x64-windows-static boost-filesystem boost-signals2 boost-test libevent openssl zeromq berkeleydb secp256k1 leveldb rapidcheck
+    PS >.\vcpkg install --triplet x64-windows-static boost-filesystem boost-signals2 boost-test libevent openssl zeromq berkeleydb secp256k1 leveldb rapidcheck libqrencode
 ```
 - Run the `msvc-autogen.py`:
 ```powershell

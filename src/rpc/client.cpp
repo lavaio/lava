@@ -38,8 +38,10 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "sendtoaddress", 4, "subtractfeefromamount" },
     { "sendtoaddress", 5 , "replaceable" },
     { "sendtoaddress", 6 , "conf_target" },
+    { "sendtoaddress", 9 , "ignoreblindfail" },
     { "settxfee", 0, "amount" },
     { "sethdseed", 0, "newkeypool" },
+    { "sethdseed", 2, "updateblind" },
     { "getreceivedbyaddress", 1, "minconf" },
     { "getreceivedbylabel", 1, "minconf" },
     { "listreceivedbyaddress", 0, "minconf" },
@@ -176,6 +178,16 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "spendhtlcwithwallet", 9, "isrefund" }, 
     { "cleanfstx",0,"slotindex"},
     { "listfstx",0,"slotindex"},
+    //
+    // CA:
+    { "issueasset", 0, "assetamount" },
+    { "issueasset", 1, "tokenamount" },
+    { "issueasset", 2, "blind" },
+    { "reissueasset", 1, "assetamount" },
+    { "destroyamount", 1, "amount" },
+    { "dumpissuanceblindingkey", 1, "vin" },
+    { "importissuanceblindingkey", 1, "vin" },
+
 };
 // clang-format on
 

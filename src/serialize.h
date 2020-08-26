@@ -902,6 +902,7 @@ protected:
     size_t nSize;
 
     const int nVersion;
+    int nExtra{0};
 public:
     explicit CSizeComputer(int nVersionIn) : nSize(0), nVersion(nVersionIn) {}
 
@@ -928,6 +929,8 @@ public:
     }
 
     int GetVersion() const { return nVersion; }
+    void SetExtra(int n) { nExtra = n; }
+    int GetExtra() const { return nExtra; }
 };
 
 template<typename Stream>
@@ -978,9 +981,11 @@ inline void WriteCompactSize(CSizeComputer &s, uint64_t nSize)
 }
 
 template <typename T>
-size_t GetSerializeSize(const T& t, int nVersion = 0)
-{
-    return (CSizeComputer(nVersion) << t).size();
+size_t GetSerializeSize(const T& t, int nVersion = 0, int flagCA = 0)
+{   
+    CSizeComputer ss(nVersion);
+    ss.SetExtra(flagCA);
+    return (ss << t).size();
 }
 
 template <typename... T>

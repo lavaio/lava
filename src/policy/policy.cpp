@@ -14,6 +14,8 @@
 #include <util/system.h>
 #include <util/strencodings.h>
 
+// CA:
+CAsset policyAsset;
 
 CAmount GetDustThreshold(const CTxOut& txout, const CFeeRate& dustRelayFeeIn)
 {
@@ -34,7 +36,7 @@ CAmount GetDustThreshold(const CTxOut& txout, const CFeeRate& dustRelayFeeIn)
     if (txout.scriptPubKey.IsUnspendable())
         return 0;
 
-    size_t nSize = GetSerializeSize(txout);
+    size_t nSize = GetSerializeSize(txout, 0, txout.IsCA());
     int witnessversion = 0;
     std::vector<unsigned char> witnessprogram;
 
@@ -51,7 +53,14 @@ CAmount GetDustThreshold(const CTxOut& txout, const CFeeRate& dustRelayFeeIn)
 
 bool IsDust(const CTxOut& txout, const CFeeRate& dustRelayFeeIn)
 {
-    return (txout.nValue < GetDustThreshold(txout, dustRelayFeeIn));
+    if (!txout.IsCA())
+        return (txout.nValue < GetDustThreshold(txout, dustRelayFeeIn));
+
+    if (!txout.nValueCA.IsExplicit())
+        return false; // FIXME
+    if (!txout.nAsset.IsExplicit())
+        return false;
+    return (txout.nValueCA.GetAmount() < GetDustThreshold(txout, dustRelayFeeIn));
 }
 
 bool IsStandard(const CScript& scriptPubKey, txnouttype& whichType)
@@ -126,7 +135,7 @@ bool IsStandardTx(const CTransaction& tx, std::string& reason)
         else if ((whichType == TX_MULTISIG) && (!fIsBareMultisigStd)) {
             reason = "bare-multisig";
             return false;
-        } else if (IsDust(txout, ::dustRelayFee)) {
+        } else if (!txout.IsCA() && IsDust(txout, ::dustRelayFee)) {
             reason = "dust";
             return false;
         }

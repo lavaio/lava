@@ -31,6 +31,7 @@
 #include <wallet/rpcwallet.h>
 #include <wallet/wallet.h>
 #include <wallet/walletutil.h>
+#include <chainparams.h>
 
 #include <memory>
 #include <string>
@@ -43,7 +44,7 @@ namespace {
 class PendingWalletTxImpl : public PendingWalletTx
 {
 public:
-    explicit PendingWalletTxImpl(CWallet& wallet) : m_wallet(wallet), m_key(&wallet) {}
+    explicit PendingWalletTxImpl(CWallet& wallet) : m_wallet(wallet) { m_keys.reserve(1); m_keys.emplace_back(new CReserveKey(&wallet)); }
 
     const CTransaction& get() override { return *m_tx; }
 
@@ -56,7 +57,7 @@ public:
         auto locked_chain = m_wallet.chain().lock();
         LOCK(m_wallet.cs_wallet);
         CValidationState state;
-        if (!m_wallet.CommitTransaction(m_tx, std::move(value_map), std::move(order_form), m_key, g_connman.get(), state)) {
+        if (!m_wallet.CommitTransaction(m_tx, std::move(value_map), std::move(order_form), m_keys, g_connman.get(), state)) {
             reject_reason = state.GetRejectReason();
             return false;
         }
@@ -65,7 +66,7 @@ public:
 
     CTransactionRef m_tx;
     CWallet& m_wallet;
-    CReserveKey m_key;
+    std::vector<std::unique_ptr<CReserveKey>> m_keys;
 };
 
 //! Construct wallet tx struct.
@@ -249,7 +250,15 @@ public:
         auto locked_chain = m_wallet->chain().lock();
         LOCK(m_wallet->cs_wallet);
         auto pending = MakeUnique<PendingWalletTxImpl>(*m_wallet);
-        if (!m_wallet->CreateTransaction(*locked_chain, recipients, pending->m_tx, pending->m_key, fee, change_pos,
+        // Pad change keys to cover total possible number of assets
+        // One already exists(for policyAsset), so one for each destination
+        std::set<CAsset> assets_seen;
+        for (const auto& rec : recipients) {
+            if (assets_seen.insert(rec.asset).second) {
+                pending->m_keys.emplace_back(new CReserveKey(&*m_wallet));
+            }
+        }
+        if (!m_wallet->CreateTransaction(*locked_chain, recipients, pending->m_tx, pending->m_keys, fee, change_pos,
                 fail_reason, coin_control, sign)) {
             return {};
         }
@@ -388,8 +397,8 @@ public:
         num_blocks = locked_chain->getHeight().get_value_or(-1);
         return true;
     }
-    CAmount getBalance() override { return m_wallet->GetBalance(); }
-    CAmount getAvailableBalance(const CCoinControl& coin_control) override
+    CAmountMap getBalance() override { return m_wallet->GetBalance(); }
+    CAmountMap getAvailableBalance(const CCoinControl& coin_control) override
     {
         return m_wallet->GetAvailableBalance(&coin_control);
     }
@@ -405,17 +414,17 @@ public:
         LOCK(m_wallet->cs_wallet);
         return m_wallet->IsMine(txout);
     }
-    CAmount getDebit(const CTxIn& txin, isminefilter filter) override
+    CAmountMap getDebit(const CTxIn& txin, isminefilter filter) override
     {
         auto locked_chain = m_wallet->chain().lock();
         LOCK(m_wallet->cs_wallet);
         return m_wallet->GetDebit(txin, filter);
     }
-    CAmount getCredit(const CTxOut& txout, isminefilter filter) override
+    CAmountMap getCredit(const CTransaction& tx, const size_t out_index, isminefilter filter) override
     {
         auto locked_chain = m_wallet->chain().lock();
         LOCK(m_wallet->cs_wallet);
-        return m_wallet->GetCredit(txout, filter);
+        return m_wallet->GetCredit(tx, out_index, filter);
     }
     CoinsList listCoins() override
     {
@@ -502,6 +511,67 @@ public:
     std::unique_ptr<Handler> handleCanGetAddressesChanged(CanGetAddressesChangedFn fn) override
     {
         return MakeHandler(m_wallet->NotifyCanGetAddressesChanged.connect(fn));
+    }
+
+    std::map<CTxDestination, int64_t> GetKeyBirthTimes() override {
+      auto locked_chain = m_wallet->chain().lock();
+      LOCK(m_wallet->cs_wallet);
+      std::map<CTxDestination, int64_t> mapKeyBirth;
+      m_wallet->GetKeyBirthTimes(*locked_chain, mapKeyBirth);
+      return mapKeyBirth;
+    }
+
+    bool hasAddress(const CTxDestination& dest) override {
+      auto locked_chain = m_wallet->chain().lock();
+      LOCK(m_wallet->cs_wallet);
+      return m_wallet->mapAddressBook.count(dest) > 0;
+    }
+
+    CKeyID getKeyForDestination(const CTxDestination& dest) override {
+      return ::GetKeyForDestination(*m_wallet, dest);
+    }
+
+    uint256 sendAction(const CAction& action, const CKey& key, const CTxDestination& destChange) override {
+      return ::SendAction(m_wallet.get(), action, key, destChange);
+    }
+
+    CTransactionRef sendMoneyWithOpRet(interfaces::Chain::Lock& locked_chain, const CTxDestination& address,
+                                       CAmount nValue, bool fSubtractFeeFromAmount, const CScript& optScritp,
+                                       const CCoinControl& coin_control) override {
+        mapValue_t mapValue;
+        return ::SendMoneyWithOpRet(locked_chain, m_wallet.get(), address, nValue, fSubtractFeeFromAmount, optScritp, coin_control, std::move(mapValue));
+    }
+    
+    void importScript(const CScript& script, const std::string& strLabel, bool isRedeemScript) override {
+        ::ImportScript(m_wallet.get(), script, strLabel, isRedeemScript);
+    }
+
+    virtual CFeeRate getPayTxFee() const override {
+      return m_wallet->m_pay_tx_fee;
+    }
+
+    virtual void setPayTxFee(const CFeeRate& fee) override {
+      m_wallet->m_pay_tx_fee = fee;
+    }
+
+    virtual std::unique_ptr<Chain::Lock> chain_lock() override {
+      return m_wallet->chain().lock(true);
+    }
+
+    virtual void doWithChainAndWalletLock(std::function<void (std::unique_ptr<Chain::Lock>&, Wallet&)> cb) override {
+      auto locked_chain = m_wallet->chain().lock(true);
+      LOCK(m_wallet->cs_wallet);
+      cb(locked_chain, *this);
+    }
+
+    virtual CTransactionRef createTicketAllSpendTx(
+        std::map<uint256,std::pair<int,CScript>> txScriptInputs,
+        std::vector<CTxOut> outs, CTxDestination& dest, CKey& key) override {
+      return ::CreateTicketAllSpendTx(m_wallet.get(), txScriptInputs, outs, dest, key);
+    }
+
+    virtual bool isPoc2x() override {
+        return chainActive.Tip()->nHeight >= Params().GetConsensus().LVIP05Height;
     }
 
     std::shared_ptr<CWallet> m_wallet;

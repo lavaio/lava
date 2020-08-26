@@ -3,7 +3,8 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <wallet/coinselection.h>
-
+#include <wallet/wallet.h>
+#include <policy/policy.h>
 #include <util/system.h>
 #include <util/moneystr.h>
 
@@ -62,6 +63,26 @@ struct {
 
 static const size_t TOTAL_TRIES = 100000;
 
+CInputCoin::CInputCoin(const CWalletTx* wtx, unsigned int i) {
+    if (!wtx || !wtx->tx)
+        throw std::invalid_argument("tx should not be null");
+    if (i >= wtx->tx->vout.size())
+        throw std::out_of_range("The output index is out of range");
+
+    outpoint = COutPoint(wtx->tx->GetHash(), i);
+    txout = wtx->tx->vout[i];
+    effective_value = txout.nValue;
+    value = txout.nValue;
+    if (! txout.IsCA()){
+        asset = ::policyAsset;
+        return;
+    }
+    effective_value = std::max<CAmount>(0, wtx->GetOutputValueOut(i));
+    value = wtx->GetOutputValueOut(i);
+    asset = wtx->GetOutputAsset(i);
+    bf_value = wtx->GetOutputAmountBlindingFactor(i);
+    bf_asset = wtx->GetOutputAssetBlindingFactor(i);
+}
 bool SelectCoinsBnB(std::vector<OutputGroup>& utxo_pool, const CAmount& target_value, const CAmount& cost_of_change, std::set<CInputCoin>& out_set, CAmount& value_ret, CAmount not_input_fees)
 {
     out_set.clear();
@@ -211,6 +232,62 @@ static void ApproximateBestSubset(const std::vector<OutputGroup>& groups, const 
             }
         }
     }
+}
+
+// CA:
+bool KnapsackSolver(const CAmountMap& mapTargetValue, std::vector<OutputGroup>& groups, std::set<CInputCoin>& setCoinsRet, CAmountMap& mapValueRet) {
+    setCoinsRet.clear();
+    mapValueRet.clear();
+
+    std::vector<OutputGroup> inner_groups;
+    std::set<CInputCoin> inner_coinsret;
+    // Perform the standard Knapsack solver for every asset individually.
+    for(std::map<CAsset, CAmount>::const_iterator it = mapTargetValue.begin(); it != mapTargetValue.end(); ++it) {
+        inner_groups.clear();
+        inner_coinsret.clear();
+
+        if (it->second == 0) {
+            continue;
+        }
+
+        // We filter the groups on two conditions:
+        // - only groups that have (exclusively) coins of the asset we're solving for
+        // - no groups that are already used in setCoinsRet
+        for (const OutputGroup& g : groups) {
+            bool add = true;
+            for (const CInputCoin& c : g.m_outputs) {
+                if (setCoinsRet.find(c) != setCoinsRet.end()) {
+                    add = false;
+                    break;
+                }
+
+                if (c.asset != it->first) {
+                    add = false;
+                    break;
+                }
+            }
+
+            if (add) {
+                inner_groups.push_back(g);
+            }
+        }
+
+        if (inner_groups.size() == 0) {
+            // No output groups for this asset.
+            return false;
+        }
+
+        CAmount outValue;
+        if (!KnapsackSolver(it->second, inner_groups, inner_coinsret, outValue)) {
+            return false;
+        }
+        mapValueRet[it->first] = outValue;
+        for (const CInputCoin& ic : inner_coinsret) {
+            setCoinsRet.insert(ic);
+        }
+    }
+
+    return true;
 }
 
 bool KnapsackSolver(const CAmount& nTargetValue, std::vector<OutputGroup>& groups, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet)

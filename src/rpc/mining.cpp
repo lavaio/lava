@@ -112,9 +112,12 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
     unsigned int nExtraNonce = 0;
     UniValue blockHashes(UniValue::VARR);
     auto params = Params();
+    CTxDestination dest;
+    ExtractDestination(coinbaseScript->reserveScript, dest);
+    auto coinbaseDest = boost::get<CKeyID>(dest);
     while (nHeight < nHeightEnd && !ShutdownRequested())
     {
-        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript, 0, CKeyID(), 0, 0, MakeTransactionRef()));
+        std::unique_ptr<CBlockTemplate> pblocktemplate(BlockAssembler(Params()).CreateNewBlock(coinbaseScript->reserveScript, 0, coinbaseDest, coinbaseDest.GetPlotID(), 0, MakeTransactionRef()));
         if (!pblocktemplate.get())
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
         CBlock *pblock = &pblocktemplate->block;

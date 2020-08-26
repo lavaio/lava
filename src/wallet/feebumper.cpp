@@ -97,6 +97,10 @@ Result CreateTransaction(const CWallet* wallet, const uint256& txid, const CCoin
     // if there was no change output or multiple change outputs, fail
     int nOutput = -1;
     for (size_t i = 0; i < wtx.tx->vout.size(); ++i) {
+        if (wtx.tx->vout[i].IsCA()) {
+            continue;
+        }
+
         if (wallet->IsChange(wtx.tx->vout[i])) {
             if (nOutput != -1) {
                 errors.push_back("Transaction has multiple change outputs");
@@ -119,7 +123,7 @@ Result CreateTransaction(const CWallet* wallet, const uint256& txid, const CCoin
     }
 
     // calculate the old fee and fee-rate
-    old_fee = wtx.GetDebit(ISMINE_SPENDABLE) - wtx.tx->GetValueOut();
+    old_fee = wtx.GetDebit(ISMINE_SPENDABLE)[::policyAsset] - wtx.tx->GetValueOut();
     CFeeRate nOldFeeRate(old_fee, txSize);
     CFeeRate nNewFeeRate;
     // The wallet uses a conservative WALLET_INCREMENTAL_RELAY_FEE value to
@@ -244,10 +248,12 @@ Result CommitTransaction(CWallet* wallet, const uint256& txid, CMutableTransacti
     CTransactionRef tx = MakeTransactionRef(std::move(mtx));
     mapValue_t mapValue = oldWtx.mapValue;
     mapValue["replaces_txid"] = oldWtx.GetHash().ToString();
+    // TODO CA: store new blinding data to remember otherwise unblindable outputs
 
-    CReserveKey reservekey(wallet);
+    std::vector<std::unique_ptr<CReserveKey>> reservekeys;
+    reservekeys.push_back(std::unique_ptr<CReserveKey>(new CReserveKey(wallet)));
     CValidationState state;
-    if (!wallet->CommitTransaction(tx, std::move(mapValue), oldWtx.vOrderForm, reservekey, g_connman.get(), state)) {
+    if (!wallet->CommitTransaction(tx, std::move(mapValue), oldWtx.vOrderForm, reservekeys, g_connman.get(), state)) {
         // NOTE: CommitTransaction never returns false, so this should never happen.
         errors.push_back(strprintf("The transaction was rejected: %s", FormatStateMessage(state)));
         return Result::WALLET_ERROR;

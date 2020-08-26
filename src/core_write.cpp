@@ -6,8 +6,10 @@
 
 #include <consensus/consensus.h>
 #include <consensus/validation.h>
+#include <issuance.h>
 #include <key_io.h>
 #include <script/script.h>
+#include <script/sign.h>
 #include <script/standard.h>
 #include <serialize.h>
 #include <streams.h>
@@ -15,6 +17,32 @@
 #include <util/system.h>
 #include <util/moneystr.h>
 #include <util/strencodings.h>
+
+#include <secp256k1_rangeproof.h>
+
+static secp256k1_context* secp256k1_blind_context = NULL;
+
+class RPCRawTransaction_ECC_Init {
+public:
+    RPCRawTransaction_ECC_Init() {
+        assert(secp256k1_blind_context == NULL);
+
+        secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_NONE);
+        assert(ctx != NULL);
+
+        secp256k1_blind_context = ctx;
+    }
+
+    ~RPCRawTransaction_ECC_Init() {
+        secp256k1_context *ctx = secp256k1_blind_context;
+        secp256k1_blind_context = NULL;
+
+        if (ctx) {
+            secp256k1_context_destroy(ctx);
+        }
+    }
+};
+static RPCRawTransaction_ECC_Init ecc_init_on_load;
 
 UniValue ValueFromAmount(const CAmount& amount)
 {
@@ -208,6 +236,42 @@ void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry,
             }
         }
         in.pushKV("sequence", (int64_t)txin.nSequence);
+
+        const CAssetIssuance& issuance = txin.assetIssuance;
+        if (!issuance.IsNull()) {
+            UniValue issue(UniValue::VOBJ);
+            issue.pushKV("assetBlindingNonce", issuance.assetBlindingNonce.GetHex());
+            CAsset asset;
+            CAsset token;
+            uint256 entropy;
+            if (issuance.assetBlindingNonce.IsNull()) {
+                GenerateAssetEntropy(entropy, txin.prevout, issuance.assetEntropy);
+                issue.pushKV("assetEntropy", entropy.GetHex());
+                CalculateAsset(asset, entropy);
+                CalculateReissuanceToken(token, entropy, issuance.nAmount.IsCommitment());
+                issue.pushKV("isreissuance", false);
+                issue.pushKV("token", token.GetHex());
+            }
+            else {
+                issue.pushKV("assetEntropy", issuance.assetEntropy.GetHex());
+                issue.pushKV("isreissuance", true);
+                CalculateAsset(asset, issuance.assetEntropy);
+            }
+            issue.pushKV("asset", asset.GetHex());
+
+            if (issuance.nAmount.IsExplicit()) {
+                issue.pushKV("assetamount", ValueFromAmount(issuance.nAmount.GetAmount()));
+            } else if (issuance.nAmount.IsCommitment()) {
+                issue.pushKV("assetamountcommitment", HexStr(issuance.nAmount.vchCommitment));
+            }
+            if (issuance.nInflationKeys.IsExplicit()) {
+                issue.pushKV("tokenamount", ValueFromAmount(issuance.nInflationKeys.GetAmount()));
+            } else if (issuance.nInflationKeys.IsCommitment()) {
+                issue.pushKV("tokenamountcommitment", HexStr(issuance.nInflationKeys.vchCommitment));
+            }
+            in.pushKV("issuance", issue);
+        }
+
         vin.push_back(in);
     }
     entry.pushKV("vin", vin);
@@ -220,6 +284,44 @@ void TxToUniv(const CTransaction& tx, const uint256& hashBlock, UniValue& entry,
 
         out.pushKV("value", ValueFromAmount(txout.nValue));
         out.pushKV("n", (int64_t)i);
+
+        if (txout.IsCA()) {
+            if (txout.nValueCA.IsExplicit()) {
+                out.pushKV("value-ca", ValueFromAmount(txout.nValueCA.GetAmount()));
+            } else {
+                int exp;
+                int mantissa;
+                uint64_t minv;
+                uint64_t maxv;
+                if (txout.vchRangeproof.size() && secp256k1_rangeproof_info(secp256k1_blind_context, &exp, &mantissa, &minv, &maxv, &txout.vchRangeproof[0], txout.vchRangeproof.size())) {
+                    if (exp == -1) {
+                        out.pushKV("value-ca", ValueFromAmount((CAmount)minv));
+                    } else {
+                        out.pushKV("value-minimum", ValueFromAmount((CAmount)minv));
+                        out.pushKV("value-maximum", ValueFromAmount((CAmount)maxv));
+                    }
+                    out.pushKV("ct-exponent", exp);
+                    out.pushKV("ct-bits", mantissa);
+                }
+
+                if (txout.vchSurjectionproof.size()) {
+                    out.pushKV("surjectionproof", HexStr(txout.vchSurjectionproof));
+                }
+                out.pushKV("valuecommitment", txout.nValueCA.GetHex());
+            }
+
+            if (txout.nAsset.IsExplicit()) {
+                out.pushKV("asset", txout.nAsset.GetAsset().GetHex());
+            } else {
+                out.pushKV("assetcommitment", txout.nAsset.GetHex());
+            }
+
+            if (! txout.nNonce.IsNull()) {
+                out.pushKV("commitmentnonce", txout.nNonce.GetHex());
+                CPubKey pubkey(txout.nNonce.vchCommitment);
+                out.pushKV("commitmentnonce_fully_valid", pubkey.IsFullyValid());
+            }
+        }
 
         UniValue o(UniValue::VOBJ);
         ScriptPubKeyToUniv(txout.scriptPubKey, o, true);
