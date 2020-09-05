@@ -1,22 +1,15 @@
 Lava Core integration/staging tree
 =====================================
 
-[![Build Status](https://travis-ci.com/lavaio/lava.svg?token=mHzysCzzvrSWVpd4jq6Z&branch=dev)](https://travis-ci.com/lavaio/lava)
-
-https://lavacore.org
+https://lavatech.org
 
 What is Lava?
 ----------------
 
-Lava is an experimental digital currency that enables instant payments to
-anyone, anywhere in the world. Lava uses peer-to-peer technology to operate
-with no central authority: managing transactions and issuing money are carried
-out collectively by the network. Lava Core is the name of open source
-software which enables the use of this currency.
-
-For more information, as well as an immediately useable, binary version of
-the Lava Core software, see https://lavacore.org/en/download/, or read the
-[original whitepaper](https://lavacore.org/lava.pdf).
+What is Lava?
+Lava is a cryptocurrency and a digital infrastructure for the global storage. The protocol works on Proof-of-Capacity consensus and Lava Firestone mechanism, which aims to better discover possibilities from storage space in a more decentralized and productive means.
+For more infomation, as well as immediately usable Lava Core software, see: https://lavatech.org/en
+For original whitepaper, please visit: https://www.lavatech.org/en/pdf
 
 License
 -------
