@@ -1,6 +1,8 @@
 
 #include <asset.h>
 
+CAsset policyAsset;
+
 CAmountMap& operator+=(CAmountMap& a, const CAmountMap& b)
 {
     for(std::map<CAsset, CAmount>::const_iterator it = b.begin(); it != b.end(); ++it)

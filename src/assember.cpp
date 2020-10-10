@@ -9,13 +9,36 @@
 #include <actiondb.h>
 #include <timedata.h>
 #include <fspool.h>
-#include <wallet/rpcwallet.h>
 
 #include <boost/bind.hpp>
 
 CPOCBlockAssember::CPOCBlockAssember()
 {
     SetNull();
+}
+
+static CTransactionRef makeSpentTicketTx(const CTicketRef& ticket, const int height, const CTxDestination& dest, const CKey& key)
+{
+    CMutableTransaction mtx;
+    auto redeemScript = ticket->redeemScript;
+    mtx.vin.push_back(CTxIn(ticket->out->hash, ticket->out->n, redeemScript, 0));
+    mtx.vout.push_back(CTxOut(ticket->nValue, GetScriptForDestination(dest)));
+    mtx.nLockTime = height - 1;
+
+    CMutableTransaction txcopy(mtx);
+    txcopy.vin[0] = CTxIn(txcopy.vin[0].prevout, redeemScript, 0);
+    CHashWriter ss(SER_GETHASH, 0);
+    ss << txcopy << 1;
+    auto hash = ss.GetHash();
+    std::vector<unsigned char> vchSig;
+    if (!key.Sign(hash, vchSig)) {
+        LogPrint(BCLog::FIRESTONE, "%s: sign firestone tx failure, key:%d, %s:%d, keyid:%s\n", __func__, key.GetPubKey().GetID().ToString());
+        return MakeTransactionRef();
+    }
+    vchSig.push_back((unsigned char)SIGHASH_ALL);
+    mtx.vin[0].scriptSig = CScript() << vchSig << ToByteVector(key.GetPubKey()) << ToByteVector(redeemScript);
+    CTransaction tx(mtx);
+    return MakeTransactionRef(tx);
 }
 
 bool CPOCBlockAssember::UpdateDeadline(const int height, const CKeyID& keyid, const uint64_t nonce, const uint64_t deadline, const CKey& key)

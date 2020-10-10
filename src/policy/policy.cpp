@@ -14,9 +14,6 @@
 #include <util/system.h>
 #include <util/strencodings.h>
 
-// CA:
-CAsset policyAsset;
-
 CAmount GetDustThreshold(const CTxOut& txout, const CFeeRate& dustRelayFeeIn)
 {
     // "Dust" is defined in terms of dustRelayFee,
